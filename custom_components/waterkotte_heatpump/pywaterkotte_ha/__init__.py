@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import aiohttp
 import re
 import xml.etree.ElementTree as ElemTree
 from datetime import datetime
@@ -40,7 +41,8 @@ class WaterkotteClient:
             self._internal_client = EcotouchBridge(host=host, web_session=web_session, username=username,
                                                    pwd=pwd, tags_per_request=tags_per_request, lang=lang)
         elif system_type == EASYCON:
-            self._internal_client = EasyconBridge(host=host, web_session=web_session)
+            self._internal_client = EasyconBridge(host=host, web_session=web_session, username=username,
+                                                  pwd=pwd, lang=lang)
         else:
             _LOGGER.error("Error unknown System type!")
 
@@ -523,7 +525,11 @@ class EasyconBridge(EcotouchBridge):
         if query == "":
             return None, None
 
-        async with self.web_session.get(f"http://{self.host}/config/xml.cgi?{query[1:]}") as response:
+        basic_auth = None
+        if self.username is not None and self.pwd is not None:
+            basic_auth = aiohttp.BasicAuth(self.username, self.pwd)
+
+        async with self.web_session.get(f"http://{self.host}/config/xml.cgi?{query[1:]}", auth=basic_auth) as response:
             try:
                 response.raise_for_status()
                 if response.status == 200:
@@ -609,7 +615,11 @@ class EasyconBridge(EcotouchBridge):
         results = {}
         resultsStatus = {}
 
-        async with self.web_session.get(f"http://{self.host}/config/query.cgi?{param}") as response:
+        basic_auth = None
+        if self.username is not None and self.pwd is not None:
+            basic_auth = aiohttp.BasicAuth(self.username, self.pwd)
+
+        async with self.web_session.get(f"http://{self.host}/config/query.cgi?{param}", auth=basic_auth) as response:
             try:
                 response.raise_for_status()
                 if response.status == 200:

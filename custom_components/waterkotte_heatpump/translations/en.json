@@ -59,9 +59,15 @@
         "description": "If you need help with the configuration have a look here: {repo}.",
         "data": {
           "host": "Host or IP",
+          "username": "Username (OPTIONAL)",
+          "password": "Password (OPTIONAL)",
           "polling_interval": "Polling Interval in seconds",
           "tags_per_request": "Number of tags to fetch in a single request (max. 75)",
           "add_serial_as_id": "Do you want to configure multiple Waterkotte Systems in your HA installation?"
+        },
+        "data_description": {
+          "username": "Only if your Watterkotte use BasicAuth to access",
+          "password": "Only if your Watterkotte use BasicAuth to access"
         }
       },
       "features": {

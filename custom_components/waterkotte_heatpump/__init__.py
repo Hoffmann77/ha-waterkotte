@@ -14,7 +14,7 @@ from homeassistant.helpers.typing import UNDEFINED, UndefinedType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha import WaterkotteClient
-from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import ECOTOUCH
+from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import ECOTOUCH, EASYCON
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import TooManyUsersException, InvalidPasswordException
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from . import service as waterkotte_service
@@ -218,12 +218,19 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
             self.available_features.append(FEATURE_DISINFECTION)
         _LOGGER.debug(f"available_features: {self.available_features}")
 
-        _host = config_entry.options.get(CONF_HOST, config_entry.data.get(CONF_HOST))
-        _user = config_entry.options.get(CONF_USERNAME, config_entry.data.get(CONF_USERNAME, "waterkotte"))
-        _pwd = config_entry.options.get(CONF_PASSWORD, config_entry.data.get(CONF_PASSWORD, "waterkotte"))
         _system_type = config_entry.options.get(CONF_SYSTEMTYPE, config_entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH))
+        _host = config_entry.options.get(CONF_HOST, config_entry.data.get(CONF_HOST))
+        _user = config_entry.options.get(CONF_USERNAME, config_entry.data.get(CONF_USERNAME, "@@@µµµ@@@" if _system_type == EASYCON else "waterkotte"))
+        _pwd = config_entry.options.get(CONF_PASSWORD, config_entry.data.get(CONF_PASSWORD, "@@@µµµ@@@" if _system_type == EASYCON else "waterkotte"))
         _tags_num = config_entry.options.get(CONF_TAGS_PER_REQUEST, config_entry.data.get(CONF_TAGS_PER_REQUEST, 10))
         _tags = generate_tag_list(hass=hass, trim_unique_id=self.is_multi_instances, config_entry_id=config_entry.entry_id)
+
+        if _system_type == EASYCON:
+            # by default, EASYCON does not have a password option... BUT if the user specified login credentials,
+            # then we must use them!
+            if _user == "@@@µµµ@@@" or _pwd == "@@@µµµ@@@":
+                _user = None
+                _pwd = None
 
         self.bridge = WaterkotteClient(host=_host, username=_user, pwd=_pwd, system_type=_system_type,
                                        web_session=async_get_clientsession(hass), tags=_tags,

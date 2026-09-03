@@ -59,9 +59,15 @@
         "description": "Wenn Du Hilfe bei der Einichtung benötigst, findest du sie hier: {repo}.",
         "data": {
           "host": "IP oder Hostname deiner Waterkotte",
+          "username": "Benutzername (Optional)",
+          "password": "Passwort (Optional)",
           "polling_interval": "Aktualisierungsintervall in Sekunden",
           "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)",
           "add_serial_as_id": "Möchtest Du mehrere Waterkotte-Systeme in deiner HA Instanz verwalten?"
+        },
+        "data_description": {
+          "username": "Nur wenn Deine Watterkotte BasicAuth verwendet",
+          "password": "Nur wenn Deine Watterkotte BasicAuth verwendet"
         }
       },
       "features": {
