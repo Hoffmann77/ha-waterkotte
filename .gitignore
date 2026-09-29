@@ -7,3 +7,4 @@ venv
 core.*
 *.iml
 /generator/gen_*.txt
+.pytest_cache
