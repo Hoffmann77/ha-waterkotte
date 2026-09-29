@@ -81,8 +81,10 @@
       }
     },
     "error": {
-      "auth": "Unter dieser IP/Host und dem angegebenen Passwort konnte keine Waterkotte erreicht werden",
-      "type": "Es konnte keine Verbindung mit deiner Waterkotte hergestellt werden - bist du dir sicher, dass du zuvor den richtigen Schnittstellentyp ausgewählt hast?"
+      "cannot_connect": "Es konnte keine Verbindung mit deiner Waterkotte hergestellt werden - bitte prüfe die IP/Host und ob du zuvor den richtigen Schnittstellentyp ausgewählt hast.",
+      "invalid_auth": "Benutzername oder Passwort ist falsch.",
+      "too_many_users": "Es sind zu viele Benutzer an der Waterkotte Weboberfläche angemeldet - bitte melde dich von anderen Sitzungen ab und versuche es später erneut.",
+      "unknown": "Unerwarteter Fehler - bitte prüfe das Home Assistant Log."
     },
     "abort": {
       "single_instance_allowed": "Only a single instance is allowed."

@@ -81,8 +81,10 @@
       }
     },
     "error": {
-      "auth": "Host/IP or the Password is wrong - could not reach system",
-      "type": "No connection to Waterkotte possible - are you sure that you have selected previously the correct Interface-Type?"
+      "cannot_connect": "No connection to Waterkotte possible - please check the Host/IP and if you have selected previously the correct Interface-Type.",
+      "invalid_auth": "Username or Password is wrong.",
+      "too_many_users": "Too many users are logged in to the Waterkotte web interface - please log out from other sessions and try again later.",
+      "unknown": "Unexpected error - please check the Home Assistant log."
     },
     "abort": {
       "single_instance_allowed": "Only a single instance is allowed."

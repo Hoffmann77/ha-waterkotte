@@ -1,6 +1,7 @@
 """Adds config flow for Waterkotte Heatpump."""
 import logging
 
+import aiohttp
 import voluptuous as vol
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha import WaterkotteClient
@@ -30,9 +31,17 @@ from .const import (
     CONF_USE_POOL,
     CONFIG_VERSION, CONFIG_MINOR_VERSION
 )
-from .pywaterkotte_ha.error import Http404Exception
+from .pywaterkotte_ha.error import Http404Exception, InvalidPasswordException, TooManyUsersException
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
+
+
+def _tag_value(values: dict, tag: WKHPTag) -> str | None:
+    """Return the value of a tag as string - or None, if the heat pump did not provide a value"""
+    entry = values.get(tag)
+    if entry is None or entry.get("value") is None or str(entry["value"]) in ("", "None"):
+        return None
+    return str(entry["value"])
 
 
 class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -99,14 +108,14 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             user_input[CONF_SYSTEMTYPE] = EASYCON
             user_input[CONF_ADD_SCHEDULE_ENTITIES] = False
-            valid = await self._test_credentials(
+            error = await self._test_connection(
                 host=user_input[CONF_HOST],
-                username=user_input[CONF_USERNAME],
-                pwd=user_input[CONF_PASSWORD],
+                username=user_input.get(CONF_USERNAME),
+                pwd=user_input.get(CONF_PASSWORD),
                 system_type=user_input[CONF_SYSTEMTYPE],
                 tags_per_request=user_input[CONF_TAGS_PER_REQUEST],
             )
-            if valid:
+            if error is None:
                 user_input[CONF_BIOS] = self._bios
                 user_input[CONF_FW] = self._firmware
                 user_input[CONF_SERIES] = self._series
@@ -115,7 +124,7 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 self._user_step_user_input = dict(user_input)
                 return await self.async_step_features()
             else:
-                self._errors["base"] = "type"
+                self._errors["base"] = error
         else:
             user_input = {}
             user_input[CONF_HOST] = ""
@@ -148,14 +157,14 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             user_input[CONF_SYSTEMTYPE] = ECOTOUCH
-            valid = await self._test_credentials(
+            error = await self._test_connection(
                 host=user_input[CONF_HOST],
-                username=user_input[CONF_USERNAME],
+                username=user_input.get(CONF_USERNAME),
                 pwd=user_input[CONF_PASSWORD],
                 system_type=user_input[CONF_SYSTEMTYPE],
                 tags_per_request=user_input[CONF_TAGS_PER_REQUEST],
             )
-            if valid:
+            if error is None:
                 user_input[CONF_BIOS] = self._bios
                 user_input[CONF_FW] = self._firmware
                 user_input[CONF_SERIES] = self._series
@@ -164,7 +173,7 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 self._user_step_user_input = dict(user_input)
                 return await self.async_step_features()
             else:
-                self._errors["base"] = "auth"
+                self._errors["base"] = error
         else:
             user_input = {}
             user_input[CONF_HOST] = ""
@@ -208,46 +217,52 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 errors=self._errors
             )
 
-    async def _test_credentials(self, host, username, pwd, system_type, tags_per_request):
+    async def _test_connection(self, host, username, pwd, system_type, tags_per_request) -> str | None:
+        """Connect to the heat pump and read the device information - returns an error key on failure"""
+        # remove login credentials if not specified...
+        if username is not None and len(str(username)) == 0:
+            username = None
+        if pwd is not None and len(str(pwd)) == 0:
+            pwd = None
+
+        client = WaterkotteClient(host=host, username=username, pwd=pwd, system_type=system_type,
+                                  web_session=async_create_clientsession(self.hass), tags=None,
+                                  tags_per_request=tags_per_request, lang=self.hass.config.language.lower())
         try:
-            session = async_create_clientsession(self.hass)
-
-            # remove login credentials if not specified...
-            if username is not None and len(str(username)) == 0:
-                username = None
-            if pwd is not None and len(str(pwd)) == 0:
-                pwd = None
-
-            client = WaterkotteClient(host=host, username=username, pwd=pwd, system_type=system_type,
-                                      web_session=session, tags=None, tags_per_request=tags_per_request,
-                                      lang=self.hass.config.language.lower())
-            await client.login()
-            init_tags = [
+            # the client.login() would swallow all errors (and retry) - so we check the login directly
+            await client.async_check_login()
+            ret = await client.async_read_values([
                 WKHPTag.VERSION_BIOS,
                 WKHPTag.VERSION_CONTROLLER,
                 WKHPTag.INFO_ID,
                 WKHPTag.INFO_SERIAL,
                 WKHPTag.INFO_SERIES,
-            ]
-            ret = await client.async_read_values(init_tags)
+            ])
+        except InvalidPasswordException:
+            return "invalid_auth"
+        except TooManyUsersException:
+            return "too_many_users"
+        except (Http404Exception, aiohttp.ClientError, TimeoutError) as exc:
+            # a HTTP 404 is also the result, when the wrong interface type have been selected
+            _LOGGER.info(f"could not connect to waterkotte@{host}: {type(exc).__name__} {exc}")
+            return "cannot_connect"
+        except Exception as exc:  # pylint: disable=broad-except
+            _LOGGER.exception(f"unexpected exception while connecting to waterkotte@{host}: {exc}")
+            return "unknown"
 
-            self._bios = ret[WKHPTag.VERSION_BIOS]["value"]
-            self._firmware = ret[WKHPTag.VERSION_CONTROLLER]["value"]
-            self._id = str(ret[WKHPTag.INFO_ID]["value"])
-            self._series = str(ret[WKHPTag.INFO_SERIES]["value"])
-            self._serial = str(ret[WKHPTag.INFO_SERIAL]["value"])
-            if self._serial is None or self._serial == "None":
-                self._serial = uuid_util.random_uuid_hex()
+        if not ret:
+            # nothing could be read (e.g. wrong interface type or wrong BasicAuth credentials for EasyCon)
+            return "cannot_connect"
 
-            _LOGGER.info(f"successfully validated login -> result: {ret}")
-            return True
-
-        except Exception as exc:
-            if isinstance(exc, Http404Exception):
-                _LOGGER.error(f"EASYCON Mode caused HTTP 404")
-            else:
-                _LOGGER.error(f"Exception while test credentials: {exc}")
-        return False
+        _LOGGER.info(f"successfully validated login -> result: {ret}")
+        self._bios = _tag_value(ret, WKHPTag.VERSION_BIOS)
+        self._firmware = _tag_value(ret, WKHPTag.VERSION_CONTROLLER)
+        self._id = _tag_value(ret, WKHPTag.INFO_ID)
+        self._series = _tag_value(ret, WKHPTag.INFO_SERIES)
+        self._serial = _tag_value(ret, WKHPTag.INFO_SERIAL)
+        if self._serial is None:
+            self._serial = uuid_util.random_uuid_hex()
+        return None
 
     @staticmethod
     @callback

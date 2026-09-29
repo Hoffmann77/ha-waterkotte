@@ -35,7 +35,7 @@ def mock_client() -> Generator[MagicMock]:
         "custom_components.waterkotte_heatpump.config_flow.WaterkotteClient", autospec=True
     ) as client_class:
         client = client_class.return_value
-        client.login = AsyncMock()
+        client.async_check_login = AsyncMock()
         client.async_read_values = AsyncMock(return_value=device_info_values())
         yield client
 
