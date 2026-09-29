@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import aiohttp
 import pytest
-from homeassistant.config_entries import SOURCE_USER
+from homeassistant.config_entries import SOURCE_RECONFIGURE, SOURCE_USER
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -160,4 +160,39 @@ async def test_options_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) ->
         CONF_TAGS_PER_REQUEST: 50,
         CONF_ADD_SCHEDULE_ENTITIES: True,
     }
+    assert entry.data[CONF_HOST] == HOST
+
+
+async def _start_reconfigure_flow(hass: HomeAssistant, entry: MockConfigEntry) -> dict:
+    """Start a reconfigure flow for the given entry."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    return result
+
+
+async def test_reconfigure(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
+    """Test that the host of the same heat pump can be changed."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    entry.add_to_hass(hass)
+    result = await _start_reconfigure_flow(hass, entry)
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "192.168.1.60"})
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data[CONF_HOST] == "192.168.1.60"
+
+
+async def test_reconfigure_wrong_device(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
+    """Test that the host can't be changed to another heat pump."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    entry.add_to_hass(hass)
+    mock_client.async_read_values.return_value = device_info_values(serial="WE15999999")
+    result = await _start_reconfigure_flow(hass, entry)
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "192.168.1.60"})
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "wrong_device"
     assert entry.data[CONF_HOST] == HOST

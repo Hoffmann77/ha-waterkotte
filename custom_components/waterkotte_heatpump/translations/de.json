@@ -70,6 +70,12 @@
           "password": "Nur wenn Deine Watterkotte BasicAuth verwendet"
         }
       },
+      "reconfigure": {
+        "description": "Ändere die IP oder den Hostnamen deiner Waterkotte (z.B. wenn sie eine neue IP Adresse erhalten hat).",
+        "data": {
+          "host": "IP oder Hostname deiner Waterkotte"
+        }
+      },
       "features": {
         "description": "Automatische Aktivierung zusätzlicher Sensoren und Steuerelemente:\n(Diese können auch später von Hand aktiviert werden)",
         "data": {
@@ -88,7 +94,9 @@
     },
     "abort": {
       "single_instance_allowed": "Only a single instance is allowed.",
-      "already_configured": "Diese Waterkotte Wärmepumpe ist bereits eingerichtet."
+      "already_configured": "Diese Waterkotte Wärmepumpe ist bereits eingerichtet.",
+      "reconfigure_successful": "Die Konfiguration wurde aktualisiert.",
+      "wrong_device": "Die Wärmepumpe unter dieser IP/Host ist nicht die eingerichtete Waterkotte Wärmepumpe (andere Seriennummer)."
     }
   },
   "options": {

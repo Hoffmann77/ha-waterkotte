@@ -219,6 +219,36 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 errors=self._errors
             )
 
+    async def async_step_reconfigure(self, user_input=None):
+        """Change the host of an existing configuration."""
+        self._errors = {}
+        entry = self._get_reconfigure_entry()
+
+        if user_input is not None:
+            error = await self._test_connection(
+                host=user_input[CONF_HOST],
+                username=entry.options.get(CONF_USERNAME, entry.data.get(CONF_USERNAME)),
+                pwd=entry.options.get(CONF_PASSWORD, entry.data.get(CONF_PASSWORD)),
+                system_type=entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH),
+                tags_per_request=entry.options.get(CONF_TAGS_PER_REQUEST, entry.data.get(CONF_TAGS_PER_REQUEST, 10)),
+            )
+            if error is None:
+                if entry.unique_id is not None:
+                    # make sure that the new host is still the same heat pump
+                    await self.async_set_unique_id(self._serial)
+                    self._abort_if_unique_id_mismatch(reason="wrong_device")
+                return self.async_update_reload_and_abort(entry, data_updates={CONF_HOST: user_input[CONF_HOST]})
+            else:
+                self._errors["base"] = error
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema({
+                vol.Required(CONF_HOST, default=entry.data.get(CONF_HOST)): str,
+            }),
+            errors=self._errors
+        )
+
     async def _test_connection(self, host, username, pwd, system_type, tags_per_request) -> str | None:
         """Connect to the heat pump and read the device information - returns an error key on failure"""
         # remove login credentials if not specified...
