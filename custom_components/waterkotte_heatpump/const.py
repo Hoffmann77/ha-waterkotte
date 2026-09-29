@@ -30,7 +30,7 @@ TITLE: Final = "Waterkotte"
 ISSUE_URL: Final = "https://github.com/marq24/ha-waterkotte/issues"
 
 CONFIG_VERSION: Final = 1
-CONFIG_MINOR_VERSION: Final = 2
+CONFIG_MINOR_VERSION: Final = 3
 
 FEATURE_DISINFECTION: Final = "DISINFECTION"
 FEATURE_HEATING_CURVE: Final = "HEATING_CURVE"

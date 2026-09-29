@@ -7,6 +7,7 @@ from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.waterkotte_heatpump.const import (
     CONF_ADD_SCHEDULE_ENTITIES,
@@ -59,6 +60,7 @@ async def test_full_flow_ecotouch(hass: HomeAssistant, mock_client: MagicMock, m
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_HOST] == HOST
     assert result["data"][CONF_SERIAL] == SERIAL
+    assert result["result"].unique_id == SERIAL
     assert len(mock_setup_entry.mock_calls) == 1
 
 
@@ -107,3 +109,25 @@ async def test_missing_serial_is_no_error(hass: HomeAssistant, mock_client: Magi
     assert result["step_id"] == "features"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["result"].unique_id is None
+
+
+async def test_already_configured_serial(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
+    """Test that the same heat pump (same serial number) can't be added twice - even with another host."""
+    MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data={CONF_HOST: "192.168.1.99"}).add_to_hass(hass)
+    result = await _start_ecotouch_flow(hass)
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT_ECOTOUCH)
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_already_configured_host(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
+    """Test that a heat pump without serial number can't be added twice with the same host."""
+    MockConfigEntry(domain=DOMAIN, data={CONF_HOST: HOST}).add_to_hass(hass)
+    mock_client.async_read_values.return_value = device_info_values(serial=None)
+    result = await _start_ecotouch_flow(hass)
+
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT_ECOTOUCH)
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"

@@ -87,7 +87,8 @@
       "unknown": "Unexpected error - please check the Home Assistant log."
     },
     "abort": {
-      "single_instance_allowed": "Only a single instance is allowed."
+      "single_instance_allowed": "Only a single instance is allowed.",
+      "already_configured": "This Waterkotte heat pump is already configured."
     }
   },
   "options": {

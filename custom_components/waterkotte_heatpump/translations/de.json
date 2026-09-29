@@ -87,7 +87,8 @@
       "unknown": "Unerwarteter Fehler - bitte prüfe das Home Assistant Log."
     },
     "abort": {
-      "single_instance_allowed": "Only a single instance is allowed."
+      "single_instance_allowed": "Only a single instance is allowed.",
+      "already_configured": "Diese Waterkotte Wärmepumpe ist bereits eingerichtet."
     }
   },
   "options": {

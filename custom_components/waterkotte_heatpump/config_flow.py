@@ -116,10 +116,11 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 tags_per_request=user_input[CONF_TAGS_PER_REQUEST],
             )
             if error is None:
+                await self._async_abort_if_already_configured(user_input[CONF_HOST])
                 user_input[CONF_BIOS] = self._bios
                 user_input[CONF_FW] = self._firmware
                 user_input[CONF_SERIES] = self._series
-                user_input[CONF_SERIAL] = self._serial
+                user_input[CONF_SERIAL] = self._serial if self._serial is not None else uuid_util.random_uuid_hex()
                 user_input[CONF_ID] = self._id
                 self._user_step_user_input = dict(user_input)
                 return await self.async_step_features()
@@ -165,10 +166,11 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 tags_per_request=user_input[CONF_TAGS_PER_REQUEST],
             )
             if error is None:
+                await self._async_abort_if_already_configured(user_input[CONF_HOST])
                 user_input[CONF_BIOS] = self._bios
                 user_input[CONF_FW] = self._firmware
                 user_input[CONF_SERIES] = self._series
-                user_input[CONF_SERIAL] = self._serial
+                user_input[CONF_SERIAL] = self._serial if self._serial is not None else uuid_util.random_uuid_hex()
                 user_input[CONF_ID] = self._id
                 self._user_step_user_input = dict(user_input)
                 return await self.async_step_features()
@@ -260,9 +262,15 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._id = _tag_value(ret, WKHPTag.INFO_ID)
         self._series = _tag_value(ret, WKHPTag.INFO_SERIES)
         self._serial = _tag_value(ret, WKHPTag.INFO_SERIAL)
-        if self._serial is None:
-            self._serial = uuid_util.random_uuid_hex()
         return None
+
+    async def _async_abort_if_already_configured(self, host: str) -> None:
+        """Abort the flow, if the heat pump is already configured (identified by its serial number or its host)"""
+        if self._serial is not None:
+            await self.async_set_unique_id(self._serial)
+            self._abort_if_unique_id_configured()
+        else:
+            self._async_abort_entries_match({CONF_HOST: host})
 
     @staticmethod
     @callback

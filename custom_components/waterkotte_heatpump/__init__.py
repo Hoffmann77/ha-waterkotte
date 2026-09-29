@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from datetime import timedelta
 from typing import List, Collection, Sequence, Any, Tuple
 
@@ -83,10 +84,29 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
                     _LOGGER.debug(f"Entity ID: {entity.entity_id}, Unique ID: {entity.unique_id} will be updated!")
                     registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
 
-            hass.config_entries.async_update_entry(config_entry, version=CONFIG_VERSION, minor_version=CONFIG_MINOR_VERSION)
+            hass.config_entries.async_update_entry(config_entry, version=1, minor_version=2)
+            _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
+
+        if config_entry.minor_version < 3:
+            # update from 1.2 to 1.3 [use the serial number as unique_id of the config entry]
+            _LOGGER.info(f"async_migrate_entry(): Migration: from v{config_entry.version}.{config_entry.minor_version} to v1.3")
+            new_unique_id = config_entry.unique_id
+            serial = config_entry.data.get(CONF_SERIAL)
+            if new_unique_id is None and _is_real_serial(serial):
+                # when the same heat pump have been configured twice, only the first entry gets the unique_id
+                if not any(entry.unique_id == serial for entry in hass.config_entries.async_entries(DOMAIN)):
+                    new_unique_id = serial
+
+            hass.config_entries.async_update_entry(config_entry, unique_id=new_unique_id, version=1, minor_version=3)
             _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
 
     return True
+
+
+def _is_real_serial(serial: str | None) -> bool:
+    """Check if the serial was read from the heat pump - older versions stored a random UUID, when the
+    heat pump did not provide a serial number"""
+    return serial is not None and serial not in ("", "None") and re.fullmatch(r"[0-9a-f]{32}", serial) is None
 
 
 async def async_setup(hass: HomeAssistant, config: dict):  # pylint: disable=unused-argument
