@@ -12,8 +12,8 @@ from homeassistant.helpers import config_validation as config_val, device_regist
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity, EntityDescription
-from homeassistant.helpers.typing import UNDEFINED, UndefinedType
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.typing import UndefinedType
+from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha import WaterkotteClient
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import ECOTOUCH, EASYCON
@@ -50,7 +50,6 @@ from .const import (
     OPTIONS_KEYS,
     CONFIG_VERSION, CONFIG_MINOR_VERSION
 )
-from .entity import CustomFriendlyNameEntity
 from .naming import device_name, entry_title
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -377,7 +376,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
             entity.async_schedule_update_ha_state(force_refresh=True)
 
 
-class WKHPBaseEntity(CustomFriendlyNameEntity):
+class WKHPBaseEntity(CoordinatorEntity):
     _attr_has_entity_name = True
 
     def __init__(self, coordinator: WKHPDataUpdateCoordinator, description: EntityDescription) -> None:
@@ -437,27 +436,3 @@ class WKHPBaseEntity(CustomFriendlyNameEntity):
     def unique_id(self):
         """Return a unique ID to use for this entity."""
         return f"{self.coordinator.unique_id_base}_{self.entity_description.key}".lower()
-
-    def _friendly_name_internal(self) -> str | None:
-        """Return the friendly name.
-
-        If has_entity_name is False, this returns self.name
-        If has_entity_name is True, this returns device.name + self.name
-        """
-        name = self.name
-        if name is UNDEFINED:
-            name = None
-
-        if not self.has_entity_name or not (device_entry := self.device_entry):
-            return name
-
-        device_name = device_entry.name_by_user or device_entry.name
-        if name is None and self.use_device_name:
-            return f"[WKHP] {device_name}"
-
-        # check if there is a user specified entity name (overwritten)
-        if registry_entry := self.registry_entry:
-            if registry_entry.has_entity_name and registry_entry.name is not None:
-                name = registry_entry.name
-
-        return f"[WKHP] {name}"
