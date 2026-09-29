@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from datetime import timedelta
 from typing import Collection, Sequence, Any, Tuple
 
@@ -45,6 +46,7 @@ from .const import (
     FEATURE_HEATING_CURVE,
     FEATURE_DISINFECTION,
     FEATURE_CODE_GEN,
+    OPTIONS_KEYS,
     CONFIG_VERSION, CONFIG_MINOR_VERSION
 )
 from .entity import CustomFriendlyNameEntity
@@ -83,10 +85,34 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
                     _LOGGER.debug(f"Entity ID: {entity.entity_id}, Unique ID: {entity.unique_id} will be updated!")
                     registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
 
-            hass.config_entries.async_update_entry(config_entry, version=CONFIG_VERSION, minor_version=CONFIG_MINOR_VERSION)
+            hass.config_entries.async_update_entry(config_entry, version=1, minor_version=2)
+            _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
+
+        if config_entry.minor_version < 3:
+            # update from 1.2 to 1.3 [use the serial number as unique_id of the config entry]
+            _LOGGER.info(f"async_migrate_entry(): Migration: from v{config_entry.version}.{config_entry.minor_version} to v1.3")
+            new_unique_id = config_entry.unique_id
+            serial = config_entry.data.get(CONF_SERIAL)
+            if new_unique_id is None and _is_real_serial(serial):
+                # when the same heat pump have been configured twice, only the first entry gets the unique_id
+                if not any(entry.unique_id == serial for entry in hass.config_entries.async_entries(DOMAIN)):
+                    new_unique_id = serial
+
+            # the options flow of older versions copied all data (incl. the host) into the options - now the
+            # options contain only the settings of the options flow
+            new_options = {key: value for key, value in config_entry.options.items() if key in OPTIONS_KEYS}
+
+            hass.config_entries.async_update_entry(config_entry, unique_id=new_unique_id, options=new_options,
+                                                   version=1, minor_version=3)
             _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
 
     return True
+
+
+def _is_real_serial(serial: str | None) -> bool:
+    """Check if the serial was read from the heat pump - older versions stored a random UUID, when the
+    heat pump did not provide a serial number"""
+    return serial is not None and serial not in ("", "None") and re.fullmatch(r"[0-9a-f]{32}", serial) is None
 
 
 async def async_setup(hass: HomeAssistant, config: dict):  # pylint: disable=unused-argument
@@ -188,8 +214,9 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
             self.available_features.append(FEATURE_DISINFECTION)
         _LOGGER.debug(f"available_features: {self.available_features}")
 
-        _system_type = config_entry.options.get(CONF_SYSTEMTYPE, config_entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH))
-        _host = config_entry.options.get(CONF_HOST, config_entry.data.get(CONF_HOST))
+        # the connection data is only stored in the config entry data (not in the options)
+        _system_type = config_entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH)
+        _host = config_entry.data.get(CONF_HOST)
         _user = config_entry.options.get(CONF_USERNAME, config_entry.data.get(CONF_USERNAME, "@@@µµµ@@@" if _system_type == EASYCON else "waterkotte"))
         _pwd = config_entry.options.get(CONF_PASSWORD, config_entry.data.get(CONF_PASSWORD, "@@@µµµ@@@" if _system_type == EASYCON else "waterkotte"))
         _tags_num = config_entry.options.get(CONF_TAGS_PER_REQUEST, config_entry.data.get(CONF_TAGS_PER_REQUEST, 10))

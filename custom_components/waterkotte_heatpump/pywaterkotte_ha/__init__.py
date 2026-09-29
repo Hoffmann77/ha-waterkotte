@@ -77,6 +77,10 @@ class WaterkotteClient:
                 except Exception as exc2:
                     _LOGGER.error(f"Error while RETRY login: {exc2}")
 
+    async def async_check_login(self) -> None:
+        """Login without any retry - the exceptions of the login are raised to the caller"""
+        await self._internal_client.login()
+
     async def logout(self) -> None:
         await self._internal_client.logout()
 
