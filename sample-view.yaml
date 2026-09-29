@@ -5,17 +5,17 @@
   cards:
     - type: entities
       entities:
-        - entity: select.wkh_enable_cooling
+        - entity: select.waterkotte_operation_mode_cooling
           name: Betrieb Kühlung
-        - entity: select.wkh_enable_heating
+        - entity: select.waterkotte_operation_mode_heating
           name: Betrieb Heizung
-        - entity: select.wkh_enable_warmwater
+        - entity: select.waterkotte_operation_mode_hot_water
           name: Betrieb Warmwasser
-        - entity: switch.wkh_holiday_enabled
+        - entity: switch.waterkotte_holiday
           name: Urlaubsfunktion
-        - entity: sensor.wkh_holiday_start_time
+        - entity: sensor.waterkotte_holiday_start
           name: Urlaub beginnt am
-        - entity: sensor.wkh_holiday_end_time
+        - entity: sensor.waterkotte_holiday_end
           name: Endet am
       title: Waterkotte
       show_header_toggle: false
@@ -26,27 +26,27 @@
           title: Status
           icon: mdi:list-status
           entities:
-            - entity: binary_sensor.wkh_state_compressor
+            - entity: binary_sensor.waterkotte_compressor
               name: Verdichter
-            - entity: binary_sensor.wkh_state_heatingpump
+            - entity: binary_sensor.waterkotte_heat_pump
               name: Wärmepumpe
-            - entity: binary_sensor.wkh_state_sourcepump
+            - entity: binary_sensor.waterkotte_source_pump
               name: Quellpumpe
-            - entity: binary_sensor.wkh_state_evd
+            - entity: binary_sensor.waterkotte_evd
               name: Überhitzungsregler
-            - entity: binary_sensor.wkh_state_external_heater
+            - entity: binary_sensor.waterkotte_electrical_heater
               name: Heizstab
-            - entity: binary_sensor.wkh_state_compressor2
+            - entity: binary_sensor.waterkotte_compressor_ii
               name: Verdichter II
-            - entity: binary_sensor.wkh_state_water
+            - entity: binary_sensor.waterkotte_hot_water
               name: Warmwasser
-            - entity: binary_sensor.wkh_status_heating
+            - entity: binary_sensor.waterkotte_heating_mode
               name: Heizung
-            - entity: binary_sensor.wkh_status_cooling
+            - entity: binary_sensor.waterkotte_cooling_mode
               name: Kühlung
-            - entity: binary_sensor.wkh_status_water
+            - entity: binary_sensor.waterkotte_hot_water_mode
               name: Warmwasser
-            - entity: sensor.wkh_state_service
+            - entity: sensor.waterkotte_service_data
               name: Service?
           show_header_toggle: false
           state_color: true
@@ -54,15 +54,15 @@
           title: Temperaturen
           icon: mdi:thermometer
           entities:
-            - entity: sensor.wkh_temperature_outside
+            - entity: sensor.waterkotte_outdoor_temperature
               name: Außen
-            - entity: sensor.wkh_temperature_heating
+            - entity: sensor.waterkotte_actual_temperature_heating
               name: Heizung
-            - entity: sensor.wkh_temperature_mix1
+            - entity: sensor.waterkotte_actual_temperature_mixer_1
               name: Mischerkreis 1
-            - entity: sensor.wkh_temperature_water
+            - entity: sensor.waterkotte_hot_water_temperature
               name: Warmwasser
-            - entity: sensor.wkh_temperature_buffertank
+            - entity: sensor.waterkotte_temperature_buffer_tank
               name: Speicher
           show_header_toggle: false
           state_color: true
@@ -70,15 +70,15 @@
           title: Leistung
           icon: mdi:lightning-bolt
           entities:
-            - entity: sensor.wkh_power_electric
+            - entity: sensor.waterkotte_electrical_power
               name: Leistungsaufnahme
-            - entity: sensor.wkh_cop_heating
+            - entity: sensor.waterkotte_cop
               name: COP
-            - entity: sensor.wkh_power_heating
+            - entity: sensor.waterkotte_thermal_power
               name: Thermische Leistung
-            - entity: sensor.wkh_cop_cooling
+            - entity: sensor.waterkotte_cop_cooling_power
               name: COP Kälteleistung
-            - entity: sensor.wkh_power_cooling
+            - entity: sensor.waterkotte_cooling_power
               name: Kälteleistung
           show_header_toggle: false
           state_color: true
@@ -88,49 +88,49 @@
       show_header_toggle: false
       state_color: true
       entities:
-        - entity: select.wkh_temperature_heating_mode
-        - entity: number.wkh_temperature_heating_setpoint
+        - entity: select.waterkotte_heating_control
+        - entity: number.waterkotte_heating_temperature
           name: Heiztemperatur [manuell]
-        - entity: number.wkh_temperature_heating_adjust
+        - entity: number.waterkotte_temperature_adjustment_heating
           name: Anpassung
           icon: mdi:plus-minus-variant
-        - entity: sensor.wkh_temperature_heating
+        - entity: sensor.waterkotte_actual_temperature_heating
           name: Istwert
           icon: mdi:thermometer
-        - entity: sensor.wkh_temperature_heating_demand
+        - entity: sensor.waterkotte_demanded_temperature_heating
           name: Sollwert
           icon: mdi:thermometer
-        - entity: number.wkh_temperature_heating_hysteresis
+        - entity: number.waterkotte_hysteresis_setpoint_heating
           name: Schaltdifferenz Sollwert
           icon: mdi:delta
-        - entity: number.wkh_temperature_heating_hc_limit
+        - entity: number.waterkotte_t_heating_limit_heating
           name: Heizgrenze
-        - entity: number.wkh_temperature_heating_hc_target
+        - entity: number.waterkotte_t_heating_limit_target_heating
           name: Heizgrenze Soll
-        - entity: number.wkh_temperature_heating_hc_outdoor_norm
+        - entity: number.waterkotte_t_norm_outdoor_heating
           name: Norm-Außen
-        - entity: number.wkh_temperature_heating_hc_norm
+        - entity: number.waterkotte_t_norm_heating_circle_heating
           name: Heizkreis Norm
     - type: entities
       title: Mischerkreis 1
       icon: mdi:numeric-1-circle
       entities:
-        - entity: number.wkh_temperature_mix1_adjust
+        - entity: number.waterkotte_temperature_adjustment_mixer_1
           name: Anpassung
           icon: mdi:plus-minus-variant
-        - entity: sensor.wkh_temperature_mix1
+        - entity: sensor.waterkotte_actual_temperature_mixer_1
           name: Istwert
           icon: mdi:thermometer
-        - entity: sensor.wkh_temperature_mix1_demand
+        - entity: sensor.waterkotte_demanded_temperature_mixer_1
           name: Sollwert
           icon: mdi:thermometer
-        - entity: number.wkh_temperature_mix1_hc_limit
+        - entity: number.waterkotte_t_heating_limit_mixer_1
           name: Heizgrenze
-        - entity: number.wkh_temperature_mix1_hc_target
+        - entity: number.waterkotte_t_heating_limit_target_mixer_1
           name: Heizgrenze Soll
-        - entity: number.wkh_temperature_mix1_hc_outdoor_norm
+        - entity: number.waterkotte_t_norm_outdoor_mixer_1
           name: Norm-Außen
-        - entity: number.wkh_temperature_mix1_hc_heating_norm
+        - entity: number.waterkotte_t_norm_heating_circle_mixer_1
           name: Heizkreis Norm
     - type: vertical-stack
       cards:
@@ -140,13 +140,13 @@
           show_header_toggle: false
           icon: mdi:water-thermometer
           entities:
-            - entity: sensor.wkh_temperature_water
+            - entity: sensor.waterkotte_hot_water_temperature
               name: Istwert
               icon: mdi:thermometer
-            - entity: number.wkh_temperature_water_setpoint
+            - entity: number.waterkotte_demanded_temperature_hot_water
               name: Sollwert
               icon: mdi:thermometer
-            - entity: number.wkh_temperature_water_hysteresis
+            - entity: number.waterkotte_hysteresis_setpoint_hot_water
               name: Schaltdifferenz Sollwert
               icon: mdi:delta
         - type: entities
@@ -155,71 +155,71 @@
           show_header_toggle: false
           icon: mdi:shield-bug
           entities:
-            - entity: number.wkh_temperature_water_disinfection
+            - entity: number.waterkotte_demanded_temperature_disinfection
               name: Temperatur
               icon: mdi:thermometer
-            - entity: sensor.wkh_schedule_water_disinfection_start_time
+            - entity: sensor.waterkotte_start_time_disinfection
               name: Startzeit
-            - entity: number.wkh_schedule_water_disinfection_duration
+            - entity: number.waterkotte_max_runtime_disinfection
               name: Dauer (in Stunden)
             - type: custom:multiple-entity-row
-              entity: switch.wkh_schedule_water_disinfection_7su
+              entity: switch.waterkotte_sunday_disinfection
               state_header: So
               toggle: true
               state_color: true
               entities:
-                - entity: switch.wkh_schedule_water_disinfection_1mo
+                - entity: switch.waterkotte_monday_disinfection
                   name: Mo
                   toggle: true
                   state_color: true
-                - entity: switch.wkh_schedule_water_disinfection_2tu
+                - entity: switch.waterkotte_tuesday_disinfection
                   name: Di
                   toggle: true
                   state_color: true
-                - entity: switch.wkh_schedule_water_disinfection_3we
+                - entity: switch.waterkotte_wednesday_disinfection
                   name: Mi
                   toggle: true
                   state_color: true
-                - entity: switch.wkh_schedule_water_disinfection_4th
+                - entity: switch.waterkotte_thursday_disinfection
                   name: Do
                   toggle: true
                   state_color: true
-                - entity: switch.wkh_schedule_water_disinfection_5fr
+                - entity: switch.waterkotte_friday_disinfection
                   name: Fr
                   toggle: true
                   state_color: true
-                - entity: switch.wkh_schedule_water_disinfection_6sa
+                - entity: switch.waterkotte_saturday_disinfection
                   name: Sa
                   toggle: true
                   state_color: true
     - type: entities
       title: Details
       entities:
-        - entity: sensor.wkh_percent_compressor
+        - entity: sensor.waterkotte_power_compressor
           name: Leistung Verdichter
-        - entity: sensor.wkh_percent_heat_circ_pump
+        - entity: sensor.waterkotte_speed_heating_pump
           name: Drehzahl Heizungspumpe
-        - entity: sensor.wkh_percent_source_pump
+        - entity: sensor.waterkotte_speed_source_pump
           name: Drehzahl Quellenpumpe
-        - entity: sensor.wkh_position_expansion_valve
+        - entity: sensor.waterkotte_valve_opening_eev
           name: EEV Ventilöffnung
-        - entity: sensor.wkh_suction_gas_overheating
+        - entity: sensor.waterkotte_suction_gas_overheating
           name: Sauggas Überhitzung
-        - entity: sensor.wkh_pressure_condensation
+        - entity: sensor.waterkotte_p_condensation
           name: Druck Kondensator
-        - entity: sensor.wkh_temperature_condensation
+        - entity: sensor.waterkotte_t_condensation
           name: Temp. Kondensator
-        - entity: sensor.wkh_pressure_evaporation
+        - entity: sensor.waterkotte_p_evaporation
           name: Druck Verdampfer
-        - entity: sensor.wkh_temperature_evaporation
+        - entity: sensor.waterkotte_t_evaporation
           name: Temp. Verdampfer
-        - entity: sensor.wkh_temperature_flow
+        - entity: sensor.waterkotte_t_flow
           name: Temp. Vorlauf
-        - entity: sensor.wkh_temperature_return
+        - entity: sensor.waterkotte_t_return
           name: Temp. Rücklauf
-        - entity: sensor.wkh_temperature_source_entry
+        - entity: sensor.waterkotte_t_source_entry
           name: Temp. Quelle Eingang
-        - entity: sensor.wkh_temperature_source_exit
+        - entity: sensor.waterkotte_t_source_exit
           name: Temp. Quelle Ausgang
-        - entity: sensor.wkh_temperature_suction_line
+        - entity: sensor.waterkotte_t_suction_line
           name: Temp. Saugleitung
