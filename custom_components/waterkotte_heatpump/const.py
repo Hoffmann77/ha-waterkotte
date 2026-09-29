@@ -32,8 +32,8 @@ TITLE: Final = "Waterkotte"
 MANUFACTURER: Final = "Waterkotte"
 ISSUE_URL: Final = "https://github.com/marq24/ha-waterkotte/issues"
 
-CONFIG_VERSION: Final = 1
-CONFIG_MINOR_VERSION: Final = 3
+CONFIG_VERSION: Final = 2
+CONFIG_MINOR_VERSION: Final = 1
 
 FEATURE_DISINFECTION: Final = "DISINFECTION"
 FEATURE_HEATING_CURVE: Final = "HEATING_CURVE"
@@ -71,6 +71,7 @@ CONF_SERIAL: Final = "serial"
 CONF_SERIES: Final = "series"
 CONF_SYSTEMTYPE: Final = "system_type"
 CONF_ADD_SCHEDULE_ENTITIES: Final = "add_schedule_entities"
+# only used for the migration of old config entries (the serial number is always part of the unique_id's now)
 CONF_ADD_SERIAL_AS_ID = "add_serial_as_id"
 CONF_USE_DISINFECTION: Final = "use_disinfection"
 CONF_USE_HEATING_CURVE: Final = "use_heating_curve"

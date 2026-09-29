@@ -11,7 +11,6 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.waterkotte_heatpump.const import (
     CONF_ADD_SCHEDULE_ENTITIES,
-    CONF_ADD_SERIAL_AS_ID,
     CONF_POLLING_INTERVAL,
     CONF_SERIAL,
     CONF_SYSTEMTYPE,
@@ -32,7 +31,6 @@ USER_INPUT_ECOTOUCH = {
     CONF_POLLING_INTERVAL: 60,
     CONF_TAGS_PER_REQUEST: 75,
     CONF_ADD_SCHEDULE_ENTITIES: False,
-    CONF_ADD_SERIAL_AS_ID: False,
 }
 
 
@@ -110,6 +108,7 @@ async def test_missing_serial_is_no_error(hass: HomeAssistant, mock_client: Magi
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["result"].unique_id is None
+    assert result["data"][CONF_SERIAL] is None
 
 
 async def test_already_configured_serial(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
