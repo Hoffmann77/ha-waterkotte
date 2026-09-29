@@ -117,3 +117,30 @@ async def test_migrate_1_3_unique_ids(
     assert dr.async_get(hass).async_get(device.id).identifiers == {(DOMAIN, expected_base)}
     assert CONF_ADD_SERIAL_AS_ID not in entry.data
     assert (entry.version, entry.minor_version) == (2, 1)
+
+
+async def test_migrate_1_3_unique_id_already_used(hass: HomeAssistant) -> None:
+    """Test that the migration does not fail, when two registry entries would get the same unique_id - the
+    second one keeps its old unique_id (and can be removed by the user)."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=1,
+        minor_version=3,
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_ADD_SERIAL_AS_ID: True},
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    old_unique_ids = {f"{DOMAIN}.temperature_outside_{SERIAL.lower()}", f"{DOMAIN}.temperature_outside"}
+    entity_ids = [
+        registry.async_get_or_create("sensor", DOMAIN, unique_id, config_entry=entry).entity_id
+        for unique_id in old_unique_ids
+    ]
+
+    assert await async_migrate_entry(hass, entry)
+
+    unique_ids = {registry.async_get(entity_id).unique_id for entity_id in entity_ids}
+    new_unique_id = f"{SERIAL}_temperature_outside".lower()
+    assert new_unique_id in unique_ids
+    assert len(unique_ids - {new_unique_id}) == 1
+    assert unique_ids - {new_unique_id} <= old_unique_ids
+    assert (entry.version, entry.minor_version) == (2, 1)

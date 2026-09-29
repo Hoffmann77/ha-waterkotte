@@ -136,8 +136,19 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
             if old_suffix is not None and key.endswith(old_suffix):
                 key = key[:-len(old_suffix)]
             new_unique_id = f"{unique_id_base}_{key}".lower()
-            if new_unique_id != entity.unique_id:
-                registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
+            if new_unique_id == entity.unique_id:
+                continue
+
+            # a leftover registry entry (e.g. from an older version) could already use the new unique_id - the
+            # migration must not fail in this case (the entry could not be loaded anymore)
+            existing_entity_id = registry.async_get_entity_id(entity.domain, DOMAIN, new_unique_id)
+            if existing_entity_id is not None and existing_entity_id != entity.entity_id:
+                _LOGGER.warning(f"async_migrate_entry(): Entity ID: {entity.entity_id}, Unique ID: {entity.unique_id} "
+                                f"not migrated - the new Unique ID: {new_unique_id} is already used by "
+                                f"{existing_entity_id}. You can remove {entity.entity_id} manually.")
+                continue
+
+            registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
 
         # old device identifiers: ('DOMAIN', 'waterkotte_heatpump') and ('IP', <ip>)
         device_registry = dev_reg.async_get(hass)
