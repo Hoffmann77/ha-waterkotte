@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant, Event, SupportsResponse
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as config_val, entity_registry as entity_reg
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity, EntityDescription
 from homeassistant.helpers.typing import UNDEFINED, UndefinedType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -34,6 +35,7 @@ from .const import (
     CONF_USE_HEATING_CURVE,
     CONF_USE_DISINFECTION,
     NAME,
+    MANUFACTURER,
     DOMAIN,
     PLATFORMS,
     STARTUP_MESSAGE,
@@ -113,6 +115,13 @@ def _is_real_serial(serial: str | None) -> bool:
     """Check if the serial was read from the heat pump - older versions stored a random UUID, when the
     heat pump did not provide a serial number"""
     return serial is not None and serial not in ("", "None") and re.fullmatch(r"[0-9a-f]{32}", serial) is None
+
+
+def _str_or_none(value) -> str | None:
+    """Device information as string - or None, if the heat pump did not provide the value"""
+    if value is None or str(value) in ("", "None"):
+        return None
+    return str(value)
 
 
 async def async_setup(hass: HomeAssistant, config: dict):  # pylint: disable=unused-argument
@@ -237,19 +246,22 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
         SCAN_INTERVAL = timedelta(seconds=config_entry.options.get(CONF_POLLING_INTERVAL,
                                                                    config_entry.data.get(CONF_POLLING_INTERVAL, 60)))
 
-        fw = config_entry.options.get(CONF_IP, config_entry.data.get(CONF_IP))
-        bios = config_entry.options.get(CONF_BIOS, config_entry.data.get(CONF_BIOS))
-        self._device_info_dict = {
-            "identifiers": {
+        fw = config_entry.data.get(CONF_FW)
+        bios = config_entry.data.get(CONF_BIOS)
+        serial = config_entry.data.get(CONF_SERIAL)
+        self._device_info_dict = DeviceInfo(
+            identifiers={
                 ("DOMAIN", DOMAIN),
-                ("IP", config_entry.options.get(CONF_IP, config_entry.data.get(CONF_IP))),
+                ("IP", config_entry.data.get(CONF_IP)),
             },
-            "manufacturer": NAME,
-            "name": NAME,
-            "model": f"{config_entry.options.get(CONF_SERIES, config_entry.data.get(CONF_SERIES))}",
-            "sw_version": f"{fw} BIOS: {bios}",
-            "hw_version": f"{config_entry.options.get(CONF_ID, config_entry.data.get(CONF_ID))}"
-        }
+            manufacturer=MANUFACTURER,
+            name=NAME,
+            model=_str_or_none(config_entry.data.get(CONF_SERIES)),
+            model_id=_str_or_none(config_entry.data.get(CONF_ID)),
+            serial_number=serial if _is_real_serial(serial) else None,
+            sw_version=f"{fw} BIOS: {bios}" if fw is not None else None,
+            configuration_url=f"http://{_host}",
+        )
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
 
@@ -369,7 +381,7 @@ class WKHPBaseEntity(CustomFriendlyNameEntity):
         return self.entity_description.tag
 
     @property
-    def device_info(self) -> dict:
+    def device_info(self) -> DeviceInfo:
         return self.coordinator._device_info_dict
 
     @property
