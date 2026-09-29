@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import timedelta
-from typing import List, Collection, Sequence, Any, Tuple
+from typing import Collection, Sequence, Any, Tuple
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID, CONF_HOST, CONF_USERNAME, CONF_PASSWORD
@@ -135,8 +135,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     hass.services.async_register(DOMAIN, SERVICE_GET_ENERGY_BALANCE_MONTHLY, service.get_energy_balance_monthly,
                                  supports_response=SupportsResponse.ONLY)
 
-    # we should check (in any CASE!) if the active tags might have...
-    asyncio.create_task(coordinator.update_client_tag_list(hass, config_entry.data.get(CONF_ADD_SERIAL_AS_ID,False), config_entry.entry_id))
+    # the initial refresh ran before any entity was added (so no tags were requested) - now all
+    # enabled entities have registered their tags as coordinator context, so we fetch the data
+    await coordinator.async_refresh()
 
     # ok we are done...
     config_entry.async_on_unload(config_entry.add_update_listener(entry_update_listener))
@@ -168,37 +169,6 @@ async def entry_update_listener(hass: HomeAssistant, config_entry: ConfigEntry) 
     await hass.config_entries.async_reload(config_entry.entry_id)
 
 
-@staticmethod
-def generate_tag_list(hass: HomeAssistant, trim_unique_id:bool, config_entry_id: str) -> List[WKHPTag]:
-    _LOGGER.info(f"(re)build tag list...")
-    tags = []
-    if hass is not None:
-        a_entity_reg = entity_reg.async_get(hass)
-        if a_entity_reg is not None:
-            # we query from the HA entity registry all entities that are created by this
-            # 'config_entry' -> we use here just default api calls [no more hacks!]
-            prefix = f"{DOMAIN.lower()}.".lower()
-            prefix_len = len(prefix)
-            for entity in entity_reg.async_entries_for_config_entry(registry=a_entity_reg, config_entry_id=config_entry_id):
-                if entity.disabled is False:
-                    a_temp_tag = (entity.unique_id)
-
-                    # we must remove the DOMAIN prefix!!!
-                    if a_temp_tag.startswith(prefix):
-                        a_temp_tag = a_temp_tag[prefix_len:]
-
-                    if trim_unique_id:
-                        a_temp_tag = a_temp_tag[0:a_temp_tag.rfind('_')]
-
-                    #_LOGGER.debug(f"found active entity: {entity.entity_id} using Tag: {a_temp_tag.upper()}")
-                    if a_temp_tag is not None and a_temp_tag.upper() in WKHPTag.__members__:
-                        if WKHPTag[a_temp_tag.upper()]:
-                            tags.append(WKHPTag[a_temp_tag.upper()])
-                    else:
-                        _LOGGER.warning(f"Tag: {a_temp_tag} not found in WKHPTag.__members__ !")
-    return tags
-
-
 class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, config_entry):
         self.name = config_entry.title
@@ -223,7 +193,6 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
         _user = config_entry.options.get(CONF_USERNAME, config_entry.data.get(CONF_USERNAME, "@@@µµµ@@@" if _system_type == EASYCON else "waterkotte"))
         _pwd = config_entry.options.get(CONF_PASSWORD, config_entry.data.get(CONF_PASSWORD, "@@@µµµ@@@" if _system_type == EASYCON else "waterkotte"))
         _tags_num = config_entry.options.get(CONF_TAGS_PER_REQUEST, config_entry.data.get(CONF_TAGS_PER_REQUEST, 10))
-        _tags = generate_tag_list(hass=hass, trim_unique_id=self.is_multi_instances, config_entry_id=config_entry.entry_id)
 
         if _system_type == EASYCON:
             # by default, EASYCON does not have a password option... BUT if the user specified login credentials,
@@ -233,7 +202,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
                 _pwd = None
 
         self.bridge = WaterkotteClient(host=_host, username=_user, pwd=_pwd, system_type=_system_type,
-                                       web_session=async_get_clientsession(hass), tags=_tags,
+                                       web_session=async_get_clientsession(hass), tags=[],
                                        tags_per_request=_tags_num, lang=hass.config.language.lower())
 
         global SCAN_INTERVAL
@@ -257,16 +226,6 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
 
-    async def update_client_tag_list(self, hass: HomeAssistant, trim_unique_id: bool, entry_id: str):
-        _LOGGER.debug(f"rechecking active tags... in 15sec")
-        await asyncio.sleep(15)
-
-        _LOGGER.debug(f"rechecking active tags NOW!")
-        self.bridge.tags = generate_tag_list(hass, trim_unique_id, entry_id)
-
-        _LOGGER.debug(f"active tags checked... now refresh sensor data")
-        await self.async_refresh()
-
     # Callable[[Event], Any]
     def __call__(self, evt: Event) -> bool:
         _LOGGER.debug(f"Event arrived: {evt}")
@@ -275,6 +234,9 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Update data via library."""
         try:
+            # each entity registers its tag as coordinator context - so we only
+            # request the tags of the entities that are currently enabled
+            self.bridge.tags = list(set(self.async_contexts()))
             await self.bridge.login()
             _LOGGER.info(f"number of entities to query: {len(self.bridge.tags)} (1 entity can consist of n-tags)")
             result = await self.bridge.async_get_data()
@@ -331,7 +293,7 @@ class WKHPBaseEntity(CustomFriendlyNameEntity):
     _attr_has_entity_name = True
 
     def __init__(self, entity_type:str, coordinator: WKHPDataUpdateCoordinator, description: EntityDescription) -> None:
-        super().__init__(coordinator)
+        super().__init__(coordinator, context=description.tag)
         if description.feature is not None and FEATURE_CODE_GEN == description.feature:
             self.code_generated = True
         else:
