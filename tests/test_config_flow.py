@@ -131,3 +131,33 @@ async def test_already_configured_host(hass: HomeAssistant, mock_client: MagicMo
     result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT_ECOTOUCH)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_options_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> None:
+    """Test that the options flow stores only its own settings (and not the connection data)."""
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_USERNAME: "waterkotte",
+            CONF_PASSWORD: "new-password",
+            CONF_POLLING_INTERVAL: 30,
+            CONF_TAGS_PER_REQUEST: 50,
+            CONF_ADD_SCHEDULE_ENTITIES: True,
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options == {
+        CONF_USERNAME: "waterkotte",
+        CONF_PASSWORD: "new-password",
+        CONF_POLLING_INTERVAL: 30,
+        CONF_TAGS_PER_REQUEST: 50,
+        CONF_ADD_SCHEDULE_ENTITIES: True,
+    }
+    assert entry.data[CONF_HOST] == HOST

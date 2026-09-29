@@ -275,16 +275,10 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return WaterkotteHeatpumpOptionsFlowHandler(config_entry)
+        return WaterkotteHeatpumpOptionsFlowHandler()
 
 
 class WaterkotteHeatpumpOptionsFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, config_entry):
-        """Initialize HACS options flow."""
-        if len(dict(config_entry.options)) == 0:
-            self.options = dict(config_entry.data)
-        else:
-            self.options = dict(config_entry.options)
 
     async def async_step_init(self, user_input=None):  # pylint: disable=unused-argument
         """Manage the options."""
@@ -293,11 +287,16 @@ class WaterkotteHeatpumpOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_user(self, user_input=None):
         """Handle a flow initialized by the user."""
         if user_input is not None:
-            self.options.update(user_input)
-            return await self._update_options()
+            # the options contain only the settings of this form - the connection data (like the host)
+            # stays in the config entry data
+            return self.async_create_entry(data=user_input)
 
-        _system_type = self.options.get(CONF_SYSTEMTYPE, self.data.get(CONF_SYSTEMTYPE, ECOTOUCH))
-        if _system_type == EASYCON:
+        # settings that have not been changed via the options yet, are taken from the initial configuration
+        entry = self.config_entry
+        def current(key, default):
+            return entry.options.get(key, entry.data.get(key, default))
+
+        if entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH) == EASYCON:
             def_user = ""
             def_pass = ""
         else:
@@ -307,14 +306,11 @@ class WaterkotteHeatpumpOptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({
-                vol.Optional(CONF_USERNAME, default=self.options.get(CONF_USERNAME, def_user)): str,
-                vol.Optional(CONF_PASSWORD, default=self.options.get(CONF_PASSWORD, def_pass)): str,
-                vol.Required(CONF_POLLING_INTERVAL, default=self.options.get(CONF_POLLING_INTERVAL, 60)): int,
-                vol.Required(CONF_TAGS_PER_REQUEST, default=self.options.get(CONF_TAGS_PER_REQUEST, 75)): int,
-                vol.Required(CONF_ADD_SCHEDULE_ENTITIES, default=self.options.get(CONF_ADD_SCHEDULE_ENTITIES, False)): bool
+                vol.Optional(CONF_USERNAME, default=current(CONF_USERNAME, def_user)): str,
+                vol.Optional(CONF_PASSWORD, default=current(CONF_PASSWORD, def_pass)): str,
+                vol.Required(CONF_POLLING_INTERVAL, default=current(CONF_POLLING_INTERVAL, 60)): int,
+                vol.Required(CONF_TAGS_PER_REQUEST, default=current(CONF_TAGS_PER_REQUEST, 75)): int,
+                vol.Required(CONF_ADD_SCHEDULE_ENTITIES, default=current(CONF_ADD_SCHEDULE_ENTITIES, False)): bool
             }),
             description_placeholders={"repo": "https://github.com/marq24/ha-waterkotte"},
         )
-
-    async def _update_options(self):
-        return self.async_create_entry(title=TITLE, data=self.options)
