@@ -2,7 +2,6 @@ import logging
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import WKHPDataUpdateCoordinator, WKHPBaseEntity
@@ -28,7 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, add_
 
 class WKHPBinarySensor(WKHPBaseEntity, BinarySensorEntity):
     def __init__(self, coordinator: WKHPDataUpdateCoordinator, description: ExtBinarySensorEntityDescription):
-        super().__init__(entity_type=Platform.BINARY_SENSOR, coordinator=coordinator, description=description)
+        super().__init__(coordinator=coordinator, description=description)
 
     @property
     def is_on(self) -> bool | None:

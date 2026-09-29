@@ -8,8 +8,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID, CONF_HOST, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.core import HomeAssistant, Event, SupportsResponse
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import config_validation as config_val, entity_registry as entity_reg
+from homeassistant.helpers import config_validation as config_val, device_registry as dev_reg, entity_registry as entity_reg
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity, EntityDescription
 from homeassistant.helpers.typing import UNDEFINED, UndefinedType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -20,7 +21,6 @@ from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import TooManyU
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from . import service as waterkotte_service
 from .const import (
-    CONF_IP,
     CONF_POLLING_INTERVAL,
     CONF_TAGS_PER_REQUEST,
     CONF_BIOS,
@@ -33,7 +33,8 @@ from .const import (
     CONF_USE_VENT,
     CONF_USE_HEATING_CURVE,
     CONF_USE_DISINFECTION,
-    NAME,
+    TITLE,
+    MANUFACTURER,
     DOMAIN,
     PLATFORMS,
     STARTUP_MESSAGE,
@@ -50,6 +51,7 @@ from .const import (
     CONFIG_VERSION, CONFIG_MINOR_VERSION
 )
 from .entity import CustomFriendlyNameEntity
+from .naming import device_name, entry_title
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 SCAN_INTERVAL = timedelta(seconds=60)
@@ -106,6 +108,56 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
                                                    version=1, minor_version=3)
             _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
 
+    if config_entry.version == 1:
+        # update from 1.3 to 2.1 [the serial number (or the config entry id) is the base of the device identifier
+        # and of the unique_id's of the entities - the 'add_serial_as_id' option is not required anymore]
+        _LOGGER.info(f"async_migrate_entry(): Migration: from v{config_entry.version}.{config_entry.minor_version} to v2.1")
+        new_data = dict(config_entry.data)
+        old_serial = new_data.get(CONF_SERIAL)
+        was_multi_instances = new_data.pop(CONF_ADD_SERIAL_AS_ID, False)
+        if not _is_real_serial(old_serial):
+            # older versions stored a random UUID, when the heat pump did not provide a serial number
+            new_data[CONF_SERIAL] = None
+        unique_id_base = new_data[CONF_SERIAL] if new_data.get(CONF_SERIAL) is not None else config_entry.entry_id
+
+        # all entries had the same title - but only update it, when the user did not rename the entry
+        new_title = config_entry.title
+        if new_title == TITLE:
+            new_title = entry_title(new_data.get(CONF_SERIES), new_data.get(CONF_SERIAL))
+
+        # old unique_id's: 'waterkotte_heatpump.<key>' or (multi instances) 'waterkotte_heatpump.<key>_<serial>'
+        old_prefix = f"{DOMAIN}."
+        old_suffix = f"_{old_serial or ''}".lower() if was_multi_instances else None
+        registry = entity_reg.async_get(hass)
+        for entity in entity_reg.async_entries_for_config_entry(registry, config_entry.entry_id):
+            key = entity.unique_id
+            if key.startswith(old_prefix):
+                key = key[len(old_prefix):]
+            if old_suffix is not None and key.endswith(old_suffix):
+                key = key[:-len(old_suffix)]
+            new_unique_id = f"{unique_id_base}_{key}".lower()
+            if new_unique_id == entity.unique_id:
+                continue
+
+            # a leftover registry entry (e.g. from an older version) could already use the new unique_id - the
+            # migration must not fail in this case (the entry could not be loaded anymore)
+            existing_entity_id = registry.async_get_entity_id(entity.domain, DOMAIN, new_unique_id)
+            if existing_entity_id is not None and existing_entity_id != entity.entity_id:
+                _LOGGER.warning(f"async_migrate_entry(): Entity ID: {entity.entity_id}, Unique ID: {entity.unique_id} "
+                                f"not migrated - the new Unique ID: {new_unique_id} is already used by "
+                                f"{existing_entity_id}. You can remove {entity.entity_id} manually.")
+                continue
+
+            registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
+
+        # old device identifiers: ('DOMAIN', 'waterkotte_heatpump') and ('IP', <ip>)
+        device_registry = dev_reg.async_get(hass)
+        for device in dev_reg.async_entries_for_config_entry(device_registry, config_entry.entry_id):
+            device_registry.async_update_device(device.id, new_identifiers={(DOMAIN, unique_id_base)})
+
+        hass.config_entries.async_update_entry(config_entry, data=new_data, title=new_title, version=2, minor_version=1)
+        _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
+
     return True
 
 
@@ -113,6 +165,13 @@ def _is_real_serial(serial: str | None) -> bool:
     """Check if the serial was read from the heat pump - older versions stored a random UUID, when the
     heat pump did not provide a serial number"""
     return serial is not None and serial not in ("", "None") and re.fullmatch(r"[0-9a-f]{32}", serial) is None
+
+
+def _str_or_none(value) -> str | None:
+    """Device information as string - or None, if the heat pump did not provide the value"""
+    if value is None or str(value) in ("", "None"):
+        return None
+    return str(value)
 
 
 async def async_setup(hass: HomeAssistant, config: dict):  # pylint: disable=unused-argument
@@ -198,9 +257,12 @@ async def entry_update_listener(hass: HomeAssistant, config_entry: ConfigEntry) 
 class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, config_entry):
         self.name = config_entry.title
-        self.is_multi_instances = config_entry.data.get(CONF_ADD_SERIAL_AS_ID, False)
-        if self.is_multi_instances:
-            self.serial_id_addon = config_entry.data.get(CONF_SERIAL, "")
+        # the serial number of the heat pump (or the config entry id, when the heat pump does not provide a
+        # serial number) is used for the device identifier and as prefix of the unique_id's of the entities
+        serial = config_entry.data.get(CONF_SERIAL)
+        if not _is_real_serial(serial):
+            serial = None
+        self.unique_id_base = serial if serial is not None else config_entry.entry_id
 
         self._config_entry = config_entry
         self.add_schedule_entities = config_entry.options.get(CONF_ADD_SCHEDULE_ENTITIES,
@@ -237,19 +299,18 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
         SCAN_INTERVAL = timedelta(seconds=config_entry.options.get(CONF_POLLING_INTERVAL,
                                                                    config_entry.data.get(CONF_POLLING_INTERVAL, 60)))
 
-        fw = config_entry.options.get(CONF_IP, config_entry.data.get(CONF_IP))
-        bios = config_entry.options.get(CONF_BIOS, config_entry.data.get(CONF_BIOS))
-        self._device_info_dict = {
-            "identifiers": {
-                ("DOMAIN", DOMAIN),
-                ("IP", config_entry.options.get(CONF_IP, config_entry.data.get(CONF_IP))),
-            },
-            "manufacturer": NAME,
-            "name": NAME,
-            "model": f"{config_entry.options.get(CONF_SERIES, config_entry.data.get(CONF_SERIES))}",
-            "sw_version": f"{fw} BIOS: {bios}",
-            "hw_version": f"{config_entry.options.get(CONF_ID, config_entry.data.get(CONF_ID))}"
-        }
+        fw = config_entry.data.get(CONF_FW)
+        bios = config_entry.data.get(CONF_BIOS)
+        self._device_info_dict = DeviceInfo(
+            identifiers={(DOMAIN, self.unique_id_base)},
+            manufacturer=MANUFACTURER,
+            name=device_name(hass, config_entry, serial),
+            model=_str_or_none(config_entry.data.get(CONF_SERIES)),
+            model_id=_str_or_none(config_entry.data.get(CONF_ID)),
+            serial_number=serial,
+            sw_version=f"{fw} BIOS: {bios}" if fw is not None else None,
+            configuration_url=f"http://{_host}",
+        )
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
 
@@ -319,7 +380,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
 class WKHPBaseEntity(CustomFriendlyNameEntity):
     _attr_has_entity_name = True
 
-    def __init__(self, entity_type:str, coordinator: WKHPDataUpdateCoordinator, description: EntityDescription) -> None:
+    def __init__(self, coordinator: WKHPDataUpdateCoordinator, description: EntityDescription) -> None:
         super().__init__(coordinator, context=description.tag)
         if description.feature is not None and FEATURE_CODE_GEN == description.feature:
             self.code_generated = True
@@ -333,11 +394,6 @@ class WKHPBaseEntity(CustomFriendlyNameEntity):
         if not description.entity_registry_enabled_default and description.feature is not None:
             if description.feature in self.coordinator.available_features:
                 self._attr_entity_registry_enabled_default = True
-
-        if self.coordinator.is_multi_instances:
-            self.entity_id = f"{entity_type}.wkh_{self.coordinator.serial_id_addon}_{self._attr_translation_key}".lower()
-        else:
-            self.entity_id = f"{entity_type}.wkh_{self._attr_translation_key}".lower()
 
     def _name_internal(self, device_class_name: str | None,
                        platform_translations: dict[str, Any], ) -> str | UndefinedType | None:
@@ -369,7 +425,7 @@ class WKHPBaseEntity(CustomFriendlyNameEntity):
         return self.entity_description.tag
 
     @property
-    def device_info(self) -> dict:
+    def device_info(self) -> DeviceInfo:
         return self.coordinator._device_info_dict
 
     @property
@@ -380,13 +436,7 @@ class WKHPBaseEntity(CustomFriendlyNameEntity):
     @property
     def unique_id(self):
         """Return a unique ID to use for this entity."""
-        # sensor_key = self.entity_description.key
-        # device_key = self.coordinator.config_entry.data[CONF_SERIAL]
-        # return f"{device_key}_{sensor}"
-        if self.coordinator.is_multi_instances:
-            return f"{DOMAIN}.{self.entity_description.key}_{self.coordinator.serial_id_addon}".lower()
-        else:
-            return f"{DOMAIN}.{self.entity_description.key}".lower()
+        return f"{self.coordinator.unique_id_base}_{self.entity_description.key}".lower()
 
     def _friendly_name_internal(self) -> str | None:
         """Return the friendly name.
