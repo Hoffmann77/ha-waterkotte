@@ -331,7 +331,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
 class WKHPBaseEntity(CustomFriendlyNameEntity):
     _attr_has_entity_name = True
 
-    def __init__(self, entity_type:str, coordinator: WKHPDataUpdateCoordinator, description: EntityDescription) -> None:
+    def __init__(self, coordinator: WKHPDataUpdateCoordinator, description: EntityDescription) -> None:
         super().__init__(coordinator, context=description.tag)
         if description.feature is not None and FEATURE_CODE_GEN == description.feature:
             self.code_generated = True
@@ -345,11 +345,6 @@ class WKHPBaseEntity(CustomFriendlyNameEntity):
         if not description.entity_registry_enabled_default and description.feature is not None:
             if description.feature in self.coordinator.available_features:
                 self._attr_entity_registry_enabled_default = True
-
-        if self.coordinator.is_multi_instances:
-            self.entity_id = f"{entity_type}.wkh_{self.coordinator.serial_id_addon}_{self._attr_translation_key}".lower()
-        else:
-            self.entity_id = f"{entity_type}.wkh_{self._attr_translation_key}".lower()
 
     def _name_internal(self, device_class_name: str | None,
                        platform_translations: dict[str, Any], ) -> str | UndefinedType | None:
