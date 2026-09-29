@@ -10,8 +10,10 @@ from custom_components.waterkotte_heatpump.const import (
     CONF_ADD_SERIAL_AS_ID,
     CONF_POLLING_INTERVAL,
     CONF_SERIAL,
+    CONF_SERIES,
     CONF_SYSTEMTYPE,
     DOMAIN,
+    TITLE,
 )
 from .conftest import HOST, SERIAL
 
@@ -22,11 +24,18 @@ UUID_SERIAL = "0123456789abcdef0123456789abcdef"
 async def test_migrate_1_2(hass: HomeAssistant) -> None:
     """Test that the migration uses the serial number as unique_id of the config entry - and that the
     connection data (copied by the options flow of older versions) is removed from the options."""
-    data = {CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH", CONF_USERNAME: "waterkotte"}
+    data = {
+        CONF_HOST: HOST,
+        CONF_SERIAL: SERIAL,
+        CONF_SERIES: "Ai1+",
+        CONF_SYSTEMTYPE: "ECOTOUCH",
+        CONF_USERNAME: "waterkotte",
+    }
     entry = MockConfigEntry(
         domain=DOMAIN,
         version=1,
         minor_version=2,
+        title=TITLE,
         data=data,
         options={**data, CONF_PASSWORD: "new-password", CONF_POLLING_INTERVAL: 30},
     )
@@ -36,7 +45,19 @@ async def test_migrate_1_2(hass: HomeAssistant) -> None:
     assert entry.unique_id == SERIAL
     assert entry.options == {CONF_USERNAME: "waterkotte", CONF_PASSWORD: "new-password", CONF_POLLING_INTERVAL: 30}
     assert entry.data == data
+    assert entry.title == "Waterkotte Ai1+ (WE15123456)"
     assert (entry.version, entry.minor_version) == (2, 1)
+
+
+async def test_migrate_keeps_renamed_title(hass: HomeAssistant) -> None:
+    """Test that a config entry title, that has been changed by the user, is kept."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, version=1, minor_version=3, title="Basement", data={CONF_HOST: HOST, CONF_SERIAL: SERIAL}
+    )
+    entry.add_to_hass(hass)
+
+    assert await async_migrate_entry(hass, entry)
+    assert entry.title == "Basement"
 
 
 @pytest.mark.parametrize("serial", [UUID_SERIAL, "None", None])

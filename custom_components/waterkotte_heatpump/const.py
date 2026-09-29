@@ -29,6 +29,7 @@ NAME: Final = "Waterkotte Heatpump [+2020]"
 DOMAIN: Final = "waterkotte_heatpump"
 
 TITLE: Final = "Waterkotte"
+DEVICE_NAME: Final = "Waterkotte"
 MANUFACTURER: Final = "Waterkotte"
 ISSUE_URL: Final = "https://github.com/marq24/ha-waterkotte/issues"
 

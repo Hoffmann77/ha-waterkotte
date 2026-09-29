@@ -33,7 +33,7 @@ from .const import (
     CONF_USE_VENT,
     CONF_USE_HEATING_CURVE,
     CONF_USE_DISINFECTION,
-    NAME,
+    TITLE,
     MANUFACTURER,
     DOMAIN,
     PLATFORMS,
@@ -51,6 +51,7 @@ from .const import (
     CONFIG_VERSION, CONFIG_MINOR_VERSION
 )
 from .entity import CustomFriendlyNameEntity
+from .naming import device_name, entry_title
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 SCAN_INTERVAL = timedelta(seconds=60)
@@ -119,6 +120,11 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
             new_data[CONF_SERIAL] = None
         unique_id_base = new_data[CONF_SERIAL] if new_data.get(CONF_SERIAL) is not None else config_entry.entry_id
 
+        # all entries had the same title - but only update it, when the user did not rename the entry
+        new_title = config_entry.title
+        if new_title == TITLE:
+            new_title = entry_title(new_data.get(CONF_SERIES), new_data.get(CONF_SERIAL))
+
         # old unique_id's: 'waterkotte_heatpump.<key>' or (multi instances) 'waterkotte_heatpump.<key>_<serial>'
         old_prefix = f"{DOMAIN}."
         old_suffix = f"_{old_serial or ''}".lower() if was_multi_instances else None
@@ -138,7 +144,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         for device in dev_reg.async_entries_for_config_entry(device_registry, config_entry.entry_id):
             device_registry.async_update_device(device.id, new_identifiers={(DOMAIN, unique_id_base)})
 
-        hass.config_entries.async_update_entry(config_entry, data=new_data, version=2, minor_version=1)
+        hass.config_entries.async_update_entry(config_entry, data=new_data, title=new_title, version=2, minor_version=1)
         _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
 
     return True
@@ -287,7 +293,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
         self._device_info_dict = DeviceInfo(
             identifiers={(DOMAIN, self.unique_id_base)},
             manufacturer=MANUFACTURER,
-            name=NAME,
+            name=device_name(hass, config_entry, serial),
             model=_str_or_none(config_entry.data.get(CONF_SERIES)),
             model_id=_str_or_none(config_entry.data.get(CONF_ID)),
             serial_number=serial,

@@ -58,6 +58,7 @@ async def test_full_flow_ecotouch(hass: HomeAssistant, mock_client: MagicMock, m
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_HOST] == HOST
     assert result["data"][CONF_SERIAL] == SERIAL
+    assert result["title"] == "Waterkotte Ai1+ (WE15123456)"
     assert result["result"].unique_id == SERIAL
     assert len(mock_setup_entry.mock_calls) == 1
 
@@ -109,6 +110,7 @@ async def test_missing_serial_is_no_error(hass: HomeAssistant, mock_client: Magi
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["result"].unique_id is None
     assert result["data"][CONF_SERIAL] is None
+    assert result["title"] == "Waterkotte Ai1+"
 
 
 async def test_already_configured_serial(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
@@ -134,7 +136,7 @@ async def test_already_configured_host(hass: HomeAssistant, mock_client: MagicMo
 
 async def test_options_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> None:
     """Test that the options flow stores only its own settings (and not the connection data)."""
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    entry = MockConfigEntry(domain=DOMAIN, version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
     entry.add_to_hass(hass)
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
@@ -174,7 +176,7 @@ async def _start_reconfigure_flow(hass: HomeAssistant, entry: MockConfigEntry) -
 
 async def test_reconfigure(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
     """Test that the host of the same heat pump can be changed."""
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    entry = MockConfigEntry(domain=DOMAIN, version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
     entry.add_to_hass(hass)
     result = await _start_reconfigure_flow(hass, entry)
 
@@ -186,7 +188,7 @@ async def test_reconfigure(hass: HomeAssistant, mock_client: MagicMock, mock_set
 
 async def test_reconfigure_wrong_device(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
     """Test that the host can't be changed to another heat pump."""
-    entry = MockConfigEntry(domain=DOMAIN, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    entry = MockConfigEntry(domain=DOMAIN, version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
     entry.add_to_hass(hass)
     mock_client.async_read_values.return_value = device_info_values(serial="WE15999999")
     result = await _start_reconfigure_flow(hass, entry)

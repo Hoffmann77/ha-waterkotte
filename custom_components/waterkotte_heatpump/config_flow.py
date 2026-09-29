@@ -14,7 +14,6 @@ from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from .const import (
     DOMAIN,
-    TITLE,
     CONF_POLLING_INTERVAL,
     CONF_TAGS_PER_REQUEST,
     CONF_BIOS,
@@ -30,6 +29,7 @@ from .const import (
     CONFIG_VERSION, CONFIG_MINOR_VERSION
 )
 from .pywaterkotte_ha.error import Http404Exception, InvalidPasswordException, TooManyUsersException
+from .naming import entry_title
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -199,7 +199,7 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             for k, v in user_input.items():
                 self._user_step_user_input[k] = v
 
-            return self.async_create_entry(title=TITLE, data=self._user_step_user_input)
+            return self.async_create_entry(title=entry_title(self._series, self._serial), data=self._user_step_user_input)
         else:
             return self.async_show_form(
                 step_id="features",
