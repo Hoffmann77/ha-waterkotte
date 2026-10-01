@@ -12,7 +12,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.waterkotte_heatpump import WKHPDataUpdateCoordinator
+from custom_components.waterkotte_heatpump.coordinator import WKHPDataUpdateCoordinator
 from custom_components.waterkotte_heatpump.const import (
     CONF_SERIAL,
     CONF_SERIES,

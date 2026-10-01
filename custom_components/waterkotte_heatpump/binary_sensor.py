@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
-from . import WaterkotteConfigEntry
+from .coordinator import WaterkotteConfigEntry
 from .const import FEATURE_POOL, FEATURE_VENT
 from .entity import WKHPBaseEntity, WKHPEntityDescription
 

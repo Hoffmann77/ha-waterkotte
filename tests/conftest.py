@@ -60,7 +60,7 @@ def mock_setup_entry() -> Generator[AsyncMock]:
 @pytest.fixture
 def mock_bridge() -> Generator[MagicMock]:
     """Mock the WaterkotteClient that is used by the coordinator."""
-    with patch("custom_components.waterkotte_heatpump.WaterkotteClient", autospec=True) as client_class:
+    with patch("custom_components.waterkotte_heatpump.coordinator.WaterkotteClient", autospec=True) as client_class:
         client = client_class.return_value
         client.async_check_login = AsyncMock()
         client.async_read_values = AsyncMock(return_value=device_info_values())

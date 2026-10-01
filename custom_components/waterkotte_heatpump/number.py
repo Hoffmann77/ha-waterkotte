@@ -15,7 +15,7 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
-from . import WaterkotteConfigEntry
+from .coordinator import WaterkotteConfigEntry
 from .const import DOMAIN, FEATURE_DISINFECTION, FEATURE_HEATING_CURVE, FEATURE_POOL, FEATURE_VENT, FIFTH_STEP, TENTH_STEP
 from .entity import WKHPBaseEntity, WKHPEntityDescription
 

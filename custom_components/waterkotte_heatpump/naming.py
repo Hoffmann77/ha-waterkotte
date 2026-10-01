@@ -1,4 +1,6 @@
 """Names of the config entries and devices of the Waterkotte Heatpump integration."""
+import re
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
@@ -42,3 +44,9 @@ def device_name(hass: HomeAssistant, config_entry: ConfigEntry, serial: str | No
     ):
         return f"{DEVICE_NAME} {serial}"
     return DEVICE_NAME
+
+
+def is_real_serial(serial: str | None) -> bool:
+    """Check if the serial was read from the heat pump - older versions stored a random UUID, when the
+    heat pump did not provide a serial number"""
+    return serial is not None and serial not in ("", "None") and re.fullmatch(r"[0-9a-f]{32}", serial) is None

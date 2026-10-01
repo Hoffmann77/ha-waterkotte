@@ -10,7 +10,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 
 if TYPE_CHECKING:
-    from . import WKHPDataUpdateCoordinator
+    from .coordinator import WKHPDataUpdateCoordinator
 
 
 @dataclass(frozen=True, kw_only=True)
