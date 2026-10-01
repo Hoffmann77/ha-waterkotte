@@ -172,15 +172,16 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
     async def async_step_reconfigure(self, user_input=None):
-        """Change the host of an existing configuration."""
+        """Change the host and the credentials of an existing configuration."""
         self._errors = {}
         entry = self._get_reconfigure_entry()
+        is_easycon = entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH) == EASYCON
 
         if user_input is not None:
             error = await self._test_connection(
                 host=user_input[CONF_HOST],
-                username=entry.options.get(CONF_USERNAME, entry.data.get(CONF_USERNAME)),
-                pwd=entry.options.get(CONF_PASSWORD, entry.data.get(CONF_PASSWORD)),
+                username=user_input.get(CONF_USERNAME),
+                pwd=user_input.get(CONF_PASSWORD),
                 system_type=entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH),
                 tags_per_request=entry.options.get(CONF_TAGS_PER_REQUEST, entry.data.get(CONF_TAGS_PER_REQUEST, 10)),
             )
@@ -189,14 +190,22 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     # make sure that the new host is still the same heat pump
                     await self.async_set_unique_id(self._serial)
                     self._abort_if_unique_id_mismatch(reason="wrong_device")
-                return self.async_update_reload_and_abort(entry, data_updates={CONF_HOST: user_input[CONF_HOST]})
+                return self.async_update_reload_and_abort(entry, data_updates={
+                    CONF_HOST: user_input[CONF_HOST],
+                    CONF_USERNAME: user_input.get(CONF_USERNAME, ""),
+                    CONF_PASSWORD: user_input.get(CONF_PASSWORD, ""),
+                })
             else:
                 self._errors["base"] = error
 
+        default_credential = "" if is_easycon else "waterkotte"
+        password_key = vol.Optional if is_easycon else vol.Required
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=vol.Schema({
                 vol.Required(CONF_HOST, default=entry.data.get(CONF_HOST)): str,
+                vol.Optional(CONF_USERNAME, default=entry.data.get(CONF_USERNAME, default_credential)): str,
+                password_key(CONF_PASSWORD, default=entry.data.get(CONF_PASSWORD, default_credential)): str,
             }),
             errors=self._errors
         )
@@ -223,19 +232,16 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     # make sure that it's still the same heat pump
                     await self.async_set_unique_id(self._serial)
                     self._abort_if_unique_id_mismatch(reason="wrong_device")
-                # the credentials are stored in the data - so we remove the (outdated) credentials from the options
-                credentials = {CONF_USERNAME: user_input.get(CONF_USERNAME, ""), CONF_PASSWORD: user_input[CONF_PASSWORD]}
-                return self.async_update_reload_and_abort(
-                    entry,
-                    data_updates=credentials,
-                    options={key: value for key, value in entry.options.items() if key not in credentials},
-                )
+                return self.async_update_reload_and_abort(entry, data_updates={
+                    CONF_USERNAME: user_input.get(CONF_USERNAME, ""),
+                    CONF_PASSWORD: user_input[CONF_PASSWORD],
+                })
             self._errors["base"] = error
 
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=vol.Schema({
-                vol.Optional(CONF_USERNAME, default=entry.options.get(CONF_USERNAME, entry.data.get(CONF_USERNAME, ""))): str,
+                vol.Optional(CONF_USERNAME, default=entry.data.get(CONF_USERNAME, "")): str,
                 vol.Required(CONF_PASSWORD): str,
             }),
             description_placeholders={"host": entry.data[CONF_HOST]},
@@ -322,23 +328,16 @@ class WaterkotteHeatpumpOptionsFlowHandler(config_entries.OptionsFlowWithReload)
             # stays in the config entry data
             return self.async_create_entry(data=user_input)
 
-        # settings that have not been changed via the options yet, are taken from the initial configuration
+        # settings that have not been changed via the options yet, are taken from the initial configuration (the
+        # credentials are changed via reconfigure)
         entry = self.config_entry
+
         def current(key, default):
             return entry.options.get(key, entry.data.get(key, default))
-
-        if entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH) == EASYCON:
-            def_user = ""
-            def_pass = ""
-        else:
-            def_user = "waterkotte"
-            def_pass = "waterkotte"
 
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({
-                vol.Optional(CONF_USERNAME, default=current(CONF_USERNAME, def_user)): str,
-                vol.Optional(CONF_PASSWORD, default=current(CONF_PASSWORD, def_pass)): str,
                 vol.Required(CONF_POLLING_INTERVAL, default=current(CONF_POLLING_INTERVAL, 60)): _POLLING_INTERVAL,
                 vol.Required(CONF_TAGS_PER_REQUEST, default=current(CONF_TAGS_PER_REQUEST, 75)): _TAGS_PER_REQUEST
             }),

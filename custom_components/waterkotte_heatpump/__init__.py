@@ -3,6 +3,7 @@ import logging
 import re
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as config_val, device_registry as dev_reg, entity_registry as entity_reg
 from homeassistant.helpers.typing import ConfigType
@@ -70,8 +71,9 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
                     new_unique_id = serial
 
             # the options flow of older versions copied all data (incl. the host) into the options - now the
-            # options contain only the settings of the options flow
-            new_options = {key: value for key, value in config_entry.options.items() if key in OPTIONS_KEYS}
+            # options contain only the settings of the options flow (in v1.3 incl. the credentials)
+            new_options = {key: value for key, value in config_entry.options.items()
+                           if key in (CONF_USERNAME, CONF_PASSWORD, *OPTIONS_KEYS)}
 
             hass.config_entries.async_update_entry(config_entry, unique_id=new_unique_id, options=new_options,
                                                    version=1, minor_version=3)
@@ -138,6 +140,19 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         new_options = {key: value for key, value in config_entry.options.items() if key != CONF_ADD_SCHEDULE_ENTITIES}
         hass.config_entries.async_update_entry(config_entry, data=new_data, options=new_options, version=2,
                                                minor_version=2)
+        _LOGGER.info("async_migrate_entry(): Migration to configuration version %s.%s successful", config_entry.version, config_entry.minor_version)
+
+    if config_entry.version == 2 and config_entry.minor_version < 3:
+        # update from 2.2 to 2.3 [the credentials are only stored in the config entry data (changed via
+        # reconfigure or reauth) - the options contain only the polling settings]
+        _LOGGER.info("async_migrate_entry(): Migration: from v%s.%s to v2.3", config_entry.version, config_entry.minor_version)
+        new_data = dict(config_entry.data)
+        new_options = dict(config_entry.options)
+        for key in (CONF_USERNAME, CONF_PASSWORD):
+            if key in new_options:
+                new_data[key] = new_options.pop(key)
+        hass.config_entries.async_update_entry(config_entry, data=new_data, options=new_options, version=2,
+                                               minor_version=3)
         _LOGGER.info("async_migrate_entry(): Migration to configuration version %s.%s successful", config_entry.version, config_entry.minor_version)
 
     return True

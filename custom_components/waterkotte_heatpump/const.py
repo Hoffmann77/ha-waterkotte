@@ -1,11 +1,7 @@
 from typing import Final
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import FOUR_STEPS_MODES, SIX_STEPS_MODES
-from homeassistant.const import (
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    Platform,
-)
+from homeassistant.const import Platform
 
 # Base component constants
 NAME: Final = "Waterkotte Heatpump [+2020]"
@@ -17,7 +13,7 @@ MANUFACTURER: Final = "Waterkotte"
 ISSUE_URL: Final = "https://github.com/marq24/ha-waterkotte/issues"
 
 CONFIG_VERSION: Final = 2
-CONFIG_MINOR_VERSION: Final = 2
+CONFIG_MINOR_VERSION: Final = 3
 
 FEATURE_DISINFECTION: Final = "DISINFECTION"
 FEATURE_HEATING_CURVE: Final = "HEATING_CURVE"
@@ -57,9 +53,9 @@ CONF_USE_HEATING_CURVE: Final = "use_heating_curve"
 CONF_USE_VENT: Final = "use_vent"
 CONF_USE_POOL: Final = "use_pool"
 
-# the settings that can be changed via the options flow - everything else (like the host) is only stored
-# in the data of the config entry
-OPTIONS_KEYS: Final = (CONF_USERNAME, CONF_PASSWORD, CONF_POLLING_INTERVAL, CONF_TAGS_PER_REQUEST)
+# the settings that can be changed via the options flow - everything else (like the host and the credentials)
+# is only stored in the data of the config entry
+OPTIONS_KEYS: Final = (CONF_POLLING_INTERVAL, CONF_TAGS_PER_REQUEST)
 
 STARTUP_MESSAGE: Final = f"""
 -------------------------------------------------------------------

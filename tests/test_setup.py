@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import aiohttp
 import pytest
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
-from homeassistant.const import ATTR_CONFIG_ENTRY_ID, CONF_HOST, CONF_ID, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import ATTR_CONFIG_ENTRY_ID, CONF_HOST, CONF_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -290,7 +290,7 @@ async def test_options_reload(hass: HomeAssistant, mock_bridge: MagicMock) -> No
     result = await hass.config_entries.options.async_init(entry.entry_id)
     await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {CONF_USERNAME: "waterkotte", CONF_PASSWORD: "waterkotte", CONF_POLLING_INTERVAL: 30, CONF_TAGS_PER_REQUEST: 50},
+        {CONF_POLLING_INTERVAL: 30, CONF_TAGS_PER_REQUEST: 50},
     )
     await hass.async_block_till_done()
 

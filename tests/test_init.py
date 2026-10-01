@@ -24,7 +24,8 @@ UUID_SERIAL = "0123456789abcdef0123456789abcdef"
 
 async def test_migrate_1_2(hass: HomeAssistant) -> None:
     """Test that the migration uses the serial number as unique_id of the config entry - and that the
-    connection data (copied by the options flow of older versions) is removed from the options."""
+    connection data (copied by the options flow of older versions) is removed from the options (the credentials
+    are moved into the data)."""
     data = {
         CONF_HOST: HOST,
         CONF_SERIAL: SERIAL,
@@ -44,10 +45,10 @@ async def test_migrate_1_2(hass: HomeAssistant) -> None:
 
     assert await async_migrate_entry(hass, entry)
     assert entry.unique_id == SERIAL
-    assert entry.options == {CONF_USERNAME: "waterkotte", CONF_PASSWORD: "new-password", CONF_POLLING_INTERVAL: 30}
-    assert entry.data == data
+    assert entry.options == {CONF_POLLING_INTERVAL: 30}
+    assert entry.data == {**data, CONF_PASSWORD: "new-password"}
     assert entry.title == "Waterkotte Ai1+ (WE15123456)"
-    assert (entry.version, entry.minor_version) == (2, 2)
+    assert (entry.version, entry.minor_version) == (2, 3)
 
 
 async def test_migrate_keeps_renamed_title(hass: HomeAssistant) -> None:
@@ -70,7 +71,7 @@ async def test_migrate_1_2_without_serial(hass: HomeAssistant, serial: str | Non
     assert await async_migrate_entry(hass, entry)
     assert entry.unique_id is None
     assert entry.data[CONF_SERIAL] is None
-    assert (entry.version, entry.minor_version) == (2, 2)
+    assert (entry.version, entry.minor_version) == (2, 3)
 
 
 async def test_migrate_1_2_duplicate_serial(hass: HomeAssistant) -> None:
@@ -117,7 +118,7 @@ async def test_migrate_1_3_unique_ids(
     assert migrated_entity.unique_id == f"{expected_base}_temperature_outside".lower()
     assert dr.async_get(hass).async_get(device.id).identifiers == {(DOMAIN, expected_base)}
     assert CONF_ADD_SERIAL_AS_ID not in entry.data
-    assert (entry.version, entry.minor_version) == (2, 2)
+    assert (entry.version, entry.minor_version) == (2, 3)
 
 
 async def test_migrate_1_3_unique_id_already_used(hass: HomeAssistant) -> None:
@@ -144,7 +145,7 @@ async def test_migrate_1_3_unique_id_already_used(hass: HomeAssistant) -> None:
     assert new_unique_id in unique_ids
     assert len(unique_ids - {new_unique_id}) == 1
     assert unique_ids - {new_unique_id} <= old_unique_ids
-    assert (entry.version, entry.minor_version) == (2, 2)
+    assert (entry.version, entry.minor_version) == (2, 3)
 
 
 async def test_migrate_2_1_removes_schedule_entities(hass: HomeAssistant) -> None:
@@ -183,4 +184,19 @@ async def test_migrate_2_1_removes_schedule_entities(hass: HomeAssistant) -> Non
         assert registry.async_get(entity.entity_id) is not None
     assert CONF_ADD_SCHEDULE_ENTITIES not in entry.data
     assert entry.options == {CONF_POLLING_INTERVAL: 30}
-    assert (entry.version, entry.minor_version) == (2, 2)
+    assert (entry.version, entry.minor_version) == (2, 3)
+
+
+async def test_migrate_2_2(hass: HomeAssistant) -> None:
+    """Test that the credentials are moved from the options into the data."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL,
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_USERNAME: "waterkotte", CONF_PASSWORD: "old-password"},
+        options={CONF_PASSWORD: "new-password", CONF_POLLING_INTERVAL: 30},
+    )
+    entry.add_to_hass(hass)
+
+    assert await async_migrate_entry(hass, entry)
+    assert entry.data == {CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_USERNAME: "waterkotte", CONF_PASSWORD: "new-password"}
+    assert entry.options == {CONF_POLLING_INTERVAL: 30}
+    assert (entry.version, entry.minor_version) == (2, 3)

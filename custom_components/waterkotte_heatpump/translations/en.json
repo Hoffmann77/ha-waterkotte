@@ -42,9 +42,11 @@
         }
       },
       "reconfigure": {
-        "description": "Change the Host or IP of your Waterkotte (e.g. when it got a new IP address).",
+        "description": "Change the Host or IP (e.g. when your Waterkotte got a new IP address) or the login credentials of your Waterkotte.",
         "data": {
-          "host": "Host or IP"
+          "host": "Host or IP",
+          "username": "Username",
+          "password": "Password"
         }
       },
       "reauth_confirm": {
@@ -83,8 +85,6 @@
       "user": {
         "description": "If you need help with the configuration have a look here: {repo}.",
         "data": {
-          "username": "Username",
-          "password": "Password",
           "polling_interval": "Polling Interval in seconds",
           "tags_per_request": "Number of tags to fetch in a single request (max. 75)"
         }

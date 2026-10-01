@@ -74,7 +74,7 @@ Use the following steps for a manual configuration by adding the custom integrat
 
 After the integration was added you can use the 'config' button to adjust your settings and you can additionally modify the update intervall
 
-If the IP address (or hostname) of your Waterkotte has changed, use the 'Reconfigure' option of the integration entry - there is no need to remove and add the integration again.
+If the IP address (or hostname) or the login credentials of your Waterkotte have changed, use the 'Reconfigure' option of the integration entry - there is no need to remove and add the integration again.
 
 Please note, that most of the available sensors are __not__ enabled by default.
 
@@ -144,6 +144,8 @@ An entity is unavailable, when its value could not be read from the heat pump in
 ### Wrong credentials
 
 When the login to the heat pump fails because of wrong credentials, Home Assistant asks you to re-enter the username and password (`Settings -> Devices & services`) instead of retrying forever.
+
+The username and password are changed via 'Reconfigure' now (the options contain only the polling interval and the number of tags per request) - credentials that have been changed via the options of an older version are taken over automatically.
 
 ### Migrate from the previous 'ha-waterkotte' repository
 

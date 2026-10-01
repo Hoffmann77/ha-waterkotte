@@ -152,7 +152,7 @@ async def test_already_configured_host(hass: HomeAssistant, mock_client: MagicMo
 
 
 async def test_options_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> None:
-    """Test that the options flow stores only its own settings (and not the connection data)."""
+    """Test that the options flow stores only its own settings (and not the connection data or the credentials)."""
     entry = MockConfigEntry(domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
     entry.add_to_hass(hass)
 
@@ -162,20 +162,10 @@ async def test_options_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) ->
 
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {
-            CONF_USERNAME: "waterkotte",
-            CONF_PASSWORD: "new-password",
-            CONF_POLLING_INTERVAL: 30,
-            CONF_TAGS_PER_REQUEST: 50,
-        },
+        {CONF_POLLING_INTERVAL: 30, CONF_TAGS_PER_REQUEST: 50},
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert entry.options == {
-        CONF_USERNAME: "waterkotte",
-        CONF_PASSWORD: "new-password",
-        CONF_POLLING_INTERVAL: 30,
-        CONF_TAGS_PER_REQUEST: 50,
-    }
+    assert entry.options == {CONF_POLLING_INTERVAL: 30, CONF_TAGS_PER_REQUEST: 50}
     assert entry.data[CONF_HOST] == HOST
 
 
@@ -192,8 +182,7 @@ async def test_options_flow_invalid_input(hass: HomeAssistant, mock_setup_entry:
     with pytest.raises(InvalidData):
         await hass.config_entries.options.async_configure(
             result["flow_id"],
-            {CONF_USERNAME: "waterkotte", CONF_PASSWORD: "waterkotte", CONF_POLLING_INTERVAL: 60,
-             CONF_TAGS_PER_REQUEST: 75, **invalid_input},
+            {CONF_POLLING_INTERVAL: 60, CONF_TAGS_PER_REQUEST: 75, **invalid_input},
         )
 
 
@@ -208,15 +197,18 @@ async def _start_reconfigure_flow(hass: HomeAssistant, entry: MockConfigEntry) -
 
 
 async def test_reconfigure(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
-    """Test that the host of the same heat pump can be changed."""
-    entry = MockConfigEntry(domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    """Test that the host and the credentials of the same heat pump can be changed."""
+    entry = MockConfigEntry(domain=DOMAIN, version=2, minor_version=3, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
     entry.add_to_hass(hass)
     result = await _start_reconfigure_flow(hass, entry)
 
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: "192.168.1.60"})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: "192.168.1.60", CONF_USERNAME: "waterkotte", CONF_PASSWORD: "new-password"}
+    )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data[CONF_HOST] == "192.168.1.60"
+    assert entry.data[CONF_PASSWORD] == "new-password"
 
 
 async def test_reconfigure_wrong_device(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
@@ -233,11 +225,12 @@ async def test_reconfigure_wrong_device(hass: HomeAssistant, mock_client: MagicM
 
 
 async def test_reauth(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
-    """Test that the reauth flow stores the new credentials (and removes the outdated ones from the options)."""
+    """Test that the reauth flow stores the new credentials."""
     entry = MockConfigEntry(
-        domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL,
-        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH", CONF_USERNAME: "waterkotte"},
-        options={CONF_PASSWORD: "old-password", CONF_POLLING_INTERVAL: 30},
+        domain=DOMAIN, version=2, minor_version=3, unique_id=SERIAL,
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH", CONF_USERNAME: "waterkotte",
+              CONF_PASSWORD: "old-password"},
+        options={CONF_POLLING_INTERVAL: 30},
     )
     entry.add_to_hass(hass)
 

@@ -79,14 +79,14 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             # settings that have not been changed via the options yet, are taken from the initial configuration
             return config_entry.options.get(key, config_entry.data.get(key, default))
 
-        # the connection data is only stored in the config entry data (not in the options)
+        # the connection data (incl. the credentials) is only stored in the config entry data (not in the options)
         _system_type = config_entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH)
         _host = config_entry.data.get(CONF_HOST)
         # by default, EASYCON does not have a password option... BUT if the user specified login credentials,
         # then we must use them!
         _default_credential = None if _system_type == EASYCON else "waterkotte"
-        _user = setting(CONF_USERNAME, _default_credential)
-        _pwd = setting(CONF_PASSWORD, _default_credential)
+        _user = config_entry.data.get(CONF_USERNAME, _default_credential)
+        _pwd = config_entry.data.get(CONF_PASSWORD, _default_credential)
         if _system_type == EASYCON and (_user is None or _pwd is None):
             _user = None
             _pwd = None

@@ -42,9 +42,11 @@
         }
       },
       "reconfigure": {
-        "description": "Ändere die IP oder den Hostnamen deiner Waterkotte (z.B. wenn sie eine neue IP Adresse erhalten hat).",
+        "description": "Ändere die IP oder den Hostnamen (z.B. wenn deine Waterkotte eine neue IP Adresse erhalten hat) oder die Zugangsdaten deiner Waterkotte.",
         "data": {
-          "host": "IP oder Hostname deiner Waterkotte"
+          "host": "IP oder Hostname deiner Waterkotte",
+          "username": "Benutzername",
+          "password": "Passwort"
         }
       },
       "reauth_confirm": {
@@ -83,8 +85,6 @@
       "user": {
         "description": "Wenn Du Hilfe bei der Einichtung benötigst, findest du sie hier: {repo}.",
         "data": {
-          "username": "Benutzername (bei den meisten Modellen ist dieser 'waterkotte')",
-          "password": "Passwort",
           "polling_interval": "Aktualisierungsintervall in Sekunden",
           "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)"
         }
