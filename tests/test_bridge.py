@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 import pytest
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha import EasyconBridge, EcotouchBridge
+from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import TRANSLATIONS
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import StatusException, TooManyUsersException
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 
@@ -143,3 +144,15 @@ async def test_easycon_read_without_warning(caplog: pytest.LogCaptureFixture) ->
     await EasyconBridge(host="heatpump", web_session=session, username=None, pwd=None).read_values(
         [WKHPTag.TEMPERATURE_OUTSIDE])
     assert session.headers == [{}]
+
+
+async def test_unknown_alarm_tag() -> None:
+    """Test that an alarm tag, that the heat pump does not know, is skipped (and the shared tag is not changed)."""
+    alarm_tags = list(WKHPTag.ALARM_BITS.tags)
+    # the heat pump does not know the last alarm tag - I52 reports bit 0
+    content = "".join(f"#{tag}\tS_OK\n192\t{1 if tag == 'I52' else 0}\n" for tag in alarm_tags[:-1])
+    session = FakeSession({"/cgi/readTags": [FakeResponse(200, content)]})
+
+    result = await _bridge(session).read_values([WKHPTag.ALARM_BITS])
+    assert result[WKHPTag.ALARM_BITS]["value"] == TRANSLATIONS["en"]["I52"][0]
+    assert list(WKHPTag.ALARM_BITS.tags) == alarm_tags
