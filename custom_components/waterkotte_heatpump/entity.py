@@ -40,6 +40,11 @@ class WKHPBaseEntity(CoordinatorEntity["WKHPDataUpdateCoordinator"]):
                 self._attr_entity_registry_enabled_default = True
 
     @property
+    def available(self) -> bool:
+        """The entity is unavailable, when the value of its tag could not be read in the last update."""
+        return super().available and self.wkhp_tag in (self.coordinator.data or {})
+
+    @property
     def wkhp_tag(self):
         """The tag of the heat pump, that provides the value of this entity."""
         return self.entity_description.tag

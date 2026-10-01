@@ -322,10 +322,9 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             result = await self.bridge.async_get_data()
         _LOGGER.debug(f"number of entity values read: {len(result)}")
 
-        # values that could not be read in this update keep their last value
-        data = dict(self.data or {})
-        data.update({tag: value for tag, value in result.items() if value is not None and value["status"] == "S_OK"})
-        return data
+        # only the values that have been read in this update - the entities of the other tags are unavailable
+        # (and don't show an outdated value)
+        return {tag: value for tag, value in result.items() if value is not None and value["status"] == "S_OK"}
 
     @asynccontextmanager
     async def _map_errors(self):

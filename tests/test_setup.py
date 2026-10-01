@@ -81,7 +81,20 @@ async def test_entity_states(hass: HomeAssistant, mock_bridge: MagicMock) -> Non
     # the heat pump provides the local time
     assert state("sensor", "HOLIDAY_START_TIME") == dt_util.as_utc(
         datetime(2026, 12, 20, 8, 0, tzinfo=dt_util.get_default_time_zone())).isoformat()
+    # not read: unavailable - read without a value: unknown
+    assert state("number", "TEMPERATURE_HEATING_SETPOINT") == "unavailable"
+    mock_bridge.async_get_data.return_value = {
+        WKHPTag.TEMPERATURE_HEATING_SETPOINT: {"value": None, "status": "S_OK"},
+    }
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
     assert state("number", "TEMPERATURE_HEATING_SETPOINT") == "unknown"
+    # a value that could not be read anymore is not shown (outdated)
+    assert state("sensor", "HOLIDAY_START_TIME") == "unavailable"
+    mock_bridge.async_get_data.return_value = {
+        WKHPTag.HOLIDAY_START_TIME: {"value": datetime(2026, 12, 20, 8, 0), "status": "S_OK"},
+        WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME: {"value": time(3, 30), "status": "S_OK"},
+    }
 
     # the disinfection start time is disabled by default
     registry.async_update_entity(

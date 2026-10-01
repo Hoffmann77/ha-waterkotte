@@ -16,6 +16,7 @@ from custom_components.waterkotte_heatpump.const import (
     SERVICE_SET_HOLIDAY,
 )
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import TooManyUsersException
+from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .conftest import HOST, SERIAL
 
 HOLIDAY = {"start": "2026-12-20 08:00:00", "end": "2027-01-06 18:00:00"}
@@ -23,6 +24,11 @@ HOLIDAY = {"start": "2026-12-20 08:00:00", "end": "2027-01-06 18:00:00"}
 
 @pytest.fixture
 async def entry(hass: HomeAssistant, mock_bridge: MagicMock) -> MockConfigEntry:
+    # the entities are only available, when their values have been read
+    mock_bridge.async_get_data.return_value = {
+        WKHPTag.HOLIDAY_ENABLED: {"value": False, "status": "S_OK"},
+        WKHPTag.TEMPERATURE_HEATING_ADJUST: {"value": 4, "status": "S_OK"},
+    }
     entry = MockConfigEntry(
         domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL,
         data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH"},
