@@ -26,6 +26,16 @@ from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
+# an entry of a readTags/writeTags response: '#<tag>\t<status>' - followed by the line '<opt>\t<value>'
+# (or without that line, e.g. for an inactive tag: '#<tag>\tE_INACTIVETAG')
+_TAG_RESPONSE = re.compile(
+    r"^#(?P<tag>[^\t\n]+)\t(?P<status>[A-Z_]+)(?:\n(?P<opt>\d+)\t(?P<value>[-+]?\d*\.?\d+)?)?",
+    re.MULTILINE,
+)
+
+# the element of the EasyCon XML response, that contains the values of a tag type ('D', 'I' or 'A')
+_EASYCON_TYPES = {"D": "DIGITAL", "I": "INTEGER", "A": "ANALOG"}
+
 
 class WaterkotteClient:
     def __init__(self, host: str, username: str, pwd: str, system_type: str, web_session,
@@ -231,40 +241,30 @@ class EcotouchBridge:
     @staticmethod
     def _parse_tag_response(content: str, tags: Sequence[str], results: dict, results_status: dict):
         """Parse the values and states of the tags from the response of a readTags/writeTags request"""
-        for tag in tags:
-            match = re.search(
-                rf"#{tag}\t(?P<status>[A-Z_]+)\n(?P<opt>\d+)\t(?P<value>[-+]?(?:\d*\.?\d+))",
-                content,
-                re.MULTILINE,
-            )
-            if match is None:
-                match = re.search(
-                    rf"#{tag}\t(?P<status>[A-Z_]+)\n(?P<opt>\d+)\t",
-                    content,
-                    re.MULTILINE,
-                )
-                if match is None:
-                    # ok let's check for INACTIVETAG...
-                    match = re.search(
-                        rf"#{tag}\tE_INACTIVETAG",
-                        content,
-                        re.MULTILINE,
-                    )
-                    if match is None:
-                        # the heat pump does not know the tag (e.g. one of the alarm tags of another model) - the
-                        # entity is unavailable (logged on debug level, because this happens in every update)
-                        _LOGGER.debug(f"Tag: '{tag}' not found in response!")
-                        results_status[tag] = "E_NOTFOUND"
-                    else:
-                        results_status[tag] = "E_INACTIVE"
-                else:
-                    _LOGGER.warning(f"Tag: '{tag}' without value! -> opt-code: {match.group('opt')}")
-                    results_status[tag] = match.group("status")
+        # the response is parsed once - the first entry of a tag wins
+        entries = {}
+        for match in _TAG_RESPONSE.finditer(content):
+            entries.setdefault(match.group("tag"), match)
 
-                results[tag] = None
-            else:
+        for tag in tags:
+            match = entries.get(tag)
+            results[tag] = None
+            if match is None:
+                # the heat pump does not know the tag (e.g. one of the alarm tags of another model) - the
+                # entity is unavailable (logged on debug level, because this happens in every update)
+                _LOGGER.debug(f"Tag: '{tag}' not found in response!")
+                results_status[tag] = "E_NOTFOUND"
+            elif match.group("value") is not None:
                 results_status[tag] = match.group("status")
                 results[tag] = match.group("value")
+            elif match.group("status") == "E_INACTIVETAG":
+                results_status[tag] = "E_INACTIVE"
+            elif match.group("opt") is not None:
+                _LOGGER.warning(f"Tag: '{tag}' without value! -> opt-code: {match.group('opt')}")
+                results_status[tag] = match.group("status")
+            else:
+                _LOGGER.debug(f"Tag: '{tag}' without value line in response!")
+                results_status[tag] = "E_NOTFOUND"
 
     async def _read_tags(self, tags: Sequence[WKHPTag], results=None, results_status=None, retry: bool = True):
         if results is None:
@@ -473,36 +473,27 @@ class EasyconBridge(EcotouchBridge):
                         _LOGGER.debug(f"Response was: {content} caused {exc}")
                         raise InvalidResponseException(f"Error in easycon.py parsing. Received: {content}") from exc
 
-                    for tag in tags:
-                        if tag[0] == "D":
-                            valType = "DIGITAL"
-                        elif tag[0] == "I":
-                            valType = "INTEGER"
-                        elif tag[0] == "A":
-                            valType = "ANALOG"
-                        match = root.find(f".//{valType}/*/INDEX[.='{tag[1:]}']/../VALUE")
-                        if match is None:
-                            match = re.search(
-                                # r"#%s\tE_INACTIVETAG" % tag,
-                                f"#{tag}\tE_INACTIVETAG",
-                                content,
-                                re.MULTILINE,
-                            )
-                            # val_status = "E_INACTIVE"  # pylint: disable=possibly-unused-variable
-                            # print("Tag: %s is inactive!", tag)
-                            if match is None:
-                                # the heat pump does not know the tag (logged on debug level, because this happens
-                                # in every update)
-                                _LOGGER.debug(f"Tag: '{tag}' not found in response!")
-                                results_status[tag] = "E_NOTFOUND"
-                            else:
-                                # if val_status == "E_INACTIVE":
-                                results_status[tag] = "E_INACTIVE"
+                    # (type, index) -> VALUE element - the XML is indexed once
+                    xml_values = {}
+                    for val_type in _EASYCON_TYPES.values():
+                        for type_element in root.iter(val_type):
+                            for variable in type_element:
+                                index, value = variable.find("INDEX"), variable.find("VALUE")
+                                if index is not None and value is not None:
+                                    xml_values.setdefault((val_type, index.text), value)
 
+                    for tag in tags:
+                        val_type = _EASYCON_TYPES.get(tag[0])
+                        match = xml_values.get((val_type, tag[1:]))
+                        if match is None:
+                            # the heat pump does not know the tag (logged on debug level, because this happens
+                            # in every update)
+                            _LOGGER.debug(f"Tag: '{tag}' not found in response!")
+                            results_status[tag] = "E_NOTFOUND"
                             results[tag] = None
                         else:
                             results_status[tag] = "S_OK"
-                            if valType == "ANALOG":
+                            if val_type == "ANALOG":
                                 results[tag] = str(float(match.text) * 10.0)
                             else:
                                 results[tag] = match.text

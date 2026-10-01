@@ -186,3 +186,31 @@ async def test_write_not_confirmed() -> None:
     """Test that a value, that the heat pump returns different from the written value, is not confirmed."""
     session = FakeSession({"/cgi/writeTags": [_write_response({"A1710": "200"})]})
     assert await _bridge(session).write_value(WKHPTag.TEMPERATURE_HEATING_SETPOINT_FOR_SOLAR, 21.5) == {}
+
+
+def test_parse_tag_response() -> None:
+    """Test the parsing of all kinds of entries of a readTags/writeTags response."""
+    content = (
+        "#A1\tS_OK\n192\t215\n"           # a value
+        "#A2\tS_OK\n192\t-1.5\n"          # a negative float value
+        "#A3\tE_INACTIVETAG\n"            # an inactive tag
+        "#I4\tS_OK\n192\t\n"              # a tag without value
+        "#I5\tE_UNKNOWN\n"                # a status without value line
+        "#3:HREG400000\tS_OK\n192\t4\n"   # a register tag
+        "#A1\tS_OK\n192\t999\n"           # a second entry of a tag (the first wins)
+    )
+    results, states = {}, {}
+    EcotouchBridge._parse_tag_response(content, ["A1", "A2", "A3", "I4", "I5", "3:HREG400000", "A99"], results, states)
+    assert results == {"A1": "215", "A2": "-1.5", "A3": None, "I4": None, "I5": None, "3:HREG400000": "4", "A99": None}
+    assert states == {"A1": "S_OK", "A2": "S_OK", "A3": "E_INACTIVE", "I4": "S_OK", "I5": "E_NOTFOUND",
+                      "3:HREG400000": "S_OK", "A99": "E_NOTFOUND"}
+
+
+async def test_easycon_unknown_tags() -> None:
+    """Test that tags, that are not part of the EasyCon response (or of an unknown type), are not found."""
+    xml = "<RESPONSE><PCO><INTEGER><VARIABLE><INDEX>7</INDEX><VALUE>3</VALUE></VARIABLE></INTEGER></PCO></RESPONSE>"
+    session = FakeSession({"/config/xml.cgi": [FakeResponse(200, xml)]})
+    bridge = EasyconBridge(host="heatpump", web_session=session, username=None, pwd=None)
+    values, states = await bridge._read_tags(["I7", "I8", "D7"])
+    assert values == {"I7": "3", "I8": None, "D7": None}
+    assert states == {"I7": "S_OK", "I8": "E_NOTFOUND", "D7": "E_NOTFOUND"}
