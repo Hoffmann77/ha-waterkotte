@@ -23,3 +23,13 @@ def test_decode_no_alarms() -> None:
     tag = WKHPTag.ALARM_BITS
     assert tag.decode_f(tag, ["0"] * len(tag.tags), LANG_MAP) == ""
     assert tag.decode_f(tag, [None] * len(tag.tags), LANG_MAP) == ""
+
+
+def test_monthly_tags_are_unique() -> None:
+    """Test that each month has its own tag (an alias would report the value of another month)."""
+    for prefix in ("ENG_HEATPUMP_COP_MONTH", "ENG_CONSUMPTION_COMPRESSOR", "ENG_CONSUMPTION_SOURCEPUMP",
+                   "ENG_CONSUMPTION_EXTERNALHEATER", "ENG_PRODUCTION_HEATING", "ENG_PRODUCTION_WARMWATER",
+                   "ENG_PRODUCTION_POOL"):
+        tags = [WKHPTag[f"{prefix}{month:02d}"] for month in range(1, 13)]
+        assert len({tag.tags[0] for tag in tags}) == 12, prefix
+        assert all(tag.name == f"{prefix}{month:02d}" for month, tag in zip(range(1, 13), tags)), prefix
