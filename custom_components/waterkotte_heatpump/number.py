@@ -11,17 +11,14 @@ from homeassistant.components.number import (
 )
 from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .coordinator import WaterkotteConfigEntry
-from .const import DOMAIN, FEATURE_DISINFECTION, FEATURE_HEATING_CURVE, FEATURE_POOL, FEATURE_VENT, FIFTH_STEP, TENTH_STEP
+from .const import FEATURE_DISINFECTION, FEATURE_HEATING_CURVE, FEATURE_POOL, FEATURE_VENT, FIFTH_STEP, TENTH_STEP
 from .entity import WKHPBaseEntity, WKHPEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
-
-TEMP_ADJUST_LOOKUP = [-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -788,21 +785,11 @@ class WKHPNumber(WKHPBaseEntity, NumberEntity):
     @property
     def native_value(self) -> float | None:
         value = self._tag_value
-        if value is None:
-            return None
         try:
-            if str(self.wkhp_tag.name).upper().endswith("_ADJUST"):
-                value = TEMP_ADJUST_LOOKUP[value]
-            return float(value)
-        except (TypeError, ValueError, IndexError):
+            return None if value is None else float(value)
+        except (TypeError, ValueError):
             return None
 
     async def async_set_native_value(self, value: float) -> None:
-        if str(self.wkhp_tag.name).upper().endswith("_ADJUST"):
-            if value not in TEMP_ADJUST_LOOKUP:
-                raise ServiceValidationError(translation_domain=DOMAIN, translation_key="invalid_value",
-                                             translation_placeholders={"tag": self.wkhp_tag.name, "value": str(value)})
-            value = TEMP_ADJUST_LOOKUP.index(value)
-        if self.wkhp_tag[0][0][0] == 'I':
-            value = int(value)
+        # the tag converts the value (e.g. an adjustment to its index) - an invalid value is raised
         await self.coordinator.async_write_tag(self.wkhp_tag, value)

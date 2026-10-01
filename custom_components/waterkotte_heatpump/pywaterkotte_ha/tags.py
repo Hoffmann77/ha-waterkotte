@@ -25,6 +25,8 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 # the raw values of the 'enable' states and of the status values
 _STATES = {0: "off", 1: "auto", 2: "manual"}
 _STATUS = {0: "off", 1: "on", 2: "disabled"}
+# the adjustments of a temperature (in K): the raw value is the index of the adjustment
+_ADJUSTMENTS = {index: -2 + index * 0.5 for index in range(9)}
 
 
 class DataTag(NamedTuple):
@@ -138,6 +140,9 @@ class DataTag(NamedTuple):
                 value_as_int = int(value)
                 if str(value_as_int) == value:
                     value = value_as_int
+            elif isinstance(value, float) and value.is_integer():
+                # e.g. the value of a number entity
+                value = int(value)
             if not isinstance(value, int) or isinstance(value, bool):
                 raise self._invalid(value)
             encoded_values[ecotouch_tag] = str(value)
@@ -260,6 +265,23 @@ class DataTag(NamedTuple):
             raise self._invalid(value)
         # there is an alternative tag for the four/six steps mode with '3:HREG' notation
         # see https://github.com/marq24/ha-waterkotte/issues/49
+        encoded_values[self.tags[0]] = str(index)
+
+    def _decode_adjust(self, str_vals: List[str]):
+        """The adjustment of a temperature (in K) - the raw value is the index of the adjustment"""
+        first_val = self._first_value(str_vals)
+        if first_val is None:
+            return None
+        try:
+            return _ADJUSTMENTS.get(int(float(first_val)))
+        except ValueError:
+            return None
+
+    def _encode_adjust(self, value, encoded_values):
+        index = next((key for key, adjustment in _ADJUSTMENTS.items()
+                      if isinstance(value, (int, float)) and adjustment == value), None)
+        if index is None:
+            raise self._invalid(value)
         encoded_values[self.tags[0]] = str(index)
 
     def _decode_state(self, str_vals: List[str]):
@@ -618,7 +640,7 @@ class WKHPTag(DataTag, Enum):
     # Temperature stuff
     TEMPERATURE_HEATING = DataTag(["A30"], "°C")
     TEMPERATURE_HEATING_DEMAND = DataTag(["A31"], "°C")
-    TEMPERATURE_HEATING_ADJUST = DataTag(["I263"], "K", writeable=True)
+    TEMPERATURE_HEATING_ADJUST = DataTag(["I263"], "K", writeable=True, decode_f=DataTag._decode_adjust, encode_f=DataTag._encode_adjust)
     TEMPERATURE_HEATING_HYSTERESIS = DataTag(["A61"], "K", writeable=True)
     TEMPERATURE_HEATING_PV_CHANGE = DataTag(["A682"], "K", writeable=True)
     TEMPERATURE_HEATING_HC_OUTDOOR_1H = DataTag(["A90"], "°C")
@@ -685,7 +707,7 @@ class WKHPTag(DataTag, Enum):
 
     TEMPERATURE_POOL = DataTag(["A20"], "°C")
     TEMPERATURE_POOL_DEMAND = DataTag(["A40"], "°C")
-    TEMPERATURE_POOL_ADJUST = DataTag(["I1740"], "K", writeable=True)
+    TEMPERATURE_POOL_ADJUST = DataTag(["I1740"], "K", writeable=True, decode_f=DataTag._decode_adjust, encode_f=DataTag._encode_adjust)
     TEMPERATURE_POOL_SETPOINT = DataTag(["A41"], "°C", writeable=True)
     TEMPERATURE_POOL_HYSTERESIS = DataTag(["A174"], "K", writeable=True)
     TEMPERATURE_POOL_PV_CHANGE = DataTag(["A685"], "K", writeable=True)
@@ -704,7 +726,7 @@ class WKHPTag(DataTag, Enum):
 
     TEMPERATURE_MIX1 = DataTag(["A44"], "°C")  # TEMPERATURE_MIXING1_CURRENT
     TEMPERATURE_MIX1_DEMAND = DataTag(["A45"], "°C")  # TEMPERATURE_MIXING1_SET
-    TEMPERATURE_MIX1_ADJUST = DataTag(["I776"], "K", writeable=True)  # ADAPT_MIXING1
+    TEMPERATURE_MIX1_ADJUST = DataTag(["I776"], "K", writeable=True, decode_f=DataTag._decode_adjust, encode_f=DataTag._encode_adjust)  # ADAPT_MIXING1
     TEMPERATURE_MIX1_PV_CHANGE = DataTag(["A1094"], "K", writeable=True)
     TEMPERATURE_MIX1_PERCENT = DataTag(["A510"], "%")
     TEMPERATURE_MIX1_HC_LIMIT = DataTag(["A276"], "°C", writeable=True)  # T_HEATING_LIMIT_MIXING1
@@ -715,7 +737,7 @@ class WKHPTag(DataTag, Enum):
 
     TEMPERATURE_MIX2 = DataTag(["A46"], "°C")  # TEMPERATURE_MIXING2_CURRENT
     TEMPERATURE_MIX2_DEMAND = DataTag(["A47"], "°C")  # TEMPERATURE_MIXING2_SET
-    TEMPERATURE_MIX2_ADJUST = DataTag(["I896"], "K", writeable=True)  # ADAPT_MIXING2
+    TEMPERATURE_MIX2_ADJUST = DataTag(["I896"], "K", writeable=True, decode_f=DataTag._decode_adjust, encode_f=DataTag._encode_adjust)  # ADAPT_MIXING2
     TEMPERATURE_MIX2_PV_CHANGE = DataTag(["A1095"], "K", writeable=True)
     TEMPERATURE_MIX2_PERCENT = DataTag(["A512"], "%")
     TEMPERATURE_MIX2_HC_LIMIT = DataTag(["A322"], "°C", writeable=True)
@@ -726,7 +748,7 @@ class WKHPTag(DataTag, Enum):
 
     TEMPERATURE_MIX3 = DataTag(["A48"], "°C")  # TEMPERATURE_MIXING3_CURRENT
     TEMPERATURE_MIX3_DEMAND = DataTag(["A49"], "°C")  # TEMPERATURE_MIXING3_SET
-    TEMPERATURE_MIX3_ADJUST = DataTag(["I1017"], "K", writeable=True)  # ADAPT_MIXING3
+    TEMPERATURE_MIX3_ADJUST = DataTag(["I1017"], "K", writeable=True, decode_f=DataTag._decode_adjust, encode_f=DataTag._encode_adjust)  # ADAPT_MIXING3
     TEMPERATURE_MIX3_PV_CHANGE = DataTag(["A1096"], "K", writeable=True)
     TEMPERATURE_MIX3_PERCENT = DataTag(["A514"], "%")
     TEMPERATURE_MIX3_HC_LIMIT = DataTag(["A368"], "°C", writeable=True)

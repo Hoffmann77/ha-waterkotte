@@ -15,7 +15,7 @@ from custom_components.waterkotte_heatpump.const import (
     SERVICE_GET_ENERGY_BALANCE,
     SERVICE_SET_HOLIDAY,
 )
-from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import TooManyUsersException
+from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import InvalidValueException, TooManyUsersException
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .conftest import HOST, SERIAL
 
@@ -27,7 +27,7 @@ async def entry(hass: HomeAssistant, mock_bridge: MagicMock) -> MockConfigEntry:
     # the entities are only available, when their values have been read
     mock_bridge.async_get_data.return_value = {
         WKHPTag.HOLIDAY_ENABLED: {"value": False, "status": "S_OK"},
-        WKHPTag.TEMPERATURE_HEATING_ADJUST: {"value": 4, "status": "S_OK"},
+        WKHPTag.TEMPERATURE_HEATING_ADJUST: {"value": 0.0, "status": "S_OK"},
     }
     entry = MockConfigEntry(
         domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL,
@@ -62,15 +62,15 @@ async def test_write_not_confirmed(hass: HomeAssistant, mock_bridge: MagicMock, 
     assert err.value.translation_key == "write_not_confirmed"
 
 
-async def test_invalid_adjust_value(hass: HomeAssistant, mock_bridge: MagicMock, entry: MockConfigEntry) -> None:
-    """Test that a value of an adjust number, that the heat pump does not support, is rejected."""
+async def test_invalid_value(hass: HomeAssistant, mock_bridge: MagicMock, entry: MockConfigEntry) -> None:
+    """Test that a value, that the tag can't encode (e.g. an unsupported adjustment), is rejected."""
+    mock_bridge.async_write_value.side_effect = InvalidValueException("0.25 is not a valid value")
     with pytest.raises(ServiceValidationError) as err:
         await hass.services.async_call(
             "number", "set_value",
             {"entity_id": _entity_id(hass, "number", "TEMPERATURE_HEATING_ADJUST"), "value": 0.25}, blocking=True
         )
     assert err.value.translation_key == "invalid_value"
-    mock_bridge.async_write_value.assert_not_awaited()
 
 
 async def test_service_read_failed(hass: HomeAssistant, mock_bridge: MagicMock, entry: MockConfigEntry) -> None:

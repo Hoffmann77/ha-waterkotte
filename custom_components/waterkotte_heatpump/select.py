@@ -9,7 +9,6 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .coordinator import WaterkotteConfigEntry
 from .const import (
-    DEVICE_CLASS_ENUM,
     ENUM_HEATING_MODE,
     ENUM_OFFAUTOMANUAL,
     ENUM_OPTIONS_0_1,
@@ -34,35 +33,30 @@ SELECT_SENSORS: Final = [
     ExtSelectEntityDescription(
         key="ENABLE_COOLING",
         tag=WKHPTag.ENABLE_COOLING,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=True,
         options=ENUM_OFFAUTOMANUAL,
     ),
     ExtSelectEntityDescription(
         key="ENABLE_HEATING",
         tag=WKHPTag.ENABLE_HEATING,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=True,
         options=ENUM_OFFAUTOMANUAL,
     ),
     ExtSelectEntityDescription(
         key="ENABLE_PV",
         tag=WKHPTag.ENABLE_PV,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=False,
         options=ENUM_OFFAUTOMANUAL,
     ),
     ExtSelectEntityDescription(
         key="ENABLE_WARMWATER",
         tag=WKHPTag.ENABLE_WARMWATER,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=True,
         options=ENUM_OFFAUTOMANUAL,
     ),
     ExtSelectEntityDescription(
         key="ENABLE_POOL",
         tag=WKHPTag.ENABLE_POOL,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=False,
         options=ENUM_OFFAUTOMANUAL,
         feature=FEATURE_POOL
@@ -70,28 +64,24 @@ SELECT_SENSORS: Final = [
     ExtSelectEntityDescription(
         key="ENABLE_EXTERNAL_HEATER",
         tag=WKHPTag.ENABLE_EXTERNAL_HEATER,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=True,
         options=ENUM_OFFAUTOMANUAL,
     ),
     ExtSelectEntityDescription(
         key="ENABLE_MIXING1",
         tag=WKHPTag.ENABLE_MIXING1,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=True,
         options=ENUM_OFFAUTOMANUAL,
     ),
     ExtSelectEntityDescription(
         key="ENABLE_MIXING2",
         tag=WKHPTag.ENABLE_MIXING2,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=False,
         options=ENUM_OFFAUTOMANUAL,
     ),
     ExtSelectEntityDescription(
         key="ENABLE_MIXING3",
         tag=WKHPTag.ENABLE_MIXING3,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=False,
         options=ENUM_OFFAUTOMANUAL,
     ),
@@ -99,14 +89,12 @@ SELECT_SENSORS: Final = [
     ExtSelectEntityDescription(
         key="TEMPERATURE_HEATING_MODE",
         tag=WKHPTag.TEMPERATURE_HEATING_MODE,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=True,
         options=ENUM_HEATING_MODE,
     ),
     ExtSelectEntityDescription(
         key="BASICVENT_OPERATION_MODE_I4582",
         tag=WKHPTag.BASICVENT_OPERATION_MODE_I4582,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=False,
         options=ENUM_VENT_OPERATION_MODE,
         feature=FEATURE_VENT
@@ -114,7 +102,6 @@ SELECT_SENSORS: Final = [
     ExtSelectEntityDescription(
         key="BASICVENT_OPERATION_MODE_ALT",
         tag=WKHPTag.BASICVENT_OPERATION_MODE_ALT,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=False,
         options=ENUM_VENT_OPERATION_MODE,
         feature=FEATURE_VENT
@@ -171,14 +158,12 @@ SELECT_SENSORS: Final = [
     ExtSelectEntityDescription(
         key="ROOM_INFLUENCE_A101_OR_I264",
         tag=WKHPTag.ROOM_INFLUENCE_A101_OR_I264,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=False,
         options=ENUM_OPTIONS_0_4,
     ),
     ExtSelectEntityDescription(
         key="TEMPERATURE_POOL_MODE",
         tag=WKHPTag.TEMPERATURE_POOL_MODE,
-        device_class=DEVICE_CLASS_ENUM,
         entity_registry_enabled_default=False,
         options=ENUM_POOL_MODE,
     ),

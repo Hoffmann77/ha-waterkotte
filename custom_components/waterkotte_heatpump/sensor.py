@@ -32,6 +32,9 @@ _LOGGER = logging.getLogger(__name__)
 class ExtSensorEntityDescription(WKHPEntityDescription, SensorEntityDescription):
     """The description of an entity of the platform (with the tag of the heat pump)."""
 
+    # the state, when the heat pump provides an empty value (e.g. no active alarm)
+    empty_value: str | None = None
+
 
 SENSOR_SENSORS: Final = [
     # temperature sensors
@@ -534,6 +537,7 @@ SENSOR_SENSORS: Final = [
     ExtSensorEntityDescription(
         key="ALARM_BITS",
         tag=WKHPTag.ALARM_BITS,
+        empty_value="none",
         device_class=None,
         state_class=None,
         native_unit_of_measurement=None,
@@ -543,6 +547,7 @@ SENSOR_SENSORS: Final = [
     ExtSensorEntityDescription(
         key="INTERRUPTION_BITS",
         tag=WKHPTag.INTERRUPTION_BITS,
+        empty_value="none",
         device_class=None,
         state_class=None,
         native_unit_of_measurement=None,
@@ -1041,15 +1046,11 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigE
 class WKHPSensor(WKHPBaseEntity, SensorEntity):
 
     @property
-    def _is_bit_field(self) -> bool:
-        return self.entity_description.key == "ALARM_BITS" or self.entity_description.key == "INTERRUPTION_BITS"
-
-    @property
     def native_value(self):
         """Return the state of the sensor."""
         value = self._tag_value
         if value is None:
-            return "none" if self._is_bit_field else None
+            return self.entity_description.empty_value
         if isinstance(value, datetime):
             # the heat pump provides the local time (SensorDeviceClass.TIMESTAMP requires the time zone)
             return value.replace(tzinfo=dt_util.get_default_time_zone())

@@ -24,9 +24,6 @@ FEATURE_HEATING_CURVE: Final = "HEATING_CURVE"
 FEATURE_VENT: Final = "VENT"
 FEATURE_POOL: Final = "POOL"
 
-# Device classes
-DEVICE_CLASS_ENUM: Final = "enum"
-
 # States
 STATE_AUTO: Final = "auto"
 STATE_MANUAL: Final = "manual"

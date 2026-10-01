@@ -59,6 +59,11 @@ def test_monthly_tags_are_unique() -> None:
         (WKHPTag.VERSION_BIOS, ["405"], "4.05"),
         (WKHPTag.INFO_SERIAL, ["1015", "123456"], "WE15123456"),
         (WKHPTag.INFO_SERIAL, ["1015", None], None),
+        # the adjustments of the temperatures: the raw value is the index of the adjustment (-2..2 K)
+        (WKHPTag.TEMPERATURE_HEATING_ADJUST, ["0"], -2.0),
+        (WKHPTag.TEMPERATURE_MIX1_ADJUST, ["4"], 0.0),
+        (WKHPTag.TEMPERATURE_POOL_ADJUST, ["7"], 1.5),
+        (WKHPTag.TEMPERATURE_HEATING_ADJUST, ["9"], None),
     ],
 )
 def test_decode(tag: WKHPTag, raw: list, expected) -> None:
@@ -73,6 +78,10 @@ def test_decode(tag: WKHPTag, raw: list, expected) -> None:
         (WKHPTag.HOLIDAY_ENABLED, True, {"D420": "1"}),
         (WKHPTag.TEMPERATURE_HEATING_SETPOINT_FOR_SOLAR, 21.5, {"A1710": "215"}),
         (WKHPTag.TEMPERATURE_HEATING_SETPOINT_FOR_SOLAR, 21, {"A1710": "210"}),
+        (WKHPTag.TEMPERATURE_HEATING_ADJUST, -1.5, {"I263": "1"}),
+        (WKHPTag.TEMPERATURE_HEATING_ADJUST, 2, {"I263": "8"}),
+        # the value of a number entity (float) for an integer tag
+        (WKHPTag.PUMPSERVICE_SOURCEPUMP_PRE_RUNTIME_I1278, 30.0, {"I1278": "30"}),
     ],
 )
 def test_encode(tag: WKHPTag, value, expected: dict) -> None:
@@ -89,6 +98,8 @@ def test_encode(tag: WKHPTag, value, expected: dict) -> None:
         (WKHPTag.HOLIDAY_ENABLED, "1"),
         (WKHPTag.TEMPERATURE_HEATING_SETPOINT_FOR_SOLAR, "21.5"),
         (WKHPTag.HOLIDAY_START_TIME, "2026-12-20"),
+        (WKHPTag.TEMPERATURE_HEATING_ADJUST, 0.25),
+        (WKHPTag.TEMPERATURE_HEATING_ADJUST, 2.5),
     ],
 )
 def test_encode_invalid_value(tag: WKHPTag, value) -> None:
