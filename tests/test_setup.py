@@ -16,6 +16,7 @@ from custom_components.waterkotte_heatpump import WKHPDataUpdateCoordinator
 from custom_components.waterkotte_heatpump.const import (
     CONF_SERIAL,
     CONF_SYSTEMTYPE,
+    CONF_USE_POOL,
     DOMAIN,
     SERVICE_GET_ENERGY_BALANCE,
     SERVICE_SET_HOLIDAY,
@@ -90,6 +91,22 @@ async def test_entity_states(hass: HomeAssistant, mock_bridge: MagicMock) -> Non
     await hass.config_entries.async_reload(entry.entry_id)
     await hass.async_block_till_done()
     assert state("sensor", "SCHEDULE_WATER_DISINFECTION_START_TIME") == "03:30"
+
+
+@pytest.mark.parametrize("use_pool", [True, False])
+async def test_pool_feature(hass: HomeAssistant, mock_bridge: MagicMock, use_pool: bool) -> None:
+    """Test that the pool entities are enabled, when the pool has been selected during the setup."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL,
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH", CONF_USE_POOL: use_pool},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry = er.async_get(hass)
+    pool_entry = registry.async_get(registry.async_get_entity_id("binary_sensor", DOMAIN, f"{SERIAL}_state_pool".lower()))
+    assert (pool_entry.disabled_by is None) is use_pool
 
 
 async def test_select_digital_tag(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
