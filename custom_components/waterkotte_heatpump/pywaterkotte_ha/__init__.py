@@ -329,49 +329,36 @@ class EcotouchBridge:
         return await self.write_values([(tag, value)])
 
     async def write_values(self, kv_pairs: Collection[Tuple[WKHPTag, Any]]):
+        """Write the values of the tags - returns the values, that the heat pump confirmed"""
         if self.auth_cookies is None:
             await self.login()
 
-        """Write values to Tag"""
-        to_write = {}
-        result = {}
-
-        # we write only one WKHPTag at the same time (but the WKHPTag can consist of
+        # converting the HA values to the raw values that the waterkotte understand (a WKHPTag can consist of
         # multiple internal tag fields)
+        to_write = {}
         for a_wkhp_tag, value in kv_pairs:  # pylint: disable=invalid-name
             if not a_wkhp_tag.writeable:
-                raise InvalidValueException("tried to write to an readonly field")
-            # converting the HA values to the final int or bools that the waterkotte understand
+                raise InvalidValueException(f"tried to write to the read only tag {a_wkhp_tag.name}")
             a_wkhp_tag.encode_f(a_wkhp_tag, value, to_write)
 
-        _LOGGER.info(f"before writing WKHPTags -> {len(to_write)} tags")
-        # '.keys()' doesn't support insertion - so we need to create a new list object!
+        _LOGGER.debug(f"writing {len(to_write)} tags: {to_write}")
         e_values, e_status = await self._write_tags(tags=list(to_write.keys()), values=list(to_write.values()))
 
-        if e_values is not None and len(e_values) > 0:
-            _LOGGER.info(f"after writing WKHPTags -> raw-values: {len(e_values)} states: {len(e_status)}")
-
-            all_ok = True
-            for a_tag in e_status:
-                if e_status[a_tag] != "S_OK":
-                    all_ok = False
-
-            if all_ok:
-                str_vals = [e_values[a_tag] for a_tag in a_wkhp_tag.tags]
-                val = a_wkhp_tag.decode_f(a_wkhp_tag, str_vals)
-
-                # special 24:00:00 time handling
-                if str(value).startswith("23:59:59.9"):
-                    value = "00:00:00"
-
-                if str(val) != str(value):
-                    _LOGGER.error(f"WRITE value does not match READ value: '{val}' (read) != '{value}' (write)")
-                else:
-                    result[a_wkhp_tag] = {
-                        "value": val,
-                        # here we also take just the first status...
-                        "status": e_status[a_wkhp_tag.tags[0]]
-                    }
+        # the heat pump returns the values after the write - they must match the written values. Both are compared
+        # decoded (e.g. a written '24:00' is read back as '00:00', and the seconds of a time are not written)
+        result = {}
+        for a_wkhp_tag, _ in kv_pairs:
+            states = [e_status.get(a_tag) for a_tag in a_wkhp_tag.tags]
+            if any(state != "S_OK" for state in states):
+                _LOGGER.error(f"could not write {a_wkhp_tag.name}: states {states}")
+                continue
+            written = a_wkhp_tag.decode_f(a_wkhp_tag, [to_write[a_tag] for a_tag in a_wkhp_tag.tags])
+            read = a_wkhp_tag.decode_f(a_wkhp_tag, [e_values.get(a_tag) for a_tag in a_wkhp_tag.tags])
+            if read != written:
+                _LOGGER.error(f"WRITE value does not match READ value: '{read}' (read) != '{written}' (write)")
+                continue
+            # here we also take just the first status...
+            result[a_wkhp_tag] = {"value": read, "status": states[0]}
         return result
 
     async def _write_tags(self, tags: list[str], values: list[Any], results=None, results_status=None,

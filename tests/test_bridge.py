@@ -1,5 +1,6 @@
 """Tests for the EcoTouch bridge (the requests to the web interface of the heat pump)."""
 import logging
+from datetime import datetime, time
 from contextlib import asynccontextmanager
 from urllib.parse import urlsplit
 
@@ -156,3 +157,32 @@ async def test_unknown_alarm_tag() -> None:
     result = await _bridge(session).read_values([WKHPTag.ALARM_BITS])
     assert result[WKHPTag.ALARM_BITS]["value"] == TRANSLATIONS["en"]["I52"][0]
     assert list(WKHPTag.ALARM_BITS.tags) == alarm_tags
+
+
+def _write_response(values: dict[str, str]) -> FakeResponse:
+    return FakeResponse(200, "".join(f"#{tag}\tS_OK\n192\t{value}\n" for tag, value in values.items()))
+
+
+@pytest.mark.parametrize(
+    ("tag", "value", "read_back", "expected"),
+    [
+        # the end of the day is written as 24:00 and read back as 00:00
+        (WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME, time.max, {"I505": "0", "I506": "0"}, time(0, 0)),
+        (WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME, time(3, 30), {"I505": "3", "I506": "30"}, time(3, 30)),
+        # the seconds are not written
+        (WKHPTag.HOLIDAY_START_TIME, datetime(2026, 12, 20, 8, 0, 30),
+         {"I1254": "26", "I1253": "12", "I1252": "20", "I1250": "8", "I1251": "0"}, datetime(2026, 12, 20, 8, 0)),
+        (WKHPTag.TEMPERATURE_HEATING_SETPOINT_FOR_SOLAR, 21.5, {"A1710": "215"}, 21.5),
+    ],
+)
+async def test_write_confirmed(tag: WKHPTag, value, read_back: dict, expected) -> None:
+    """Test that the written value is compared with the value that the heat pump returns (both decoded)."""
+    session = FakeSession({"/cgi/writeTags": [_write_response(read_back)]})
+    result = await _bridge(session).write_value(tag, value)
+    assert result == {tag: {"value": expected, "status": "S_OK"}}
+
+
+async def test_write_not_confirmed() -> None:
+    """Test that a value, that the heat pump returns different from the written value, is not confirmed."""
+    session = FakeSession({"/cgi/writeTags": [_write_response({"A1710": "200"})]})
+    assert await _bridge(session).write_value(WKHPTag.TEMPERATURE_HEATING_SETPOINT_FOR_SOLAR, 21.5) == {}
