@@ -52,7 +52,7 @@ from .const import (
     OPTIONS_KEYS,
     CONFIG_VERSION, CONFIG_MINOR_VERSION
 )
-from .naming import device_name, entry_title, str_or_none
+from .naming import device_name, entry_title, known_or_none
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 CONFIG_SCHEMA = config_val.removed(DOMAIN, raise_if_present=False)
@@ -249,6 +249,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
         serial = config_entry.data.get(CONF_SERIAL)
         if not _is_real_serial(serial):
             serial = None
+        self.serial = serial
         self.unique_id_base = serial if serial is not None else config_entry.entry_id
 
         self.available_features = [feature for flag, feature in _FEATURE_FLAGS.items() if config_entry.data.get(flag)]
@@ -281,8 +282,8 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             identifiers={(DOMAIN, self.unique_id_base)},
             manufacturer=MANUFACTURER,
             name=device_name(hass, config_entry, serial),
-            model=str_or_none(config_entry.data.get(CONF_SERIES)),
-            model_id=str_or_none(config_entry.data.get(CONF_ID)),
+            model=known_or_none(config_entry.data.get(CONF_SERIES)),
+            model_id=known_or_none(config_entry.data.get(CONF_ID)),
             serial_number=serial,
             sw_version=f"{fw} BIOS: {bios}" if fw is not None else None,
             configuration_url=f"http://{_host}",
@@ -300,6 +301,8 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             if not await self.bridge.async_read_values([WKHPTag.VERSION_BIOS]):
                 raise UpdateFailed(f"no data could be read from the heat pump at {self.config_entry.data.get(CONF_HOST)}")
 
+        await self._async_complete_device_information()
+
         # we check if the operation hours will be returned as TOTAL's (and if this is
         # not the case, we enable it!
         try:
@@ -309,6 +312,38 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
                 await self.bridge.async_write_value(WKHPTag.OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634, True)
         except Exception as e:  # pylint: disable=broad-except
             _LOGGER.warning("could not enable OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634: %s %s", type(e).__name__, e)
+
+    async def _async_complete_device_information(self) -> None:
+        """Older versions could not decode the series and the system id of the heat pump - so they are missing in
+        the existing config entries. They are read once and stored in the config entry (the model of the device)."""
+        data = self.config_entry.data
+        if known_or_none(data.get(CONF_SERIES)) is not None and known_or_none(data.get(CONF_ID)) is not None:
+            return
+        try:
+            values = await self.bridge.async_read_values([WKHPTag.INFO_SERIES, WKHPTag.INFO_ID])
+        except Exception as err:  # pylint: disable=broad-except
+            # not required for the setup - the next setup tries again
+            _LOGGER.debug("could not read the series and the system id: %s %s", type(err).__name__, err)
+            return
+
+        new_data = dict(data)
+        for key, tag in ((CONF_SERIES, WKHPTag.INFO_SERIES), (CONF_ID, WKHPTag.INFO_ID)):
+            value = known_or_none((values.get(tag) or {}).get("value"))
+            if value is not None and known_or_none(data.get(key)) is None:
+                new_data[key] = value
+        if new_data == data:
+            return
+
+        # only a generated title is updated (a title, that the user has changed, is kept)
+        title = self.config_entry.title
+        if title == entry_title(data.get(CONF_SERIES), self.serial):
+            title = entry_title(new_data.get(CONF_SERIES), self.serial)
+        _LOGGER.info("completed the device information: series %s, system id %s",
+                     new_data.get(CONF_SERIES), new_data.get(CONF_ID))
+        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data, title=title)
+        # the entities (and so the device) are added after the setup of the coordinator
+        self.device_info["model"] = known_or_none(new_data.get(CONF_SERIES))
+        self.device_info["model_id"] = known_or_none(new_data.get(CONF_ID))
 
     async def _async_update_data(self) -> dict[WKHPTag, dict]:
         """Update data via library."""

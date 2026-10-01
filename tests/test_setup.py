@@ -5,16 +5,17 @@ from unittest.mock import MagicMock
 import aiohttp
 import pytest
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
-from homeassistant.const import ATTR_CONFIG_ENTRY_ID, CONF_HOST
+from homeassistant.const import ATTR_CONFIG_ENTRY_ID, CONF_HOST, CONF_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.waterkotte_heatpump import WKHPDataUpdateCoordinator
 from custom_components.waterkotte_heatpump.const import (
     CONF_SERIAL,
+    CONF_SERIES,
     CONF_SYSTEMTYPE,
     CONF_USE_POOL,
     DOMAIN,
@@ -234,3 +235,44 @@ async def test_service_config_entry(hass: HomeAssistant, mock_bridge: MagicMock)
         await hass.services.async_call(DOMAIN, SERVICE_GET_ENERGY_BALANCE, {ATTR_CONFIG_ENTRY_ID: second.entry_id},
                                        blocking=True, return_response=True)
     assert err.value.translation_key == "config_entry_not_loaded"
+
+
+@pytest.mark.parametrize(
+    ("title", "expected_title"),
+    [("Waterkotte (WE15123456)", "Waterkotte Ai1+ (WE15123456)"), ("Basement", "Basement")],
+)
+async def test_complete_device_information(
+    hass: HomeAssistant, mock_bridge: MagicMock, title: str, expected_title: str
+) -> None:
+    """Test that the series and the system id (not decoded by older versions) are read once and stored - and that
+    only a generated title is updated."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL, title=title,
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH", CONF_SERIES: "UNKNOWN_SERIES",
+              CONF_ID: None},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.data[CONF_SERIES] == "Ai1+"
+    assert entry.data[CONF_ID] == "Ai1+ 5007.3"
+    assert entry.title == expected_title
+    [device] = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+    assert (device.model, device.model_id) == ("Ai1+", "Ai1+ 5007.3")
+
+
+async def test_device_information_complete(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    """Test that the device information is not read again, when it is complete."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL, title="Waterkotte Ai1 (WE15123456)",
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH", CONF_SERIES: "Ai1",
+              CONF_ID: "Ai1 5005.4"},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    read_tags = [tag for call in mock_bridge.async_read_values.await_args_list for tag in call.args[0]]
+    assert WKHPTag.INFO_SERIES not in read_tags
+    assert (entry.data[CONF_SERIES], entry.title) == ("Ai1", "Waterkotte Ai1 (WE15123456)")

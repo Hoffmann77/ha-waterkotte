@@ -12,10 +12,19 @@ def str_or_none(value) -> str | None:
     return str(value)
 
 
+def known_or_none(value) -> str | None:
+    """Device information as string - or None, if the heat pump did not provide the value or the value is
+    unknown (e.g. 'UNKNOWN_SERIES_42')"""
+    value = str_or_none(value)
+    if value is None or value.upper().startswith("UNKNOWN"):
+        return None
+    return value
+
+
 def entry_title(series: str | None, serial: str | None) -> str:
     """Title of the config entry: 'Waterkotte <series> (<serial>)' - unknown parts are left out"""
     title = TITLE
-    if str_or_none(series) is not None and not series.upper().startswith("UNKNOWN"):
+    if known_or_none(series) is not None:
         title = f"{title} {series}"
     if serial is not None:
         title = f"{title} ({serial})"
