@@ -21,7 +21,6 @@ from .const import (
     CONF_SERIAL,
     CONF_SERIES,
     CONF_SYSTEMTYPE,
-    CONF_ADD_SCHEDULE_ENTITIES,
     CONF_USE_DISINFECTION,
     CONF_USE_HEATING_CURVE,
     CONF_USE_VENT,
@@ -105,7 +104,6 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             user_input[CONF_SYSTEMTYPE] = EASYCON
-            user_input[CONF_ADD_SCHEDULE_ENTITIES] = False
             error = await self._test_connection(
                 host=user_input[CONF_HOST],
                 username=user_input.get(CONF_USERNAME),
@@ -177,7 +175,6 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             user_input[CONF_HOST] = ""
             user_input[CONF_USERNAME] = "waterkotte"
             user_input[CONF_PASSWORD] = "waterkotte"
-            user_input[CONF_ADD_SCHEDULE_ENTITIES] = False
 
         return self.async_show_form(
             step_id="user_ecotouch",
@@ -187,7 +184,6 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)): str,
                 vol.Required(CONF_POLLING_INTERVAL, default=60): int,
                 vol.Required(CONF_TAGS_PER_REQUEST, default=75): int,
-                vol.Required(CONF_ADD_SCHEDULE_ENTITIES, default=False): bool,
             }),
             last_step=False,
             errors=self._errors
@@ -333,8 +329,7 @@ class WaterkotteHeatpumpOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(CONF_USERNAME, default=current(CONF_USERNAME, def_user)): str,
                 vol.Optional(CONF_PASSWORD, default=current(CONF_PASSWORD, def_pass)): str,
                 vol.Required(CONF_POLLING_INTERVAL, default=current(CONF_POLLING_INTERVAL, 60)): int,
-                vol.Required(CONF_TAGS_PER_REQUEST, default=current(CONF_TAGS_PER_REQUEST, 75)): int,
-                vol.Required(CONF_ADD_SCHEDULE_ENTITIES, default=current(CONF_ADD_SCHEDULE_ENTITIES, False)): bool
+                vol.Required(CONF_TAGS_PER_REQUEST, default=current(CONF_TAGS_PER_REQUEST, 75)): int
             }),
             description_placeholders={"repo": "https://github.com/marq24/ha-waterkotte"},
         )

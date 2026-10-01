@@ -34,13 +34,12 @@ MANUFACTURER: Final = "Waterkotte"
 ISSUE_URL: Final = "https://github.com/marq24/ha-waterkotte/issues"
 
 CONFIG_VERSION: Final = 2
-CONFIG_MINOR_VERSION: Final = 1
+CONFIG_MINOR_VERSION: Final = 2
 
 FEATURE_DISINFECTION: Final = "DISINFECTION"
 FEATURE_HEATING_CURVE: Final = "HEATING_CURVE"
 FEATURE_VENT: Final = "VENT"
 FEATURE_POOL: Final = "POOL"
-FEATURE_CODE_GEN: Final = "GENERATED"
 
 # Device classes
 DEVICE_CLASS_ENUM: Final = "enum"
@@ -71,6 +70,7 @@ CONF_FW: Final = "fw"
 CONF_SERIAL: Final = "serial"
 CONF_SERIES: Final = "series"
 CONF_SYSTEMTYPE: Final = "system_type"
+# only used for the migration of old config entries (the optional schedule entities have been removed)
 CONF_ADD_SCHEDULE_ENTITIES: Final = "add_schedule_entities"
 # only used for the migration of old config entries (the serial number is always part of the unique_id's now)
 CONF_ADD_SERIAL_AS_ID = "add_serial_as_id"
@@ -81,8 +81,7 @@ CONF_USE_POOL: Final = "use_pool"
 
 # the settings that can be changed via the options flow - everything else (like the host) is only stored
 # in the data of the config entry
-OPTIONS_KEYS: Final = (CONF_USERNAME, CONF_PASSWORD, CONF_POLLING_INTERVAL, CONF_TAGS_PER_REQUEST,
-                       CONF_ADD_SCHEDULE_ENTITIES)
+OPTIONS_KEYS: Final = (CONF_USERNAME, CONF_PASSWORD, CONF_POLLING_INTERVAL, CONF_TAGS_PER_REQUEST)
 
 STARTUP_MESSAGE: Final = f"""
 -------------------------------------------------------------------
@@ -95,7 +94,6 @@ If you have any issues with this you need to open an issue here:
 
 SERVICE_SET_HOLIDAY: Final = "set_holiday"
 SERVICE_SET_DISINFECTION_START_TIME: Final = "set_disinfection_start_time"
-SERVICE_SET_SCHEDULE_DATA: Final = "set_schedule_data"
 SERVICE_GET_ENERGY_BALANCE: Final = "get_energy_balance"
 SERVICE_GET_ENERGY_BALANCE_MONTHLY: Final = "get_energy_balance_monthly"
 
