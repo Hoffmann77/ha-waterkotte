@@ -44,14 +44,12 @@
         }
       },
       "user_ecotouch": {
-        "description": "Important note: With the 'Adjust Schedules Service' you can adjust all schedules of your Waterkotte heat pump. Adding the optional entities is not necessary for this. These are only needed if you want to modify or display the schedule settings via your dashboard or one of your automations.\r\rIf you are unsure, do not add the optional scheduling entities in the first step. They can be added at any time via a configuration settings at a later date.",
         "data": {
           "host": "Host or IP",
           "username": "Username",
           "password": "Password",
           "polling_interval": "Polling Interval in seconds",
-          "tags_per_request": "Number of tags to fetch in a single request (max. 75)",
-          "add_schedule_entities": "Add the optional Schedule-Entities (650+)"
+          "tags_per_request": "Number of tags to fetch in a single request (max. 75)"
         }
       },
       "user_easycon": {
@@ -100,13 +98,12 @@
   "options": {
     "step": {
       "user": {
-        "description": "If you need help with the configuration have a look here: {repo}.\r\rImportant note: With the 'Adjust Schedules Service' you can adjust all schedules of your Waterkotte heating. Adding the optional entities is not necessary for this. These are only needed if you want to modify or display the schedule settings via your dashboard or one of your automations.",
+        "description": "If you need help with the configuration have a look here: {repo}.",
         "data": {
           "username": "Username",
           "password": "Password",
           "polling_interval": "Polling Interval in seconds",
-          "tags_per_request": "Number of tags to fetch in a single request (max. 75)",
-          "add_schedule_entities": "Add the optional Schedule-Entities (650+)"
+          "tags_per_request": "Number of tags to fetch in a single request (max. 75)"
         }
       }
     }
@@ -468,29 +465,6 @@
       "basicvent_outgoing_fan_manual_mode": {"name": "Vent 2 (inner) Manual-Mode"},
       "pumpservice_sourcepump_cable_break_monitoring_d881": {"name": "Service: Sourcepump cable-break Monitor"},
       "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Sourcepump regeneration"}
-    },
-    "code_gen": {
-      "schedule": {"name":  "Schedule"},
-      "heating":  {"name": "Heating"},
-      "cooling":  {"name": "Cooling"},
-      "water":  {"name": "Hot Water"},
-      "pool": {"name": "Pool"},
-      "mix1": {"name": "Mixer 1"},
-      "mix2": {"name": "Mixer 2"},
-      "mix3": {"name": "Mixer 3"},
-      "buffer_tank_circulation_pump": {"name": "Circulation pump buffer tank"},
-      "solar": {"name": "Solar Control"},
-      "pv": {"name": "Photovoltaic"},
-      "adjust":  {"name": "adjustment"},
-      "1mo": {"name": "Mondays"},
-      "2tu": {"name": "Tuesdays"},
-      "3we": {"name": "Wednesdays"},
-      "4th": {"name": "Thursdays"},
-      "5fr": {"name": "Fridays"},
-      "6sa": {"name": "Saturdays"},
-      "7su": {"name": "Sundays"},
-      "start_time":  {"name": "Begin"},
-      "end_time":  {"name": "End"}
     }
   }
 }

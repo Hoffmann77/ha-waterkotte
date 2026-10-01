@@ -7,6 +7,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.waterkotte_heatpump import async_migrate_entry
 from custom_components.waterkotte_heatpump.const import (
+    CONF_ADD_SCHEDULE_ENTITIES,
     CONF_ADD_SERIAL_AS_ID,
     CONF_POLLING_INTERVAL,
     CONF_SERIAL,
@@ -46,7 +47,7 @@ async def test_migrate_1_2(hass: HomeAssistant) -> None:
     assert entry.options == {CONF_USERNAME: "waterkotte", CONF_PASSWORD: "new-password", CONF_POLLING_INTERVAL: 30}
     assert entry.data == data
     assert entry.title == "Waterkotte Ai1+ (WE15123456)"
-    assert (entry.version, entry.minor_version) == (2, 1)
+    assert (entry.version, entry.minor_version) == (2, 2)
 
 
 async def test_migrate_keeps_renamed_title(hass: HomeAssistant) -> None:
@@ -69,7 +70,7 @@ async def test_migrate_1_2_without_serial(hass: HomeAssistant, serial: str | Non
     assert await async_migrate_entry(hass, entry)
     assert entry.unique_id is None
     assert entry.data[CONF_SERIAL] is None
-    assert (entry.version, entry.minor_version) == (2, 1)
+    assert (entry.version, entry.minor_version) == (2, 2)
 
 
 async def test_migrate_1_2_duplicate_serial(hass: HomeAssistant) -> None:
@@ -116,7 +117,7 @@ async def test_migrate_1_3_unique_ids(
     assert migrated_entity.unique_id == f"{expected_base}_temperature_outside".lower()
     assert dr.async_get(hass).async_get(device.id).identifiers == {(DOMAIN, expected_base)}
     assert CONF_ADD_SERIAL_AS_ID not in entry.data
-    assert (entry.version, entry.minor_version) == (2, 1)
+    assert (entry.version, entry.minor_version) == (2, 2)
 
 
 async def test_migrate_1_3_unique_id_already_used(hass: HomeAssistant) -> None:
@@ -143,4 +144,43 @@ async def test_migrate_1_3_unique_id_already_used(hass: HomeAssistant) -> None:
     assert new_unique_id in unique_ids
     assert len(unique_ids - {new_unique_id}) == 1
     assert unique_ids - {new_unique_id} <= old_unique_ids
-    assert (entry.version, entry.minor_version) == (2, 1)
+    assert (entry.version, entry.minor_version) == (2, 2)
+
+
+async def test_migrate_2_1_removes_schedule_entities(hass: HomeAssistant) -> None:
+    """Test that the (removed) optional schedule entities are removed from the entity registry - but not the
+    water disinfection entities or other entities - and that the 'add_schedule_entities' option is removed."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=2,
+        minor_version=1,
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_ADD_SCHEDULE_ENTITIES: False},
+        options={CONF_POLLING_INTERVAL: 30, CONF_ADD_SCHEDULE_ENTITIES: True},
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    base = SERIAL.lower()
+    schedule_entities = [
+        registry.async_get_or_create("switch", DOMAIN, f"{base}_schedule_heating_1mo_enable", config_entry=entry),
+        registry.async_get_or_create("number", DOMAIN, f"{base}_schedule_mix1_7su_adjust2_value", config_entry=entry),
+        registry.async_get_or_create(
+            "sensor", DOMAIN, f"{base}_schedule_buffer_tank_circulation_pump_3we_end_time", config_entry=entry
+        ),
+        # skipped by the 2.1 migration (unique_id already in use) - still in the old format
+        registry.async_get_or_create("sensor", DOMAIN, f"{DOMAIN}.schedule_pv_5fr_start_time", config_entry=entry),
+    ]
+    kept_entities = [
+        registry.async_get_or_create("switch", DOMAIN, f"{base}_schedule_water_disinfection_1mo", config_entry=entry),
+        registry.async_get_or_create("sensor", DOMAIN, f"{base}_schedule_water_disinfection_start_time", config_entry=entry),
+        registry.async_get_or_create("sensor", DOMAIN, f"{base}_temperature_outside", config_entry=entry),
+    ]
+
+    assert await async_migrate_entry(hass, entry)
+
+    for entity in schedule_entities:
+        assert registry.async_get(entity.entity_id) is None
+    for entity in kept_entities:
+        assert registry.async_get(entity.entity_id) is not None
+    assert CONF_ADD_SCHEDULE_ENTITIES not in entry.data
+    assert entry.options == {CONF_POLLING_INTERVAL: 30}
+    assert (entry.version, entry.minor_version) == (2, 2)

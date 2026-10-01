@@ -44,14 +44,12 @@
         }
       },
       "user_ecotouch": {
-        "description": "Wichtiger Hinweis: Mit dem 'Zeitprogramm anpassen Service' kannst Du alle Zeitpläne Deiner Waterkotte Wärmepumpe anpassen. Das Hinzufügen der optionalen Entitäten ist hierfür nicht notwendig. Diese werden nur dann benötigt, wenn Du die Zeitsteuerung über Dein Dashborad oder eine Deiner Automatisierungen modifizieren oder anzeigen möchtest.\r\rWenn Du Dir unsicher bist, füge die optionalen Zeitplanungs-Entitäten im ersten Schritt nicht hinzu. Sie können jederzeit über eine Einstellungen der Konfiguration zu einem späteren Zeitpunkt hinzugefügt werden.",
         "data": {
           "host": "IP oder Hostname deiner Waterkotte",
           "username": "Benutzername (bei den meisten Modellen ist dieser 'waterkotte')",
           "password": "Passwort",
           "polling_interval": "Aktualisierungsintervall in Sekunden",
-          "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)",
-          "add_schedule_entities": "Optionale Zeitsteuerung-Entitäten hinzufügen (650+)"
+          "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)"
         }
       },
       "user_easycon": {
@@ -100,13 +98,12 @@
   "options": {
     "step": {
       "user": {
-        "description": "Wenn Du Hilfe bei der Einichtung benötigst, findest du sie hier: {repo}.\r\rWichtiger Hinweis: Mit dem 'Zeitprogramm anpassen Service' kannst Du alle Zeitpläne Deiner Waterkotte Heizung anpassen. Das Hinzufügen der optionalen Entitäten ist hierfür nicht notwendig. Diese werden nur dann benötigt, wenn Du die Zeitsteuerung über Dein Dashborad oder eine Deiner Automatisierungen modifizieren oder anzeigen möchtest.",
+        "description": "Wenn Du Hilfe bei der Einichtung benötigst, findest du sie hier: {repo}.",
         "data": {
           "username": "Benutzername (bei den meisten Modellen ist dieser 'waterkotte')",
           "password": "Passwort",
           "polling_interval": "Aktualisierungsintervall in Sekunden",
-          "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)",
-          "add_schedule_entities": "Optionale Zeitsteuerungs-Entitäten hinzufügen (650+)"
+          "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)"
         }
       }
     }
@@ -512,29 +509,6 @@
       "basicvent_outgoing_fan_manual_mode": {"name": "Lüfter 2 (Innen) manuelle Drehzahl-Steuerung"},
       "pumpservice_sourcepump_cable_break_monitoring_d881": {"name": "Service: Quellenpumpe Kabelbruchüberwachung"},
       "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Quellenpumpe Regeneration"}
-    },
-    "code_gen": {
-      "schedule": {"name":  "Zeitprogramm"},
-      "heating": {"name": "Heizung"},
-      "cooling": {"name": "Kühlung"},
-      "water": {"name": "Warmwasser"},
-      "pool": {"name": "Pool"},
-      "mix1": {"name": "Mischerkreis 1"},
-      "mix2": {"name": "Mischerkreis 2"},
-      "mix3": {"name": "Mischerkreis 3"},
-      "buffer_tank_circulation_pump": {"name": "Speicherentladepumpe"},
-      "solar": {"name": "Solarregelung"},
-      "pv": {"name": "Photovoltaik"},
-      "adjust": {"name": "Anpassung"},
-      "1mo": {"name": "Montags"},
-      "2tu": {"name": "Dienstags"},
-      "3we": {"name": "Mittwochs"},
-      "4th": {"name": "Donnerstags"},
-      "5fr": {"name": "Freitags"},
-      "6sa": {"name": "Samstags"},
-      "7su": {"name": "Sonntags"},
-      "start_time": {"name": "Begin"},
-      "end_time": {"name": "Ende"}
     }
   }
 }

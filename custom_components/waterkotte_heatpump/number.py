@@ -6,7 +6,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import WKHPDataUpdateCoordinator, WKHPBaseEntity
 from .const import DOMAIN, NUMBER_SENSORS, ExtNumberEntityDescription
-from .const_gen import NUMBER_SENSORS_GENERATED
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,10 +19,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, add_
     for description in NUMBER_SENSORS:
         entity = WKHPNumber(coordinator, description)
         entities.append(entity)
-    if coordinator.add_schedule_entities:
-        for description in NUMBER_SENSORS_GENERATED:
-            entity = WKHPNumber(coordinator, description)
-            entities.append(entity)
     add_entity_cb(entities)
 
 

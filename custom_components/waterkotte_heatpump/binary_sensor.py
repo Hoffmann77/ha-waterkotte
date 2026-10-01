@@ -6,7 +6,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import WKHPDataUpdateCoordinator, WKHPBaseEntity
 from .const import DOMAIN, BINARY_SENSORS, ExtBinarySensorEntityDescription
-from .const_gen import BINARY_SENSORS_GENERATED
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,10 +17,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, add_
     for description in BINARY_SENSORS:
         entity = WKHPBinarySensor(coordinator, description)
         entities.append(entity)
-    if coordinator.add_schedule_entities:
-        for description in BINARY_SENSORS_GENERATED:
-            entity = WKHPBinarySensor(coordinator, description)
-            entities.append(entity)
     add_entity_cb(entities)
 
 

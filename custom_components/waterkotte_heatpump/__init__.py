@@ -12,7 +12,6 @@ from homeassistant.helpers import config_validation as config_val, device_regist
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity, EntityDescription
-from homeassistant.helpers.typing import UndefinedType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha import WaterkotteClient
@@ -46,7 +45,6 @@ from .const import (
     FEATURE_VENT,
     FEATURE_HEATING_CURVE,
     FEATURE_DISINFECTION,
-    FEATURE_CODE_GEN,
     OPTIONS_KEYS,
     CONFIG_VERSION, CONFIG_MINOR_VERSION
 )
@@ -157,7 +155,31 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         hass.config_entries.async_update_entry(config_entry, data=new_data, title=new_title, version=2, minor_version=1)
         _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
 
+    if config_entry.version == 2 and config_entry.minor_version < 2:
+        # update from 2.1 to 2.2 [the optional schedule entities have been removed - so we remove them (incl. the
+        # disabled ones) from the entity registry, and the 'add_schedule_entities' option is not required anymore]
+        _LOGGER.info(f"async_migrate_entry(): Migration: from v{config_entry.version}.{config_entry.minor_version} to v2.2")
+        registry = entity_reg.async_get(hass)
+        for entity in entity_reg.async_entries_for_config_entry(registry, config_entry.entry_id):
+            if _SCHEDULE_ENTITY_UNIQUE_ID.search(entity.unique_id):
+                registry.async_remove(entity.entity_id)
+
+        new_data = {key: value for key, value in config_entry.data.items() if key != CONF_ADD_SCHEDULE_ENTITIES}
+        new_options = {key: value for key, value in config_entry.options.items() if key != CONF_ADD_SCHEDULE_ENTITIES}
+        hass.config_entries.async_update_entry(config_entry, data=new_data, options=new_options, version=2,
+                                               minor_version=2)
+        _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
+
     return True
+
+
+# unique_id's of the removed schedule entities, e.g. '<serial>_schedule_heating_1mo_adjust1_value' (also in the old
+# format 'waterkotte_heatpump.schedule_...') - the water disinfection entities ('schedule_water_disinfection_1mo')
+# are not affected
+_SCHEDULE_ENTITY_UNIQUE_ID = re.compile(
+    r"(^|[._])schedule_(heating|cooling|water|pool|mix[123]|buffer_tank_circulation_pump|solar|pv)_"
+    r"[1-7](mo|tu|we|th|fr|sa|su)_"
+)
 
 
 def _is_real_serial(serial: str | None) -> bool:
@@ -264,8 +286,6 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
         self.unique_id_base = serial if serial is not None else config_entry.entry_id
 
         self._config_entry = config_entry
-        self.add_schedule_entities = config_entry.options.get(CONF_ADD_SCHEDULE_ENTITIES,
-                                                              config_entry.data.get(CONF_ADD_SCHEDULE_ENTITIES, False))
         self.available_features = []
         if CONF_USE_VENT in config_entry.data and config_entry.data[CONF_USE_VENT]:
             self.available_features.append(FEATURE_VENT)
@@ -381,10 +401,6 @@ class WKHPBaseEntity(CoordinatorEntity):
 
     def __init__(self, coordinator: WKHPDataUpdateCoordinator, description: EntityDescription) -> None:
         super().__init__(coordinator, context=description.tag)
-        if description.feature is not None and FEATURE_CODE_GEN == description.feature:
-            self.code_generated = True
-        else:
-            self.code_generated = False
         self._attr_translation_key = description.key.lower()
         self.coordinator = coordinator
         self.entity_description = description
@@ -393,30 +409,6 @@ class WKHPBaseEntity(CoordinatorEntity):
         if not description.entity_registry_enabled_default and description.feature is not None:
             if description.feature in self.coordinator.available_features:
                 self._attr_entity_registry_enabled_default = True
-
-    def _name_internal(self, device_class_name: str | None,
-                       platform_translations: dict[str, Any], ) -> str | UndefinedType | None:
-        if self.code_generated:
-            return self._name_internal_code_generated(self._attr_translation_key, platform_translations)
-        else:
-            return super()._name_internal(device_class_name, platform_translations)
-
-    def _name_internal_code_generated(self, key, platform_translations: dict[str, Any]):
-        temp = key.lower().replace('_', ' ')
-        temp = temp.replace(' enable', '')
-        temp = temp.replace(' value', '')
-        a_list = ["schedule", "heating", "cooling", "water", "pool", "solar", "pv",
-                  "mix1", "mix2", "mix3", "buffer tank circulation pump", "adjust",
-                  "1mo", "2tu", "3we", "4th", "5fr", "6sa", "7su",
-                  "start time", "end time"]
-        for a_key in a_list:
-            f_key = f"component.{self.platform.platform_name}.entity.code_gen.{a_key.replace(' ', '_')}.name"
-            if f_key in platform_translations:
-                temp = temp.replace(a_key, platform_translations.get(f_key))
-            else:
-                _LOGGER.warning(f"{a_key} -> {f_key} not found in platform_translations")
-
-        return temp  # .title()
 
     @property
     def wkhp_tag(self):

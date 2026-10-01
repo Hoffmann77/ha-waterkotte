@@ -10,7 +10,6 @@ from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.waterkotte_heatpump.const import (
-    CONF_ADD_SCHEDULE_ENTITIES,
     CONF_POLLING_INTERVAL,
     CONF_SERIAL,
     CONF_SYSTEMTYPE,
@@ -30,7 +29,6 @@ USER_INPUT_ECOTOUCH = {
     CONF_PASSWORD: "waterkotte",
     CONF_POLLING_INTERVAL: 60,
     CONF_TAGS_PER_REQUEST: 75,
-    CONF_ADD_SCHEDULE_ENTITIES: False,
 }
 
 
@@ -136,7 +134,7 @@ async def test_already_configured_host(hass: HomeAssistant, mock_client: MagicMo
 
 async def test_options_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> None:
     """Test that the options flow stores only its own settings (and not the connection data)."""
-    entry = MockConfigEntry(domain=DOMAIN, version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    entry = MockConfigEntry(domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
     entry.add_to_hass(hass)
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
@@ -150,7 +148,6 @@ async def test_options_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) ->
             CONF_PASSWORD: "new-password",
             CONF_POLLING_INTERVAL: 30,
             CONF_TAGS_PER_REQUEST: 50,
-            CONF_ADD_SCHEDULE_ENTITIES: True,
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -159,7 +156,6 @@ async def test_options_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) ->
         CONF_PASSWORD: "new-password",
         CONF_POLLING_INTERVAL: 30,
         CONF_TAGS_PER_REQUEST: 50,
-        CONF_ADD_SCHEDULE_ENTITIES: True,
     }
     assert entry.data[CONF_HOST] == HOST
 
@@ -176,7 +172,7 @@ async def _start_reconfigure_flow(hass: HomeAssistant, entry: MockConfigEntry) -
 
 async def test_reconfigure(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
     """Test that the host of the same heat pump can be changed."""
-    entry = MockConfigEntry(domain=DOMAIN, version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    entry = MockConfigEntry(domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
     entry.add_to_hass(hass)
     result = await _start_reconfigure_flow(hass, entry)
 
@@ -188,7 +184,7 @@ async def test_reconfigure(hass: HomeAssistant, mock_client: MagicMock, mock_set
 
 async def test_reconfigure_wrong_device(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
     """Test that the host can't be changed to another heat pump."""
-    entry = MockConfigEntry(domain=DOMAIN, version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    entry = MockConfigEntry(domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
     entry.add_to_hass(hass)
     mock_client.async_read_values.return_value = device_info_values(serial="WE15999999")
     result = await _start_reconfigure_flow(hass, entry)
