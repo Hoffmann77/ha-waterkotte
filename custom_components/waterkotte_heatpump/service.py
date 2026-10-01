@@ -6,7 +6,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_CONFIG_ENTRY_ID
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse, callback
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
@@ -115,10 +115,10 @@ class WaterkotteHeatpumpService:
         try:
             await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_START_TIME, start)
             await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_END_TIME, end)
-        except ValueError as exc:
+        except HomeAssistantError as exc:
             if call.return_response:
                 return {"error": str(exc), "date": _now()}
-            return None
+            raise
 
         if call.return_response:
             return {"success": "yes", "date": _now()}
@@ -129,10 +129,10 @@ class WaterkotteHeatpumpService:
         _LOGGER.debug(f"set_disinfection_start_time: {start_time}")
         try:
             await self._coordinator.async_write_tag(WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME, start_time)
-        except ValueError as exc:
+        except HomeAssistantError as exc:
             if call.return_response:
                 return {"error": str(exc), "date": _now()}
-            return None
+            raise
 
         if call.return_response:
             return {"success": "yes", "date": _now()}
@@ -147,19 +147,16 @@ class WaterkotteHeatpumpService:
         return res
 
     async def get_energy_balance(self, call: ServiceCall) -> ServiceResponse:
-        try:
-            tags = [WKHPTag.COMPRESSOR_ELECTRIC_CONSUMPTION_YEAR,
-                    WKHPTag.SOURCEPUMP_ELECTRIC_CONSUMPTION_YEAR,
-                    WKHPTag.ELECTRICAL_HEATER_ELECTRIC_CONSUMPTION_YEAR,
-                    WKHPTag.HEATING_ENERGY_PRODUCTION_YEAR,
-                    WKHPTag.HOT_WATER_ENERGY_PRODUCTION_YEAR,
-                    WKHPTag.POOL_ENERGY_PRODUCTION_YEAR,
-                    WKHPTag.COP_HEATPUMP_YEAR,
-                    WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]
-            res = await self._coordinator.async_read_values(tags)
-
-        except ValueError:
-            return "unavailable"
+        tags = [WKHPTag.COMPRESSOR_ELECTRIC_CONSUMPTION_YEAR,
+                WKHPTag.SOURCEPUMP_ELECTRIC_CONSUMPTION_YEAR,
+                WKHPTag.ELECTRICAL_HEATER_ELECTRIC_CONSUMPTION_YEAR,
+                WKHPTag.HEATING_ENERGY_PRODUCTION_YEAR,
+                WKHPTag.HOT_WATER_ENERGY_PRODUCTION_YEAR,
+                WKHPTag.POOL_ENERGY_PRODUCTION_YEAR,
+                WKHPTag.COP_HEATPUMP_YEAR,
+                WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]
+        # the read errors are raised as HomeAssistantError
+        res = await self._coordinator.async_read_values(tags)
         return {
             "year": _value(res, WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO),
             "cop": _value(res, WKHPTag.COP_HEATPUMP_YEAR),
@@ -172,18 +169,16 @@ class WaterkotteHeatpumpService:
         }
 
     async def get_energy_balance_monthly(self, call: ServiceCall) -> ServiceResponse:
-        try:
-            monthly = {}
-            for key, prefix in _MONTHLY_TAG_PREFIXES.items():
-                tags = [WKHPTag[f"{prefix}{month:02d}"] for month in _MONTHS]
-                monthly[key] = (tags, await self._read_with_retry(tags))
+        # the read errors are raised as HomeAssistantError
+        monthly = {}
+        for key, prefix in _MONTHLY_TAG_PREFIXES.items():
+            tags = [WKHPTag[f"{prefix}{month:02d}"] for month in _MONTHS]
+            monthly[key] = (tags, await self._read_with_retry(tags))
 
-            res_date = await self._read_with_retry([WKHPTag.DATE_MONTH,
-                                                    WKHPTag.DATE_YEAR,
-                                                    WKHPTag.COP_HEATPUMP_YEAR,
-                                                    WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO])
-        except ValueError:
-            return "unavailable"
+        res_date = await self._read_with_retry([WKHPTag.DATE_MONTH,
+                                                WKHPTag.DATE_YEAR,
+                                                WKHPTag.COP_HEATPUMP_YEAR,
+                                                WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO])
 
         ret = {
             "cop_year": _value(res_date, WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO),

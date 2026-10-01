@@ -11,11 +11,12 @@ from homeassistant.components.number import (
 )
 from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from . import WaterkotteConfigEntry
-from .const import FEATURE_DISINFECTION, FEATURE_HEATING_CURVE, FEATURE_POOL, FEATURE_VENT, FIFTH_STEP, TENTH_STEP
+from .const import DOMAIN, FEATURE_DISINFECTION, FEATURE_HEATING_CURVE, FEATURE_POOL, FEATURE_VENT, FIFTH_STEP, TENTH_STEP
 from .entity import WKHPBaseEntity, WKHPEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
@@ -797,11 +798,11 @@ class WKHPNumber(WKHPBaseEntity, NumberEntity):
             return None
 
     async def async_set_native_value(self, value: float) -> None:
-        try:
-            if str(self.wkhp_tag.name).upper().endswith("_ADJUST"):
-                value = TEMP_ADJUST_LOOKUP.index(value)
-            if self.wkhp_tag[0][0][0] == 'I':
-                value = int(value)
-            await self.coordinator.async_write_tag(self.wkhp_tag, value)
-        except ValueError:
-            return "unavailable"
+        if str(self.wkhp_tag.name).upper().endswith("_ADJUST"):
+            if value not in TEMP_ADJUST_LOOKUP:
+                raise ServiceValidationError(translation_domain=DOMAIN, translation_key="invalid_value",
+                                             translation_placeholders={"tag": self.wkhp_tag.name, "value": str(value)})
+            value = TEMP_ADJUST_LOOKUP.index(value)
+        if self.wkhp_tag[0][0][0] == 'I':
+            value = int(value)
+        await self.coordinator.async_write_tag(self.wkhp_tag, value)

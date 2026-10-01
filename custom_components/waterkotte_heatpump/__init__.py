@@ -4,10 +4,11 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 from typing import Sequence
 
+import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID, CONF_HOST, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as config_val, device_registry as dev_reg, entity_registry as entity_reg
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -18,6 +19,7 @@ from custom_components.waterkotte_heatpump.pywaterkotte_ha import WaterkotteClie
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import ECOTOUCH, EASYCON
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import (
     InvalidPasswordException,
+    InvalidValueException,
     StatusException,
     TooManyUsersException,
 )
@@ -341,22 +343,35 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             raise UpdateFailed(f"error communicating with the heat pump: {type(err).__name__} {err}") from err
 
     async def async_read_values(self, tags: Sequence[WKHPTag]) -> dict:
-        """Get data from the API."""
-        return await self.bridge.async_read_values(tags)
+        """Read the values of the tags (outside the regular updates) - the errors are raised as HomeAssistantError"""
+        try:
+            return await self.bridge.async_read_values(tags)
+        except (StatusException, aiohttp.ClientError, TimeoutError) as err:
+            raise HomeAssistantError(translation_domain=DOMAIN, translation_key="read_failed",
+                                     translation_placeholders={"error": f"{type(err).__name__} {err}"}) from err
 
     async def async_write_tag(self, tag: WKHPTag, value):
-        """Write the value of a tag to the heat pump"""
+        """Write the value of a tag to the heat pump - the errors are raised as HomeAssistantError"""
+        placeholders = {"tag": tag.name, "value": str(value)}
         try:
             result = await self.bridge.async_write_value(tag, value)
-        except StatusException as err:
+        except (ValueError, InvalidValueException) as err:
+            # the value can't be encoded for the tag (or the tag is read only)
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="invalid_value",
+                                         translation_placeholders=placeholders) from err
+        except (StatusException, aiohttp.ClientError, TimeoutError) as err:
             # e.g. too many users are logged in to the heat pump
-            raise HomeAssistantError(f"could not write {tag.name}: {err}") from err
+            raise HomeAssistantError(translation_domain=DOMAIN, translation_key="write_failed",
+                                     translation_placeholders={**placeholders,
+                                                               "error": f"{type(err).__name__} {err}"}) from err
         _LOGGER.debug(f"write result: {result}")
 
         if tag in result:
             self.async_set_updated_data({**self.data, tag: result[tag]})
-        else:
-            _LOGGER.error(f"could not write value: '{value}' to: {tag} result was: {result}")
-
-        # writing a value can change other values of the heat pump as well
+        # writing a value can change other values of the heat pump as well (and after a failed write, the
+        # current value is shown again)
         await self.async_request_refresh()
+        if tag not in result:
+            # the heat pump did not confirm the written value
+            raise HomeAssistantError(translation_domain=DOMAIN, translation_key="write_not_confirmed",
+                                     translation_placeholders=placeholders)

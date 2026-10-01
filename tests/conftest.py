@@ -65,7 +65,8 @@ def mock_bridge() -> Generator[MagicMock]:
         client.async_check_login = AsyncMock()
         client.async_read_values = AsyncMock(return_value=device_info_values())
         client.async_read_value = AsyncMock(return_value={"value": True, "status": "S_OK"})
-        client.async_write_value = AsyncMock(return_value={})
+        # the heat pump confirms the written value
+        client.async_write_value = AsyncMock(side_effect=lambda tag, value: {tag: {"value": value, "status": "S_OK"}})
         client.async_get_data = AsyncMock(return_value={})
         client.logout = AsyncMock()
         yield client

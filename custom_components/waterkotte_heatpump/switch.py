@@ -121,17 +121,11 @@ class WKHPSwitch(WKHPBaseEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs):
         """Turn on the switch."""
-        try:
-            await self.coordinator.async_write_tag(self.wkhp_tag, True)
-        except ValueError:
-            return "unavailable"
+        await self.coordinator.async_write_tag(self.wkhp_tag, True)
 
     async def async_turn_off(self, **kwargs):
         """Turn off the switch."""
-        try:
-            await self.coordinator.async_write_tag(self.wkhp_tag, False)
-        except ValueError:
-            return "unavailable"
+        await self.coordinator.async_write_tag(self.wkhp_tag, False)
 
     @property
     def is_on(self) -> bool | None:

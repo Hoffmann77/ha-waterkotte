@@ -211,7 +211,4 @@ class WKHPSelect(WKHPBaseEntity, SelectEntity):
         if self.wkhp_tag.tags[0].startswith("D"):
             # the digital tags ("switches" that we show as selects) are written as bool
             value = option == "1"
-        try:
-            await self.coordinator.async_write_tag(self.wkhp_tag, value)
-        except ValueError:
-            return "unavailable"
+        await self.coordinator.async_write_tag(self.wkhp_tag, value)

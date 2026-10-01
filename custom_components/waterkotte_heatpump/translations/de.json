@@ -127,7 +127,11 @@
   "exceptions": {
     "config_entry_required": {"message": "Es ist mehr als eine (oder keine) Waterkotte Wärmepumpe geladen - bitte wähle die Wärmepumpe aus."},
     "config_entry_not_found": {"message": "Die Wärmepumpe {entry_id} wurde nicht gefunden."},
-    "config_entry_not_loaded": {"message": "Die Wärmepumpe {title} ist nicht geladen."}
+    "config_entry_not_loaded": {"message": "Die Wärmepumpe {title} ist nicht geladen."},
+    "invalid_value": {"message": "Der Wert {value} ist für {tag} nicht gültig."},
+    "write_failed": {"message": "Der Wert {value} konnte nicht in {tag} geschrieben werden: {error}"},
+    "write_not_confirmed": {"message": "Die Wärmepumpe hat den Wert {value} für {tag} nicht bestätigt."},
+    "read_failed": {"message": "Die Werte konnten nicht von der Wärmepumpe gelesen werden: {error}"}
   },
   "entity": {
     "binary_sensor": {
