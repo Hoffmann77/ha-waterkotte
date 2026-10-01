@@ -20,12 +20,24 @@ from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import (
     InvalidValueException,
 )
 
-# from aenum import Enum, extend_enum
-
 _LOGGER: logging.Logger = logging.getLogger(__package__)
+
+# the raw values of the 'enable' states and of the status values
+_STATES = {0: "off", 1: "auto", 2: "manual"}
+_STATUS = {0: "off", 1: "on", 2: "disabled"}
 
 
 class DataTag(NamedTuple):
+
+    @staticmethod
+    def _first_value(str_vals: List[str] | None) -> str | None:
+        """The first raw value - or None, when the heat pump did not provide a value"""
+        if not str_vals or str_vals[0] is None or str(str_vals[0]).strip() == "":
+            return None
+        return str_vals[0]
+
+    def _invalid(self, value) -> InvalidValueException:
+        return InvalidValueException(f"{value!r} is not a valid value for {self.tags}")
 
     def _decode_value_default(self, str_vals: List[str]):
         return self.__decode_value_default(str_vals, factor=10.0)
@@ -127,13 +139,16 @@ class DataTag(NamedTuple):
                 value_as_int = int(value)
                 if str(value_as_int) == value:
                     value = value_as_int
-            assert isinstance(value, int)
+            if not isinstance(value, int) or isinstance(value, bool):
+                raise self._invalid(value)
             encoded_values[ecotouch_tag] = str(value)
         elif ecotouch_tag[0] == "D":
-            assert isinstance(value, bool)
+            if not isinstance(value, bool):
+                raise self._invalid(value)
             encoded_values[ecotouch_tag] = "1" if value else "0"
         elif ecotouch_tag[0] == "A":
-            assert isinstance(value, float)
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                raise self._invalid(value)
             if factor > -1:
                 encoded_values[ecotouch_tag] = str(int(value * factor))
             else:
@@ -187,7 +202,8 @@ class DataTag(NamedTuple):
             return None
 
     def _encode_datetime(self, value, encoded_values):
-        assert isinstance(value, datetime)
+        if not isinstance(value, datetime):
+            raise self._invalid(value)
         vals = [
             str(val)
             for val in [
@@ -218,7 +234,8 @@ class DataTag(NamedTuple):
         return dt
 
     def _encode_time_hhmm(self, value, encoded_values):
-        assert isinstance(value, time)
+        if not isinstance(value, time):
+            raise self._invalid(value)
         if value == time.max:
             vals = ["24", "0"]
         else:
@@ -227,140 +244,77 @@ class DataTag(NamedTuple):
         for i, tags in enumerate(self.tags):
             encoded_values[tags] = vals[i]
 
-    def _decode_state(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
+    def _decode_mapped(self, str_vals: List[str], value_map: dict[int, str]):
+        """The name of the value (from the map of the raw values) - 'Error' for an unknown value"""
+        first_val = self._first_value(str_vals)
+        if first_val is None:
             return None
-
-        assert len(self.tags) == 1
-        if str_vals[0] == "0":
-            return "off"
-        elif str_vals[0] == "1":
-            return "auto"
-        elif str_vals[0] == "2":
-            return "manual"
-        else:
+        try:
+            return value_map.get(int(float(first_val)), "Error")
+        except ValueError:
             return "Error"
 
-    def _encode_state(self, value, encoded_values):
-        assert len(self.tags) == 1
-        ecotouch_tag = self.tags[0]
-        assert ecotouch_tag[0] in ["I"]
-        if value == "off":
-            encoded_values[ecotouch_tag] = "0"
-        elif value == "auto":
-            encoded_values[ecotouch_tag] = "1"
-        elif value == "manual":
-            encoded_values[ecotouch_tag] = "2"
-
-    def _decode_four_steps_mode(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
-            return None
-
-        assert len(self.tags) == 1
-        if str_vals[0] is not None:
-            int_val = int(str_vals[0])
-            if 0 <= int_val <= len(FOUR_STEPS_MODES):
-                return FOUR_STEPS_MODES[int_val]
-        return "Error"
-
-    def _encode_four_steps_mode(self, value, encoded_values):
-        assert len(self.tags) == 1
-        ecotouch_tag = self.tags[0]
+    def _encode_mapped(self, value, encoded_values, value_map: dict[int, str]):
+        """The raw value of the name of a value - an unknown name is raised as InvalidValueException"""
+        index = next((key for key, name in value_map.items() if name == value), None)
+        if index is None:
+            raise self._invalid(value)
         # there is an alternative tag for the four/six steps mode with '3:HREG' notation
         # see https://github.com/marq24/ha-waterkotte/issues/49
-        assert ecotouch_tag[0] in ["I", "3"]
-        index = self._get_key_from_value(FOUR_STEPS_MODES, value)
-        if index is not None:
-            encoded_values[ecotouch_tag] = str(index)
+        encoded_values[self.tags[0]] = str(index)
+
+    def _decode_state(self, str_vals: List[str]):
+        return self._decode_mapped(str_vals, _STATES)
+
+    def _encode_state(self, value, encoded_values):
+        self._encode_mapped(value, encoded_values, _STATES)
+
+    def _decode_four_steps_mode(self, str_vals: List[str]):
+        return self._decode_mapped(str_vals, FOUR_STEPS_MODES)
+
+    def _encode_four_steps_mode(self, value, encoded_values):
+        self._encode_mapped(value, encoded_values, FOUR_STEPS_MODES)
 
     def _decode_six_steps_mode(self, str_vals: List[str]):
-        if str_vals is None is None and str_vals[0] is not None:
-            return None
-
-        assert len(self.tags) == 1
-        if str_vals[0] is not None:
-            int_val = int(str_vals[0])
-            if 0 <= int_val <= len(SIX_STEPS_MODES):
-                return SIX_STEPS_MODES[int_val]
-        return "Error"
+        return self._decode_mapped(str_vals, SIX_STEPS_MODES)
 
     def _encode_six_steps_mode(self, value, encoded_values):
-        assert len(self.tags) == 1
-        ecotouch_tag = self.tags[0]
-        # there is an alternative tag for the six steps mode with '3:HREG' notation
-        # see https://github.com/marq24/ha-waterkotte/issues/49
-        assert ecotouch_tag[0] in ["I", "3"]
-        index = self._get_key_from_value(SIX_STEPS_MODES, value)
-        if index is not None:
-            encoded_values[ecotouch_tag] = str(index)
-
-    @staticmethod
-    def _get_key_from_value(a_dict: dict, value_to_find):
-        # a very simple "find first key" of dict method...
-        keys = [k for k, v in a_dict.items() if v == value_to_find]
-        if keys:
-            return keys[0]
-        return None
+        self._encode_mapped(value, encoded_values, SIX_STEPS_MODES)
 
     def _decode_status(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
-            return None
+        return self._decode_mapped(str_vals, _STATUS)
 
-        assert len(self.tags) == 1
-        if str_vals[0] == "0":
-            return "off"
-        elif str_vals[0] == "1":
-            return "on"
-        elif str_vals[0] == "2":
-            return "disabled"
-        else:
-            return "Error"
+    def _decode_indexed(self, str_vals: List[str], names: list[str], unknown: str):
+        """The name of the value (the raw value is the index in the list of the names) - or None, when the heat
+        pump did not provide a value"""
+        first_val = self._first_value(str_vals)
+        if first_val is None:
+            return None
+        try:
+            idx = int(float(first_val))
+        except ValueError:
+            return None
+        return names[idx] if 0 <= idx < len(names) else f"{unknown}_{idx}"
 
     def _decode_ro_series(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
-            return None
-
-        if str_vals[0]:
-            if isinstance(str_vals[0], int):
-                idx = int(str_vals[0])
-                if len(SERIES) > idx:
-                    return SERIES[idx]
-                else:
-                    return f"UNKNOWN_SERIES_{idx}"
-        else:
-            return "UNKNOWN_SERIES"
+        return self._decode_indexed(str_vals, SERIES, "UNKNOWN_SERIES")
 
     def _decode_ro_id(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
-            return None
-
-        assert len(self.tags) == 1
-        if str_vals[0]:
-            if isinstance(str_vals[0], int):
-                idx = int(str_vals[0])
-                if len(SYSTEM_IDS) > idx:
-                    return SYSTEM_IDS[idx]
-                else:
-                    return f"UNKNOWN_SYSTEM_{idx}"
-        else:
-            return "UNKNOWN_SYSTEM"
+        return self._decode_indexed(str_vals, SYSTEM_IDS, "UNKNOWN_SYSTEM")
 
     def _decode_ro_bios(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
+        str_val = self._first_value(str_vals)
+        if str_val is None:
             return None
-
-        assert len(self.tags) == 1
-        str_val = str_vals[0]
         if len(str_val) > 2:
             return f"{str_val[:-2]}.{str_val[-2:]}"
         else:
             return str_val
 
     def _decode_ro_fw(self, str_vals: List[str]):
-        if str_vals is None:
+        if not str_vals or len(str_vals) != 2 or None in str_vals:
             return None
 
-        assert len(self.tags) == 2
         str_val1 = str_vals[0]
         str_val2 = str_vals[1]
         try:
@@ -371,12 +325,15 @@ class DataTag(NamedTuple):
             return f"FW_{str_val1}-{str_val2}"
 
     def _decode_ro_sn(self, str_vals: List[str]):
-        if str_vals is None:
+        if not str_vals or len(str_vals) != 2 or None in str_vals:
             return None
 
-        assert len(self.tags) == 2
-        sn1 = int(str_vals[0])
-        sn2 = int(str_vals[1])
+        try:
+            sn1 = int(float(str_vals[0]))
+            sn2 = int(float(str_vals[1]))
+        except ValueError:
+            _LOGGER.warning("could not decode Serial: %s", str_vals)
+            return None
         try:
             s1 = "WE" if math.floor(sn1 / 1000) > 0 else "00"  # pylint: disable=invalid-name
             s2 = (sn1 - 1000 if math.floor(sn1 / 1000) > 0 else sn1)  # pylint: disable=invalid-name
@@ -387,11 +344,10 @@ class DataTag(NamedTuple):
             return f"Serial_{sn1}-{sn2}"
 
     def _decode_year(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
+        first_val = self._first_value(str_vals)
+        if first_val is None:
             return None
-
-        assert len(self.tags) == 1
-        return int(str_vals[0]) + 2000
+        return int(float(first_val)) + 2000
 
     tags: Collection[str]
     unit: str = None
