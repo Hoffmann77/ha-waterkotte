@@ -88,6 +88,7 @@
       "name": "Urlaubszeitraum setzen",
       "description": "Setzt den Start- & Endzeitpunkt des Urlaubsmodus",
       "fields": {
+        "config_entry_id": {"name": "Wärmepumpe", "description": "Die Wärmepumpe - nur erforderlich, wenn mehr als eine Wärmepumpe eingerichtet ist."},
         "start": {"name": "Start Zeit & Datum",  "description": "Urlaub beginnt am/um"},
         "end": {"name": "Ende Zeit & Datum", "description": "Urlaub ended am/um"}
       }
@@ -96,17 +97,29 @@
       "name": "Startzeit des Desinfektionslauf",
       "description": "Setze die Uhrzeit an dem der Desinfektionslauf an den ausgewählten Tagen startet",
       "fields": {
+        "config_entry_id": {"name": "Wärmepumpe", "description": "Die Wärmepumpe - nur erforderlich, wenn mehr als eine Wärmepumpe eingerichtet ist."},
         "starthhmm": {"name": "Startzeit", "description": "Startzeit des Desinfektionslauf"}
       }
     },
     "get_energy_balance": {
       "name": "Energiebilanz des laufenden Jahres ermitten",
-      "description": "Ermittele die Energiebilanz nach unterschiedlichen Verbrauchern für das laufende Jahr"
+      "description": "Ermittele die Energiebilanz nach unterschiedlichen Verbrauchern für das laufende Jahr",
+      "fields": {
+        "config_entry_id": {"name": "Wärmepumpe", "description": "Die Wärmepumpe - nur erforderlich, wenn mehr als eine Wärmepumpe eingerichtet ist."}
+      }
     },
     "get_energy_balance_monthly":{
       "name": "Energiebilanz der letzten 12 Monate im Detail ermitten",
-      "description": "Ermittele die Energiebilanz nach unterschiedlichen Verbrauchern in einem Fenster der letzten 12 Monate"
+      "description": "Ermittele die Energiebilanz nach unterschiedlichen Verbrauchern in einem Fenster der letzten 12 Monate",
+      "fields": {
+        "config_entry_id": {"name": "Wärmepumpe", "description": "Die Wärmepumpe - nur erforderlich, wenn mehr als eine Wärmepumpe eingerichtet ist."}
+      }
     }
+  },
+  "exceptions": {
+    "config_entry_required": {"message": "Es ist mehr als eine (oder keine) Waterkotte Wärmepumpe geladen - bitte wähle die Wärmepumpe aus."},
+    "config_entry_not_found": {"message": "Die Wärmepumpe {entry_id} wurde nicht gefunden."},
+    "config_entry_not_loaded": {"message": "Die Wärmepumpe {title} ist nicht geladen."}
   },
   "entity": {
     "binary_sensor": {

@@ -1,8 +1,22 @@
+"""Service actions of the Waterkotte Heatpump integration."""
 import datetime
 import logging
-from homeassistant.core import ServiceCall, ServiceResponse
+
+import voluptuous as vol
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import ATTR_CONFIG_ENTRY_ID
+from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse, callback
+from homeassistant.exceptions import ServiceValidationError
+from homeassistant.helpers import config_validation as cv
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
+from .const import (
+    DOMAIN,
+    SERVICE_SET_HOLIDAY,
+    SERVICE_SET_DISINFECTION_START_TIME,
+    SERVICE_GET_ENERGY_BALANCE,
+    SERVICE_GET_ENERGY_BALANCE_MONTHLY,
+)
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
@@ -19,69 +33,111 @@ _MONTHLY_TAG_PREFIXES = {
 _MONTHS = range(1, 13)
 
 
+def _time_hhmm(value) -> datetime.time:
+    """A time of the day - '24:00' is the end of the day"""
+    value = str(value)
+    if value.startswith("24:"):
+        return datetime.time.max
+    try:
+        return datetime.time.fromisoformat(value)
+    except ValueError as err:
+        raise vol.Invalid(f"invalid time: {value}") from err
+
+
+# the config entry is optional - it's only required, when more than one heat pump is configured
+_BASE_SCHEMA = {vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string}
+
+_SERVICES = {
+    SERVICE_SET_HOLIDAY: (
+        vol.Schema({**_BASE_SCHEMA, vol.Required("start"): cv.datetime, vol.Required("end"): cv.datetime}),
+        SupportsResponse.OPTIONAL,
+    ),
+    SERVICE_SET_DISINFECTION_START_TIME: (
+        vol.Schema({**_BASE_SCHEMA, vol.Required("starthhmm"): _time_hhmm}),
+        SupportsResponse.OPTIONAL,
+    ),
+    SERVICE_GET_ENERGY_BALANCE: (vol.Schema(_BASE_SCHEMA), SupportsResponse.ONLY),
+    SERVICE_GET_ENERGY_BALANCE_MONTHLY: (vol.Schema(_BASE_SCHEMA), SupportsResponse.ONLY),
+}
+
+
+@callback
+def async_setup_services(hass: HomeAssistant) -> None:
+    """Register the service actions of the integration."""
+
+    async def handle(call: ServiceCall) -> ServiceResponse:
+        service = WaterkotteHeatpumpService(_get_coordinator(hass, call))
+        return await getattr(service, call.service)(call)
+
+    for name, (schema, supports_response) in _SERVICES.items():
+        hass.services.async_register(DOMAIN, name, handle, schema=schema, supports_response=supports_response)
+
+
+def _get_coordinator(hass: HomeAssistant, call: ServiceCall):
+    """The coordinator of the heat pump, the service action is called for."""
+    entry_id = call.data.get(ATTR_CONFIG_ENTRY_ID)
+    if entry_id is None:
+        entries = hass.config_entries.async_loaded_entries(DOMAIN)
+        if len(entries) != 1:
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="config_entry_required")
+        return entries[0].runtime_data
+
+    entry = hass.config_entries.async_get_entry(entry_id)
+    if entry is None or entry.domain != DOMAIN:
+        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="config_entry_not_found",
+                                     translation_placeholders={"entry_id": entry_id})
+    if entry.state is not ConfigEntryState.LOADED:
+        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="config_entry_not_loaded",
+                                     translation_placeholders={"title": entry.title})
+    return entry.runtime_data
+
+
 def _value(res: dict, tag: WKHPTag):
     """The value of a tag from a read result - or 'unknown', if the tag could not be read"""
     return res.get(tag, {"value": "unknown"})["value"]
 
 
-class WaterkotteHeatpumpService():
-    """waterkotte_heatpump switch class."""
+def _now() -> str:
+    return str(datetime.datetime.now().time())
 
-    def __init__(self, hass, config, coordinator):  # pylint: disable=unused-argument
-        """Initialize the sensor."""
-        self._hass = hass
-        self._config = config
+
+class WaterkotteHeatpumpService:
+    """The service actions for one heat pump (the methods have the names of the service actions)."""
+
+    def __init__(self, coordinator):
         self._coordinator = coordinator
 
     async def set_holiday(self, call: ServiceCall):
         """Handle the service call."""
-        start = call.data.get('start', None)
-        end = call.data.get('end', None)
-        if start is not None and end is not None:
-            start = datetime.datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
-            end = datetime.datetime.strptime(end, '%Y-%m-%d %H:%M:%S')
-            _LOGGER.debug(f"set_holiday start: {start} end: {end}")
-            try:
-                await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_START_TIME, start)
-                await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_END_TIME, end)
-                await self._coordinator.async_refresh()
-            except ValueError as exc:
-                if call.return_response:
-                    return {"error": str(exc), "date": str(datetime.datetime.now().time())}
-
+        start = call.data["start"]
+        end = call.data["end"]
+        _LOGGER.debug(f"set_holiday start: {start} end: {end}")
+        try:
+            await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_START_TIME, start)
+            await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_END_TIME, end)
+            await self._coordinator.async_refresh()
+        except ValueError as exc:
             if call.return_response:
-                return {"success": "yes", "date": str(datetime.datetime.now().time())}
+                return {"error": str(exc), "date": _now()}
+            return None
 
         if call.return_response:
-            return {"error": "No Start and/or End Time", "date": str(datetime.datetime.now().time())}
+            return {"success": "yes", "date": _now()}
+        return None
 
     async def set_disinfection_start_time(self, call: ServiceCall):
-        start_time = self._get_time("starthhmm", call)
-        if start_time is not None:
-            _LOGGER.debug(f"set_disinfection_start_time: {start_time}")
-            try:
-                await self._coordinator.async_write_tag(WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME, start_time)
-                await self._coordinator.async_refresh()
-                if call.return_response:
-                    return {
-                        "success": "yes",
-                        "date": str(datetime.datetime.now().time())
-                    }
-            except ValueError as exe:
-                if call.return_response:
-                    return {"error": str(exe), "date": str(datetime.datetime.now().time())}
-        else:
+        start_time = call.data["starthhmm"]
+        _LOGGER.debug(f"set_disinfection_start_time: {start_time}")
+        try:
+            await self._coordinator.async_write_tag(WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME, start_time)
+            await self._coordinator.async_refresh()
+        except ValueError as exc:
             if call.return_response:
-                return {"error": "no start_time provided", "date": str(datetime.datetime.now().time())}
+                return {"error": str(exc), "date": _now()}
+            return None
 
-    def _get_time(self, key: str, call: ServiceCall):
-        a_time = call.data.get(key, None)
-        if a_time is not None:
-            temp = str(a_time)
-            if temp.startswith("24:"):
-                return datetime.time.max
-            else:
-                return datetime.time.fromisoformat(temp)
+        if call.return_response:
+            return {"success": "yes", "date": _now()}
         return None
 
     async def _read_with_retry(self, tags: list[WKHPTag]) -> dict:

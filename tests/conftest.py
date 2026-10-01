@@ -43,8 +43,29 @@ def mock_client() -> Generator[MagicMock]:
 @pytest.fixture
 def mock_setup_entry() -> Generator[AsyncMock]:
     """Prevent the setup of created config entries (no heat pump available in the tests)."""
+
+    async def setup_entry_without_heat_pump(hass, entry) -> bool:
+        # the entries are unloaded after the end of the test (when this patch is not active anymore)
+        entry.runtime_data = MagicMock(bridge=MagicMock(logout=AsyncMock()))
+        return True
+
     with (
-        patch("custom_components.waterkotte_heatpump.async_setup_entry", return_value=True) as setup_entry,
+        patch("custom_components.waterkotte_heatpump.async_setup_entry",
+              side_effect=setup_entry_without_heat_pump) as setup_entry,
         patch("custom_components.waterkotte_heatpump.async_unload_entry", return_value=True),
     ):
         yield setup_entry
+
+
+@pytest.fixture
+def mock_bridge() -> Generator[MagicMock]:
+    """Mock the WaterkotteClient that is used by the coordinator."""
+    with patch("custom_components.waterkotte_heatpump.WaterkotteClient", autospec=True) as client_class:
+        client = client_class.return_value
+        client.async_check_login = AsyncMock()
+        client.async_read_values = AsyncMock(return_value=device_info_values())
+        client.async_read_value = AsyncMock(return_value={"value": True, "status": "S_OK"})
+        client.async_write_value = AsyncMock(return_value={})
+        client.async_get_data = AsyncMock(return_value={})
+        client.logout = AsyncMock()
+        yield client

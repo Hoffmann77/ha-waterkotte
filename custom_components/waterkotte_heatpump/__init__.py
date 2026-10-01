@@ -6,19 +6,20 @@ from typing import Sequence
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID, CONF_HOST, CONF_USERNAME, CONF_PASSWORD
-from homeassistant.core import HomeAssistant, SupportsResponse
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as config_val, device_registry as dev_reg, entity_registry as entity_reg
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity, EntityDescription
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha import WaterkotteClient
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import ECOTOUCH, EASYCON
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import TooManyUsersException, InvalidPasswordException
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
-from . import service as waterkotte_service
+from .service import async_setup_services
 from .const import (
     CONF_POLLING_INTERVAL,
     CONF_TAGS_PER_REQUEST,
@@ -37,10 +38,6 @@ from .const import (
     DOMAIN,
     PLATFORMS,
     STARTUP_MESSAGE,
-    SERVICE_SET_HOLIDAY,
-    SERVICE_SET_DISINFECTION_START_TIME,
-    SERVICE_GET_ENERGY_BALANCE,
-    SERVICE_GET_ENERGY_BALANCE_MONTHLY,
     FEATURE_VENT,
     FEATURE_HEATING_CURVE,
     FEATURE_DISINFECTION,
@@ -59,13 +56,8 @@ _FEATURE_FLAGS = {
     CONF_USE_DISINFECTION: FEATURE_DISINFECTION,
 }
 
-# the services of the integration (the handler is the method with the same name in WaterkotteHeatpumpService)
-_SERVICES = {
-    SERVICE_SET_HOLIDAY: SupportsResponse.OPTIONAL,
-    SERVICE_SET_DISINFECTION_START_TIME: SupportsResponse.OPTIONAL,
-    SERVICE_GET_ENERGY_BALANCE: SupportsResponse.ONLY,
-    SERVICE_GET_ENERGY_BALANCE_MONTHLY: SupportsResponse.ONLY,
-}
+# the coordinator of a loaded config entry is stored as its runtime_data
+type WaterkotteConfigEntry = ConfigEntry[WKHPDataUpdateCoordinator]
 
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
@@ -201,11 +193,14 @@ def _is_real_serial(serial: str | None) -> bool:
     return serial is not None and serial not in ("", "None") and re.fullmatch(r"[0-9a-f]{32}", serial) is None
 
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
-    if DOMAIN not in hass.data:
-        _LOGGER.info(STARTUP_MESSAGE)
-        hass.data[DOMAIN] = {}
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the integration - the service actions are registered once (independent of the config entries)."""
+    _LOGGER.info(STARTUP_MESSAGE)
+    async_setup_services(hass)
+    return True
 
+
+async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigEntry) -> bool:
     coordinator = WKHPDataUpdateCoordinator(hass, config_entry)
     await coordinator.async_refresh()
     if not coordinator.last_update_success:
@@ -223,12 +218,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         _LOGGER.warning(f"async_setup_entry(): could not enable OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634: {(type(e).__name__)} {e}")
 
     # ok now init the platforms...
-    hass.data[DOMAIN][config_entry.entry_id] = coordinator
+    config_entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
-
-    service = waterkotte_service.WaterkotteHeatpumpService(hass, config_entry, coordinator)
-    for name, supports_response in _SERVICES.items():
-        hass.services.async_register(DOMAIN, name, getattr(service, name), supports_response=supports_response)
 
     # the initial refresh ran before any entity was added (so no tags were requested) - now all
     # enabled entities have registered their tags as coordinator context, so we fetch the data
@@ -239,20 +230,11 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, config_entry: WaterkotteConfigEntry) -> bool:
     _LOGGER.debug(f"async_unload_entry() called for entry: {config_entry.entry_id}")
     unload_ok = await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
-
     if unload_ok:
-        if DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]:
-            # even if waterkotte does not support logout... I code it here...
-            coordinator = hass.data[DOMAIN][config_entry.entry_id]
-            await coordinator.bridge.logout()
-
-            hass.data[DOMAIN].pop(config_entry.entry_id)
-
-        for name in _SERVICES:
-            hass.services.async_remove(DOMAIN, name)
+        await config_entry.runtime_data.bridge.logout()
 
     return unload_ok
 

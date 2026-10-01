@@ -1,21 +1,21 @@
 import logging
 
 from homeassistant.components.number import NumberEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from . import WKHPBaseEntity
-from .const import DOMAIN, NUMBER_SENSORS
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from . import WaterkotteConfigEntry, WKHPBaseEntity
+from .const import NUMBER_SENSORS
 
 _LOGGER = logging.getLogger(__name__)
 
 TEMP_ADJUST_LOOKUP = [-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2]
 
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, add_entity_cb: AddEntitiesCallback):
+async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigEntry,
+                            async_add_entities: AddConfigEntryEntitiesCallback):
     _LOGGER.debug("NUMBER async_setup_entry")
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    add_entity_cb(WKHPNumber(coordinator, description) for description in NUMBER_SENSORS)
+    coordinator = config_entry.runtime_data
+    async_add_entities(WKHPNumber(coordinator, description) for description in NUMBER_SENSORS)
 
 
 class WKHPNumber(WKHPBaseEntity, NumberEntity):

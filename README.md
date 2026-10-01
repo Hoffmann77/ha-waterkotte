@@ -99,7 +99,7 @@ __Don't get confused!__ The EcoTouch web login for newer Waterkotte models shows
 
 ## Services
 
-The Integration provides currently 4 services:
+The Integration provides currently 4 services. When more than one heat pump is configured, select the heat pump with the `config_entry_id` parameter (optional for a single heat pump).
 
 ### Setting dates & times
 

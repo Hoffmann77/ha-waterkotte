@@ -2,20 +2,20 @@ import logging
 from datetime import datetime, time
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
-from . import WKHPBaseEntity
-from .const import DOMAIN, SENSOR_SENSORS
+from . import WaterkotteConfigEntry, WKHPBaseEntity
+from .const import SENSOR_SENSORS
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, add_entity_cb: AddEntitiesCallback):
+async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigEntry,
+                            async_add_entities: AddConfigEntryEntitiesCallback):
     _LOGGER.debug("SENSOR async_setup_entry")
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    add_entity_cb(WKHPSensor(coordinator, description) for description in SENSOR_SENSORS)
+    coordinator = config_entry.runtime_data
+    async_add_entities(WKHPSensor(coordinator, description) for description in SENSOR_SENSORS)
 
 
 class WKHPSensor(WKHPBaseEntity, SensorEntity):
