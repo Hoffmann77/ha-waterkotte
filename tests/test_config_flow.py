@@ -1,5 +1,5 @@
 """Tests for the config flow of the Waterkotte Heatpump integration."""
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
 import pytest
@@ -95,6 +95,25 @@ async def test_connection_errors(
     mock_client.async_read_values.return_value = device_info_values()
     result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT_ECOTOUCH)
     assert result["step_id"] == "features"
+
+
+@pytest.mark.parametrize("login_error", [None, InvalidPasswordException("INVALID_PWD")])
+async def test_connection_test_cleanup(
+    hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock, login_error: Exception | None
+) -> None:
+    """Test that the connection test logs out (the heat pump allows only a few users) and closes its session."""
+    session = MagicMock(close=AsyncMock())
+    mock_client.async_check_login.side_effect = login_error
+    mock_client.logout.side_effect = aiohttp.ClientError("logout failed")
+    result = await _start_ecotouch_flow(hass)
+
+    with patch("custom_components.waterkotte_heatpump.config_flow.async_create_clientsession", return_value=session):
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT_ECOTOUCH)
+
+    # a failed logout is no error
+    assert result["step_id"] == ("features" if login_error is None else "user_ecotouch")
+    mock_client.logout.assert_awaited_once()
+    session.close.assert_awaited_once()
 
 
 async def test_missing_serial_is_no_error(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:

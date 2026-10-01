@@ -1,6 +1,7 @@
 """Adds config flow for Waterkotte Heatpump."""
 import logging
 from collections.abc import Mapping
+from contextlib import suppress
 from typing import Any
 
 import aiohttp
@@ -250,8 +251,10 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if pwd is not None and len(str(pwd)) == 0:
             pwd = None
 
+        # a temporary session (with its own cookies) - closed after the test
+        session = async_create_clientsession(self.hass, auto_cleanup=False)
         client = WaterkotteClient(host=host, username=username, pwd=pwd, system_type=system_type,
-                                  web_session=async_create_clientsession(self.hass), tags=None,
+                                  web_session=session, tags=None,
                                   tags_per_request=tags_per_request, lang=self.hass.config.language.lower())
         try:
             # check the login first - so that an invalid password is reported as such
@@ -274,6 +277,11 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         except Exception as exc:  # pylint: disable=broad-except
             _LOGGER.exception(f"unexpected exception while connecting to waterkotte@{host}: {exc}")
             return "unknown"
+        finally:
+            # the heat pump allows only a few logged in users at the same time (a failed logout is no error)
+            with suppress(Exception):
+                await client.logout()
+            await session.close()
 
         if not ret:
             # nothing could be read (e.g. wrong interface type or wrong BasicAuth credentials for EasyCon)
