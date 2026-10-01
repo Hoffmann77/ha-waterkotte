@@ -1,64 +1,42 @@
 set_holiday:
-  name: Set Holiday
-  description: Sets start and end times for holiday mode.
   fields:
     config_entry_id:
-      name: Heat pump
-      description: The heat pump - only required, when more than one heat pump is configured.
       required: false
       selector:
         config_entry:
           integration: waterkotte_heatpump
     start:
-      name: Start Time & Date
-      description: Set the beginning of the holiday
       required: true
       selector:
         datetime:
     end:
-      name: End Time & Date
-      description: Set the end of the holiday
       required: true
       selector:
         datetime:
 
 set_disinfection_start_time:
-  name: Set disinfection start time
-  description: Set the start time for disinfection
   fields:
     config_entry_id:
-      name: Heat pump
-      description: The heat pump - only required, when more than one heat pump is configured.
       required: false
       selector:
         config_entry:
           integration: waterkotte_heatpump
     starthhmm:
-      name: Disinfection Start Time
-      description: Set the disinfection start time
       required: true
       selector:
         time:
 
 get_energy_balance:
-  name: Get Current Year Energy Balance
-  description: Get the energy balance by different usage for the current year
   fields:
     config_entry_id:
-      name: Heat pump
-      description: The heat pump - only required, when more than one heat pump is configured.
       required: false
       selector:
         config_entry:
           integration: waterkotte_heatpump
 
 get_energy_balance_monthly:
-  name: Get rolling 12 Month breakdown
-  description: Gets the energy balance breakdown per month in a rolling 12 month window
   fields:
     config_entry_id:
-      name: Heat pump
-      description: The heat pump - only required, when more than one heat pump is configured.
       required: false
       selector:
         config_entry:
