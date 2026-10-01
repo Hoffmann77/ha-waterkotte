@@ -1,9 +1,11 @@
 """Tests for the EcoTouch bridge (the requests to the web interface of the heat pump)."""
+import logging
 from contextlib import asynccontextmanager
+from urllib.parse import urlsplit
 
 import pytest
 
-from custom_components.waterkotte_heatpump.pywaterkotte_ha import EcotouchBridge
+from custom_components.waterkotte_heatpump.pywaterkotte_ha import EasyconBridge, EcotouchBridge
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import StatusException, TooManyUsersException
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 
@@ -29,11 +31,13 @@ class FakeSession:
     def __init__(self, responses: dict[str, list[FakeResponse]]):
         self.responses = responses
         self.requests = []
+        self.headers = []
 
     @asynccontextmanager
     async def get(self, url: str, params=None, **kwargs):
-        path = url[url.index("/cgi/"):]
+        path = urlsplit(url).path
         self.requests.append((path, [value for key, value in (params or {}).items() if key.startswith("t")]))
+        self.headers.append(kwargs.get("headers"))
         yield self.responses[path].pop(0)
 
 
@@ -113,3 +117,29 @@ def _fake_read_tags(values: dict):
     async def read_tags(tags, *args, **kwargs):
         return dict(values), {tag: "S_OK" for tag in values}
     return read_tags
+
+
+async def test_easycon_read_without_warning(caplog: pytest.LogCaptureFixture) -> None:
+    """Test that the values of the EasyCon interface are read - and that a successful request logs no warning."""
+    xml = (
+        "<RESPONSE><PCO>"
+        "<ANALOG><VARIABLE><INDEX>1</INDEX><VALUE>21.5</VALUE></VARIABLE></ANALOG>"
+        "<DIGITAL><VARIABLE><INDEX>420</INDEX><VALUE>1</VALUE></VARIABLE></DIGITAL>"
+        "</PCO></RESPONSE>"
+    )
+    session = FakeSession({"/config/xml.cgi": [FakeResponse(200, xml)]})
+    bridge = EasyconBridge(host="heatpump", web_session=session)
+
+    with caplog.at_level(logging.WARNING):
+        result = await bridge.read_values([WKHPTag.TEMPERATURE_OUTSIDE, WKHPTag.HOLIDAY_ENABLED])
+
+    assert result[WKHPTag.TEMPERATURE_OUTSIDE] == {"value": 21.5, "status": "S_OK"}
+    assert result[WKHPTag.HOLIDAY_ENABLED] == {"value": True, "status": "S_OK"}
+    assert not caplog.records
+    # BasicAuth with the (default) credentials
+    assert session.headers == [{"Authorization": "Basic d2F0ZXJrb3R0ZTp3YXRlcmtvdHRl"}]
+
+    session = FakeSession({"/config/xml.cgi": [FakeResponse(200, xml)]})
+    await EasyconBridge(host="heatpump", web_session=session, username=None, pwd=None).read_values(
+        [WKHPTag.TEMPERATURE_OUTSIDE])
+    assert session.headers == [{}]

@@ -1,5 +1,5 @@
+import base64
 import logging
-import aiohttp
 import re
 import xml.etree.ElementTree as ElemTree
 from datetime import datetime
@@ -437,6 +437,13 @@ class EasyconBridge(EcotouchBridge):
         """Logout function (not needed for easycon)"""
         return
 
+    def _auth_headers(self) -> dict:
+        """The BasicAuth header - only when credentials have been configured"""
+        if self.username is None or self.pwd is None:
+            return {}
+        credentials = base64.b64encode(f"{self.username}:{self.pwd}".encode()).decode("ascii")
+        return {"Authorization": f"Basic {credentials}"}
+
     # reads a list of ecotouch tags
     #
     async def _read_tags(self, tags: Sequence[WKHPTag], results=None, results_status=None):
@@ -470,11 +477,8 @@ class EasyconBridge(EcotouchBridge):
         if query == "":
             return None, None
 
-        basic_auth = None
-        if self.username is not None and self.pwd is not None:
-            basic_auth = aiohttp.BasicAuth(self.username, self.pwd)
-
-        async with self.web_session.get(f"http://{self.host}/config/xml.cgi?{query[1:]}", auth=basic_auth) as response:
+        async with self.web_session.get(f"http://{self.host}/config/xml.cgi?{query[1:]}",
+                                    headers=self._auth_headers()) as response:
             try:
                 response.raise_for_status()
                 if response.status == 200:
@@ -523,10 +527,8 @@ class EasyconBridge(EcotouchBridge):
                                 results[tag] = str(float(match.text) * 10.0)
                             else:
                                 results[tag] = match.text
-                if response.status == 404:
-                    _LOGGER.debug(f"http 404 caused by requesting {response.url} - full: {response}")
-                    raise Http404Exception(f"HTTP 404 {response.url}")
                 else:
+                    # other success codes (the HTTP errors are raised by raise_for_status)
                     _LOGGER.warning(f"{response}")
             except Exception as exc:
                 if response is not None and response.status == 404:
@@ -553,11 +555,8 @@ class EasyconBridge(EcotouchBridge):
         results = {}
         resultsStatus = {}
 
-        basic_auth = None
-        if self.username is not None and self.pwd is not None:
-            basic_auth = aiohttp.BasicAuth(self.username, self.pwd)
-
-        async with self.web_session.get(f"http://{self.host}/config/query.cgi?{param}", auth=basic_auth) as response:
+        async with self.web_session.get(f"http://{self.host}/config/query.cgi?{param}",
+                                    headers=self._auth_headers()) as response:
             try:
                 response.raise_for_status()
                 if response.status == 200:
