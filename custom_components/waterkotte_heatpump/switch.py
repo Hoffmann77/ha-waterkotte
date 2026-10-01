@@ -2,7 +2,6 @@ import logging
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_OFF
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import WKHPBaseEntity
@@ -38,10 +37,3 @@ class WKHPSwitch(WKHPBaseEntity, SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         return self._tag_value
-
-    @property
-    def icon(self):
-        """Return the icon of the sensor."""
-        if self.entity_description.icon_off is not None and self.state == STATE_OFF:
-            return self.entity_description.icon_off
-        return super().icon

@@ -128,7 +128,6 @@ class ExtSensorEntityDescription(SensorEntityDescription):
 class ExtSwitchEntityDescription(SwitchEntityDescription):
     tag: WKHPTag | None = None
     feature: str | None = None
-    icon_off: str | None = None
 
 
 PLATFORMS: Final = [Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.SWITCH]
@@ -138,14 +137,12 @@ BINARY_SENSORS: Final = [
         key="STATE_SOURCEPUMP",
         tag=WKHPTag.STATE_SOURCEPUMP,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:water-pump",
         entity_registry_enabled_default=True
     ),
     ExtBinarySensorEntityDescription(
         key="STATE_HEATINGPUMP",
         tag=WKHPTag.STATE_HEATINGPUMP,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:heat-pump",
         entity_registry_enabled_default=True
     ),
     # EVD: -> Überhitzungsregler
@@ -153,56 +150,48 @@ BINARY_SENSORS: Final = [
         key="STATE_EVD",
         tag=WKHPTag.STATE_EVD,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:thermometer-high",
         entity_registry_enabled_default=True
     ),
     ExtBinarySensorEntityDescription(
         key="STATE_COMPRESSOR",
         tag=WKHPTag.STATE_COMPRESSOR,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtBinarySensorEntityDescription(
         key="STATE_COMPRESSOR2",
         tag=WKHPTag.STATE_COMPRESSOR2,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtBinarySensorEntityDescription(
         key="STATE_EXTERNAL_HEATER",
         tag=WKHPTag.STATE_EXTERNAL_HEATER,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:heating-coil",
         entity_registry_enabled_default=True
     ),
     ExtBinarySensorEntityDescription(
         key="STATE_ALARM",
         tag=WKHPTag.STATE_ALARM,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:alert",
         entity_registry_enabled_default=False
     ),
     ExtBinarySensorEntityDescription(
         key="STATE_COOLING",
         tag=WKHPTag.STATE_COOLING,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=False
     ),
     ExtBinarySensorEntityDescription(
         key="STATE_WATER",
         tag=WKHPTag.STATE_WATER,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:water-thermometer",
         entity_registry_enabled_default=True
     ),
     ExtBinarySensorEntityDescription(
         key="STATE_POOL",
         tag=WKHPTag.STATE_POOL,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:pool",
         entity_registry_enabled_default=False,
         feature=FEATURE_POOL
     ),
@@ -210,14 +199,12 @@ BINARY_SENSORS: Final = [
         key="STATE_SOLAR",
         tag=WKHPTag.STATE_SOLAR,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:solar-power-variant",
         entity_registry_enabled_default=False
     ),
     ExtBinarySensorEntityDescription(
         key="STATE_COOLING4WAY",
         tag=WKHPTag.STATE_COOLING4WAY,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=False
     ),
     # status sensors (Operation Mode 0=off, 1=on or 2=disabled)
@@ -225,28 +212,24 @@ BINARY_SENSORS: Final = [
         key="STATUS_HEATING",
         tag=WKHPTag.STATUS_HEATING,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:radiator",
         entity_registry_enabled_default=True
     ),
     ExtBinarySensorEntityDescription(
         key="STATUS_WATER",
         tag=WKHPTag.STATUS_WATER,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:water-thermometer",
         entity_registry_enabled_default=True
     ),
     ExtBinarySensorEntityDescription(
         key="STATUS_COOLING",
         tag=WKHPTag.STATUS_COOLING,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=True
     ),
     ExtBinarySensorEntityDescription(
         key="STATUS_POOL",
         tag=WKHPTag.STATUS_POOL,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:pool-thermometer",
         entity_registry_enabled_default=False,
         feature=FEATURE_POOL
     ),
@@ -254,14 +237,12 @@ BINARY_SENSORS: Final = [
         key="STATE_BLOCKING_TIME",
         tag=WKHPTag.STATE_BLOCKING_TIME,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:electric-switch",
         entity_registry_enabled_default=False
     ),
     ExtBinarySensorEntityDescription(
         key="STATE_TEST_RUN",
         tag=WKHPTag.STATE_TEST_RUN,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:heating-coil",
         entity_registry_enabled_default=True
     ),
     # this is just indicates if the heating circulation pump is running -
@@ -317,7 +298,6 @@ BINARY_SENSORS: Final = [
         key="STATUS_SOLAR",
         tag=WKHPTag.STATUS_SOLAR,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:solar-power-variant",
         entity_registry_enabled_default=False
     ),
 
@@ -325,7 +305,6 @@ BINARY_SENSORS: Final = [
         key="BASICVENT_STATUS_BYPASS_ACTIVE_D1432",
         tag=WKHPTag.BASICVENT_STATUS_BYPASS_ACTIVE_D1432,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:electric-switch",
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
     ),
@@ -333,7 +312,6 @@ BINARY_SENSORS: Final = [
         key="BASICVENT_STATUS_HUMIDIFIER_ACTIVE_D1433",
         tag=WKHPTag.BASICVENT_STATUS_HUMIDIFIER_ACTIVE_D1433,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:electric-switch",
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
     ),
@@ -341,7 +319,6 @@ BINARY_SENSORS: Final = [
         key="BASICVENT_STATUS_COMFORT_BYPASS_ACTIVE_D1465",
         tag=WKHPTag.BASICVENT_STATUS_COMFORT_BYPASS_ACTIVE_D1465,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:electric-switch",
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
     ),
@@ -349,7 +326,6 @@ BINARY_SENSORS: Final = [
         key="BASICVENT_STATUS_SMART_BYPASS_ACTIVE_D1466",
         tag=WKHPTag.BASICVENT_STATUS_SMART_BYPASS_ACTIVE_D1466,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:electric-switch",
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
     ),
@@ -357,7 +333,6 @@ BINARY_SENSORS: Final = [
         key="BASICVENT_STATUS_HOLIDAY_ENABLED_D1503",
         tag=WKHPTag.BASICVENT_STATUS_HOLIDAY_ENABLED_D1503,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:electric-switch",
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
     ),
@@ -365,7 +340,6 @@ BINARY_SENSORS: Final = [
         key="BASICVENT_FILTER_CHANGE_DISPLAY_D1469",
         tag=WKHPTag.BASICVENT_FILTER_CHANGE_DISPLAY_D1469,
         device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:electric-switch",
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
     )
@@ -410,7 +384,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_RETURN_SETPOINT",
         tag=WKHPTag.TEMPERATURE_RETURN_SETPOINT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -424,7 +397,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_COOLING_SETPOINT",
         tag=WKHPTag.TEMPERATURE_COOLING_SETPOINT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=False,
         native_min_value=5,
         native_max_value=26,
@@ -437,7 +409,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_COOLING_OUTDOOR_LIMIT",
         tag=WKHPTag.TEMPERATURE_COOLING_OUTDOOR_LIMIT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=False,
         native_min_value=7,
         native_max_value=30,
@@ -450,7 +421,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_COOLING_FLOW_LIMIT",
         tag=WKHPTag.TEMPERATURE_COOLING_FLOW_LIMIT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=False,
         native_min_value=4,
         native_max_value=20,
@@ -465,7 +435,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_SETPOINT",
         tag=WKHPTag.TEMPERATURE_HEATING_SETPOINT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:radiator",
         entity_registry_enabled_default=True,
         native_min_value=15,
         native_max_value=60,
@@ -477,7 +446,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_ADJUST",
         tag=WKHPTag.TEMPERATURE_HEATING_ADJUST,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:radiator",
         entity_registry_enabled_default=True,
         native_min_value=-2,
         native_max_value=2,
@@ -489,7 +457,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_HYSTERESIS",
         tag=WKHPTag.TEMPERATURE_HEATING_HYSTERESIS,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:radiator",
         entity_registry_enabled_default=True,
         native_min_value=0,
         native_max_value=10,
@@ -501,7 +468,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX1_ADJUST",
         tag=WKHPTag.TEMPERATURE_MIX1_ADJUST,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-1-circle",
         entity_registry_enabled_default=True,
         native_min_value=-2,
         native_max_value=2,
@@ -513,7 +479,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX2_ADJUST",
         tag=WKHPTag.TEMPERATURE_MIX2_ADJUST,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-2-circle",
         entity_registry_enabled_default=False,
         native_min_value=-2,
         native_max_value=2,
@@ -525,7 +490,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX3_ADJUST",
         tag=WKHPTag.TEMPERATURE_MIX3_ADJUST,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-3-circle",
         entity_registry_enabled_default=False,
         native_min_value=-2,
         native_max_value=2,
@@ -537,7 +501,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_ADJUST",
         tag=WKHPTag.TEMPERATURE_POOL_ADJUST,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:pool-thermometer",
         entity_registry_enabled_default=False,
         native_min_value=-2,
         native_max_value=2,
@@ -552,7 +515,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_HC_LIMIT",
         tag=WKHPTag.TEMPERATURE_HEATING_HC_LIMIT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:radiator",
         entity_registry_enabled_default=False,
         native_min_value=5,
         native_max_value=35,
@@ -566,7 +528,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_HC_TARGET",
         tag=WKHPTag.TEMPERATURE_HEATING_HC_TARGET,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:radiator",
         entity_registry_enabled_default=False,
         native_min_value=15,
         native_max_value=65,
@@ -580,7 +541,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_HC_OUTDOOR_NORM",
         tag=WKHPTag.TEMPERATURE_HEATING_HC_OUTDOOR_NORM,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:radiator",
         entity_registry_enabled_default=False,
         native_min_value=-99,
         native_max_value=99,
@@ -594,7 +554,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_HC_NORM",
         tag=WKHPTag.TEMPERATURE_HEATING_HC_NORM,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:radiator",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=99,
@@ -608,7 +567,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_SETPOINTLIMIT_MAX",
         tag=WKHPTag.TEMPERATURE_HEATING_SETPOINTLIMIT_MAX,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:radiator",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=99,
@@ -621,7 +579,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_SETPOINTLIMIT_MIN",
         tag=WKHPTag.TEMPERATURE_HEATING_SETPOINTLIMIT_MIN,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:radiator",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=99,
@@ -634,7 +591,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_WATER_SETPOINT",
         tag=WKHPTag.TEMPERATURE_WATER_SETPOINT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:water-thermometer",
         entity_registry_enabled_default=True,
         native_min_value=28,
         native_max_value=70,
@@ -646,7 +602,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_WATER_HYSTERESIS",
         tag=WKHPTag.TEMPERATURE_WATER_HYSTERESIS,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:water-thermometer",
         entity_registry_enabled_default=True,
         native_min_value=0,
         native_max_value=10,
@@ -660,7 +615,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX1_HC_LIMIT",
         tag=WKHPTag.TEMPERATURE_MIX1_HC_LIMIT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-1-circle",
         entity_registry_enabled_default=False,
         native_min_value=5,
         native_max_value=35,
@@ -674,7 +628,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX1_HC_TARGET",
         tag=WKHPTag.TEMPERATURE_MIX1_HC_TARGET,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-1-circle",
         entity_registry_enabled_default=False,
         native_min_value=15,
         native_max_value=65,
@@ -688,7 +641,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX1_HC_OUTDOOR_NORM",
         tag=WKHPTag.TEMPERATURE_MIX1_HC_OUTDOOR_NORM,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-1-circle",
         entity_registry_enabled_default=False,
         native_min_value=-99,
         native_max_value=99,
@@ -702,7 +654,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX1_HC_HEATING_NORM",
         tag=WKHPTag.TEMPERATURE_MIX1_HC_HEATING_NORM,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-1-circle",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=99,
@@ -716,7 +667,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX1_HC_MAX",
         tag=WKHPTag.TEMPERATURE_MIX1_HC_MAX,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-1-circle",
         entity_registry_enabled_default=False,
         native_min_value=15,
         native_max_value=72,
@@ -729,7 +679,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX2_HC_LIMIT",
         tag=WKHPTag.TEMPERATURE_MIX2_HC_LIMIT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-2-circle",
         entity_registry_enabled_default=False,
         native_min_value=5,
         native_max_value=35,
@@ -741,7 +690,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX2_HC_TARGET",
         tag=WKHPTag.TEMPERATURE_MIX2_HC_TARGET,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-2-circle",
         entity_registry_enabled_default=False,
         native_min_value=15,
         native_max_value=65,
@@ -753,7 +701,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX2_HC_OUTDOOR_NORM",
         tag=WKHPTag.TEMPERATURE_MIX2_HC_OUTDOOR_NORM,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-2-circle",
         entity_registry_enabled_default=False,
         native_min_value=-99,
         native_max_value=99,
@@ -765,7 +712,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX2_HC_HEATING_NORM",
         tag=WKHPTag.TEMPERATURE_MIX2_HC_HEATING_NORM,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-2-circle",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=99,
@@ -777,7 +723,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX2_HC_MAX",
         tag=WKHPTag.TEMPERATURE_MIX2_HC_MAX,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-2-circle",
         entity_registry_enabled_default=False,
         native_min_value=15,
         native_max_value=72,
@@ -790,7 +735,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX3_HC_LIMIT",
         tag=WKHPTag.TEMPERATURE_MIX3_HC_LIMIT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-3-circle",
         entity_registry_enabled_default=False,
         native_min_value=5,
         native_max_value=35,
@@ -802,7 +746,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX3_HC_TARGET",
         tag=WKHPTag.TEMPERATURE_MIX3_HC_TARGET,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-3-circle",
         entity_registry_enabled_default=False,
         native_min_value=15,
         native_max_value=65,
@@ -814,7 +757,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX3_HC_OUTDOOR_NORM",
         tag=WKHPTag.TEMPERATURE_MIX3_HC_OUTDOOR_NORM,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-3-circle",
         entity_registry_enabled_default=False,
         native_min_value=-99,
         native_max_value=99,
@@ -826,7 +768,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX3_HC_HEATING_NORM",
         tag=WKHPTag.TEMPERATURE_MIX3_HC_HEATING_NORM,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-3-circle",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=99,
@@ -838,7 +779,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_MIX3_HC_MAX",
         tag=WKHPTag.TEMPERATURE_MIX3_HC_MAX,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:numeric-3-circle",
         entity_registry_enabled_default=False,
         native_min_value=15,
         native_max_value=72,
@@ -851,7 +791,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_SETPOINT",
         tag=WKHPTag.TEMPERATURE_POOL_SETPOINT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:pool-thermometer",
         entity_registry_enabled_default=False,
         native_min_value=15,
         native_max_value=75,
@@ -864,7 +803,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_HYSTERESIS",
         tag=WKHPTag.TEMPERATURE_POOL_HYSTERESIS,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:pool-thermometer",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=10,
@@ -877,7 +815,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_HC_LIMIT",
         tag=WKHPTag.TEMPERATURE_POOL_HC_LIMIT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:pool",
         entity_registry_enabled_default=False,
         native_min_value=5,
         native_max_value=35,
@@ -890,7 +827,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_HC_TARGET",
         tag=WKHPTag.TEMPERATURE_POOL_HC_TARGET,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:pool",
         entity_registry_enabled_default=False,
         native_min_value=15,
         native_max_value=65,
@@ -903,7 +839,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_HC_OUTDOOR_NORM",
         tag=WKHPTag.TEMPERATURE_POOL_HC_OUTDOOR_NORM,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:pool",
         entity_registry_enabled_default=False,
         native_min_value=-99,
         native_max_value=99,
@@ -916,7 +851,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_HC_NORM",
         tag=WKHPTag.TEMPERATURE_POOL_HC_NORM,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:pool",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=99,
@@ -931,7 +865,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_WATER_DISINFECTION",
         tag=WKHPTag.TEMPERATURE_WATER_DISINFECTION,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:shield-bug",
         entity_registry_enabled_default=False,
         native_min_value=60,
         native_max_value=70,
@@ -944,7 +877,6 @@ NUMBER_SENSORS: Final = [
         key="SCHEDULE_WATER_DISINFECTION_DURATION",
         tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_DURATION,
         device_class=None,  # duration in h
-        icon="mdi:progress-clock",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=23,
@@ -957,7 +889,6 @@ NUMBER_SENSORS: Final = [
         key="BASICVENT_INCOMING_FAN_MANUAL_SPEED_PERCENT",
         tag=WKHPTag.BASICVENT_INCOMING_FAN_MANUAL_SPEED_PERCENT,
         device_class=None,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -970,7 +901,6 @@ NUMBER_SENSORS: Final = [
         key="BASICVENT_OUTGOING_FAN_MANUAL_SPEED_PERCENT",
         tag=WKHPTag.BASICVENT_OUTGOING_FAN_MANUAL_SPEED_PERCENT,
         device_class=None,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -983,7 +913,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_POWLIMIT_MIN",
         tag=WKHPTag.TEMPERATURE_HEATING_POWLIMIT_MIN,
         device_class=None,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -995,7 +924,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_HEATING_POWLIMIT_MAX",
         tag=WKHPTag.TEMPERATURE_HEATING_POWLIMIT_MAX,
         device_class=None,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -1007,7 +935,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_WATER_POWLIMIT_MIN",
         tag=WKHPTag.TEMPERATURE_WATER_POWLIMIT_MIN,
         device_class=None,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -1019,7 +946,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_WATER_POWLIMIT_MAX",
         tag=WKHPTag.TEMPERATURE_WATER_POWLIMIT_MAX,
         device_class=None,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -1031,7 +957,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_POWLIMIT_MIN",
         tag=WKHPTag.TEMPERATURE_POOL_POWLIMIT_MIN,
         device_class=None,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -1043,7 +968,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_POWLIMIT_MAX",
         tag=WKHPTag.TEMPERATURE_POOL_POWLIMIT_MAX,
         device_class=None,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -1055,7 +979,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_SETPOINTLIMIT",
         tag=WKHPTag.TEMPERATURE_POOL_SETPOINTLIMIT,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:pool-thermometer",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=99,
@@ -1067,7 +990,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_POOL_MAX_RUNTIME",
         tag=WKHPTag.TEMPERATURE_POOL_MAX_RUNTIME,
         device_class=NumberDeviceClass.DURATION,
-        icon="mdi:clock-outline",
         entity_registry_enabled_default=False,
         native_min_value=5,
         native_max_value=180,
@@ -1081,7 +1003,6 @@ NUMBER_SENSORS: Final = [
         key="PUMPSERVICE_SOURCEPUMP_PRE_RUNTIME_I1278",
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_PRE_RUNTIME_I1278,
         device_class=NumberDeviceClass.DURATION,
-        icon="mdi:clock-outline",
         entity_registry_enabled_default=False,
         native_min_value=25,
         native_max_value=500,
@@ -1093,7 +1014,6 @@ NUMBER_SENSORS: Final = [
         key="PUMPSERVICE_SOURCEPUMP_POST_RUNTIME_I1279",
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_POST_RUNTIME_I1279,
         device_class=NumberDeviceClass.DURATION,
-        icon="mdi:clock-outline",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=500,
@@ -1105,7 +1025,6 @@ NUMBER_SENSORS: Final = [
         key="PUMPSERVICE_SOURCEPUMP_ANTI_JAMMING_I1280",
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_ANTI_JAMMING_I1280,
         device_class=NumberDeviceClass.DURATION,
-        icon="mdi:clock-outline",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=500,
@@ -1117,7 +1036,6 @@ NUMBER_SENSORS: Final = [
         key="PUMPSERVICE_SOURCEPUMP_TEMP_ON_LOWER_A1539",
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_TEMP_ON_LOWER_A1539,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=False,
         native_min_value=-50,
         native_max_value=50,
@@ -1129,7 +1047,6 @@ NUMBER_SENSORS: Final = [
         key="PUMPSERVICE_SOURCEPUMP_HEATMODE_MINSPEED_A485",
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_HEATMODE_MINSPEED_A485,
         device_class=None,
-        icon="mdi:pump",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -1141,7 +1058,6 @@ NUMBER_SENSORS: Final = [
         key="PUMPSERVICE_SOURCEPUMP_HEATMODE_MAXSPEED_A486",
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_HEATMODE_MAXSPEED_A486,
         device_class=None,
-        icon="mdi:pump",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -1153,7 +1069,6 @@ NUMBER_SENSORS: Final = [
         key="PUMPSERVICE_SOURCEPUMP_HEATMODE_SOURCE_TEMPERATURE_A479",
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_HEATMODE_SOURCE_TEMPERATURE_A479,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=40,
@@ -1165,7 +1080,6 @@ NUMBER_SENSORS: Final = [
         key="PUMPSERVICE_SOURCEPUMP_COOLINGMODE_MINSPEED_A1032",
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_COOLINGMODE_MINSPEED_A1032,
         device_class=None,
-        icon="mdi:pump",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -1177,7 +1091,6 @@ NUMBER_SENSORS: Final = [
         key="PUMPSERVICE_SOURCEPUMP_COOLINGMODE_MAXSPEED_A1033",
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_COOLINGMODE_MAXSPEED_A1033,
         device_class=None,
-        icon="mdi:pump",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=100,
@@ -1189,7 +1102,6 @@ NUMBER_SENSORS: Final = [
         key="PUMPSERVICE_SOURCEPUMP_COOLINGMODE_SOURCE_TEMPERATURE_A1034",
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_COOLINGMODE_SOURCE_TEMPERATURE_A1034,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=False,
         native_min_value=0,
         native_max_value=50,
@@ -1201,7 +1113,6 @@ NUMBER_SENSORS: Final = [
         key="TEMPERATURE_ROOM_TARGET_A100",
         tag=WKHPTag.TEMPERATURE_ROOM_TARGET_A100,
         device_class=NumberDeviceClass.TEMPERATURE,
-        icon="mdi:home-thermometer",
         entity_registry_enabled_default=False,
         native_min_value=15,
         native_max_value=30,
@@ -1215,7 +1126,6 @@ SELECT_SENSORS: Final = [
         key="ENABLE_COOLING",
         tag=WKHPTag.ENABLE_COOLING,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=True,
         options=ENUM_OFFAUTOMANUAL,
     ),
@@ -1223,7 +1133,6 @@ SELECT_SENSORS: Final = [
         key="ENABLE_HEATING",
         tag=WKHPTag.ENABLE_HEATING,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:radiator",
         entity_registry_enabled_default=True,
         options=ENUM_OFFAUTOMANUAL,
     ),
@@ -1231,7 +1140,6 @@ SELECT_SENSORS: Final = [
         key="ENABLE_PV",
         tag=WKHPTag.ENABLE_PV,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:solar-power",
         entity_registry_enabled_default=False,
         options=ENUM_OFFAUTOMANUAL,
     ),
@@ -1239,7 +1147,6 @@ SELECT_SENSORS: Final = [
         key="ENABLE_WARMWATER",
         tag=WKHPTag.ENABLE_WARMWATER,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:water-thermometer",
         entity_registry_enabled_default=True,
         options=ENUM_OFFAUTOMANUAL,
     ),
@@ -1247,7 +1154,6 @@ SELECT_SENSORS: Final = [
         key="ENABLE_POOL",
         tag=WKHPTag.ENABLE_POOL,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:pool-thermometer",
         entity_registry_enabled_default=False,
         options=ENUM_OFFAUTOMANUAL,
         feature=FEATURE_POOL
@@ -1256,7 +1162,6 @@ SELECT_SENSORS: Final = [
         key="ENABLE_EXTERNAL_HEATER",
         tag=WKHPTag.ENABLE_EXTERNAL_HEATER,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:heating-coil",
         entity_registry_enabled_default=True,
         options=ENUM_OFFAUTOMANUAL,
     ),
@@ -1264,7 +1169,6 @@ SELECT_SENSORS: Final = [
         key="ENABLE_MIXING1",
         tag=WKHPTag.ENABLE_MIXING1,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:numeric-1-circle",
         entity_registry_enabled_default=True,
         options=ENUM_OFFAUTOMANUAL,
     ),
@@ -1272,7 +1176,6 @@ SELECT_SENSORS: Final = [
         key="ENABLE_MIXING2",
         tag=WKHPTag.ENABLE_MIXING2,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:numeric-2-circle",
         entity_registry_enabled_default=False,
         options=ENUM_OFFAUTOMANUAL,
     ),
@@ -1280,7 +1183,6 @@ SELECT_SENSORS: Final = [
         key="ENABLE_MIXING3",
         tag=WKHPTag.ENABLE_MIXING3,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:numeric-3-circle",
         entity_registry_enabled_default=False,
         options=ENUM_OFFAUTOMANUAL,
     ),
@@ -1289,7 +1191,6 @@ SELECT_SENSORS: Final = [
         key="TEMPERATURE_HEATING_MODE",
         tag=WKHPTag.TEMPERATURE_HEATING_MODE,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:radiator",
         entity_registry_enabled_default=True,
         options=ENUM_HEATING_MODE,
     ),
@@ -1297,7 +1198,6 @@ SELECT_SENSORS: Final = [
         key="BASICVENT_OPERATION_MODE_I4582",
         tag=WKHPTag.BASICVENT_OPERATION_MODE_I4582,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:hvac",
         entity_registry_enabled_default=False,
         options=ENUM_VENT_OPERATION_MODE,
         feature=FEATURE_VENT
@@ -1306,7 +1206,6 @@ SELECT_SENSORS: Final = [
         key="BASICVENT_OPERATION_MODE_ALT",
         tag=WKHPTag.BASICVENT_OPERATION_MODE_ALT,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:hvac",
         entity_registry_enabled_default=False,
         options=ENUM_VENT_OPERATION_MODE,
         feature=FEATURE_VENT
@@ -1364,7 +1263,6 @@ SELECT_SENSORS: Final = [
         key="ROOM_INFLUENCE_A101_OR_I264",
         tag=WKHPTag.ROOM_INFLUENCE_A101_OR_I264,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:home-thermometer",
         entity_registry_enabled_default=False,
         options=ENUM_OPTIONS_0_4,
     ),
@@ -1372,7 +1270,6 @@ SELECT_SENSORS: Final = [
         key="TEMPERATURE_POOL_MODE",
         tag=WKHPTag.TEMPERATURE_POOL_MODE,
         device_class=DEVICE_CLASS_ENUM,
-        icon="mdi:pool",
         entity_registry_enabled_default=False,
         options=ENUM_POOL_MODE,
     ),
@@ -1385,7 +1282,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:sun-snowflake-variant",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1394,7 +1290,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:sun-snowflake-variant",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1403,7 +1298,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:sun-snowflake-variant",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1412,7 +1306,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1421,7 +1314,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1430,7 +1322,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1439,7 +1330,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1448,7 +1338,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1457,7 +1346,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1466,7 +1354,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1475,7 +1362,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:storage-tank",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1484,7 +1370,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermostat-box",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1493,7 +1378,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermostat-box",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1502,7 +1386,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:radiator",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1511,7 +1394,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:radiator",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1520,7 +1402,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1529,7 +1410,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1538,7 +1418,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:water-thermometer",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1547,7 +1426,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:water-thermometer",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1556,7 +1434,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:numeric-1-circle",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1565,7 +1442,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1574,7 +1450,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:numeric-1-circle",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1583,7 +1458,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:numeric-2-circle",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1592,7 +1466,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1601,7 +1474,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:numeric-2-circle",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1610,7 +1482,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:numeric-3-circle",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1619,7 +1490,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1628,7 +1498,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:numeric-3-circle",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1637,7 +1506,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:pool-thermometer",
         entity_registry_enabled_default=False,
         feature=FEATURE_POOL
     ),
@@ -1647,7 +1515,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:pool-thermometer",
         entity_registry_enabled_default=False,
         feature=FEATURE_POOL
     ),
@@ -1657,7 +1524,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:solar-power-variant",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1666,7 +1532,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:solar-power-variant",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -1675,7 +1540,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=False
     ),
     # other (none temperature) values...
@@ -1685,7 +1549,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.PRESSURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPressure.BAR,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1694,7 +1557,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.PRESSURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPressure.BAR,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1703,7 +1565,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.PRESSURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPressure.BAR,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False
     ),
     # other data...
@@ -1713,7 +1574,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1722,7 +1582,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1731,7 +1590,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
-        icon="mdi:meter-electric",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1740,7 +1598,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
-        icon="mdi:radiator",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1749,7 +1606,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1758,7 +1614,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=None,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1767,7 +1622,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=None,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1776,7 +1630,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        icon="mdi:lightning-bolt-outline",
         entity_registry_enabled_default=True,
         suggested_display_precision=3
     ),
@@ -1786,7 +1639,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True,
         suggested_display_precision=3
     ),
@@ -1796,7 +1648,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        icon="mdi:water-pump",
         entity_registry_enabled_default=False,
         suggested_display_precision=3
     ),
@@ -1806,7 +1657,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        icon="mdi:heating-coil",
         entity_registry_enabled_default=True,
         suggested_display_precision=3
     ),
@@ -1816,7 +1666,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        icon="mdi:home-thermometer-outline",
         entity_registry_enabled_default=True,
         suggested_display_precision=3
     ),
@@ -1826,7 +1675,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        icon="mdi:radiator",
         entity_registry_enabled_default=True,
         suggested_display_precision=3
     ),
@@ -1836,7 +1684,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        icon="mdi:water-thermometer",
         entity_registry_enabled_default=True,
         suggested_display_precision=3
     ),
@@ -1846,7 +1693,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        icon="mdi:pool-thermometer",
         entity_registry_enabled_default=False,
         suggested_display_precision=3,
         feature=FEATURE_POOL
@@ -1857,7 +1703,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        icon="mdi:snowflake-thermometer",
         entity_registry_enabled_default=True,
         suggested_display_precision=3
     ),
@@ -1867,7 +1712,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1876,7 +1720,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1885,7 +1728,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.POWER_FACTOR,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1894,7 +1736,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.DATE,
         state_class=None,
         native_unit_of_measurement=None,
-        icon="mdi:clock-digital",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=True
     ),
@@ -1904,7 +1745,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.DATE,
         state_class=None,
         native_unit_of_measurement=None,
-        icon="mdi:calendar-arrow-right",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1913,7 +1753,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.DATE,
         state_class=None,
         native_unit_of_measurement=None,
-        icon="mdi:calendar-arrow-left",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1922,7 +1761,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.DATE,
         state_class=None,
         native_unit_of_measurement=None,
-        icon="mdi:clock-digital",
         entity_registry_enabled_default=False,
         feature=FEATURE_DISINFECTION
     ),
@@ -1932,7 +1770,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=None,
-        icon="mdi:wrench-clock",
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1941,7 +1778,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=None,
         native_unit_of_measurement=None,
-        icon="mdi:alarm-light",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=True
     ),
@@ -1951,7 +1787,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=None,
         native_unit_of_measurement=None,
-        icon="mdi:alert-circle",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=True
     ),
@@ -1962,7 +1797,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=False,
         suggested_display_precision=1,
         feature=FEATURE_VENT
@@ -1973,7 +1807,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=False,
         suggested_display_precision=1,
         feature=FEATURE_VENT
@@ -1984,7 +1817,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=False,
         suggested_display_precision=1,
         feature=FEATURE_VENT
@@ -1995,7 +1827,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:thermometer",
         entity_registry_enabled_default=False,
         suggested_display_precision=1,
         feature=FEATURE_VENT
@@ -2007,7 +1838,6 @@ SENSOR_SENSORS: Final = [
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.DAYS,
         unit_of_measurement=UnitOfTime.DAYS,
-        icon="mdi:counter",
         entity_registry_enabled_default=False,
         suggested_display_precision=0,
         feature=FEATURE_VENT
@@ -2019,7 +1849,6 @@ SENSOR_SENSORS: Final = [
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTime.DAYS,
         unit_of_measurement=UnitOfTime.DAYS,
-        icon="mdi:counter",
         entity_registry_enabled_default=False,
         suggested_display_precision=0,
         feature=FEATURE_VENT
@@ -2030,7 +1859,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.HUMIDITY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:cloud-percent",
         entity_registry_enabled_default=False,
         suggested_display_precision=1,
         feature=FEATURE_VENT
@@ -2041,7 +1869,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.CO2,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfRatio.PARTS_PER_MILLION,
-        icon="mdi:molecule-co2",
         entity_registry_enabled_default=False,
         suggested_display_precision=2,
         feature=FEATURE_VENT
@@ -2052,7 +1879,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfDensity.MICROGRAMS_PER_CUBIC_METER,
-        icon="mdi:counter",
         entity_registry_enabled_default=False,
         suggested_display_precision=2,
         feature=FEATURE_VENT
@@ -2063,7 +1889,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
-        icon="mdi:wind-power",
         entity_registry_enabled_default=False,
         suggested_display_precision=0,
         feature=FEATURE_VENT
@@ -2074,7 +1899,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:wind-power",
         entity_registry_enabled_default=False,
         suggested_display_precision=1,
         feature=FEATURE_VENT
@@ -2085,7 +1909,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=REVOLUTIONS_PER_MINUTE,
-        icon="mdi:wind-power",
         entity_registry_enabled_default=False,
         suggested_display_precision=0,
         feature=FEATURE_VENT
@@ -2096,7 +1919,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:wind-power",
         entity_registry_enabled_default=False,
         suggested_display_precision=1,
         feature=FEATURE_VENT
@@ -2107,7 +1929,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        icon="mdi:home-lightning-bolt",
         entity_registry_enabled_default=False,
         suggested_display_precision=2,
         feature=FEATURE_VENT
@@ -2118,7 +1939,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.WATT,
-        icon="mdi:home-lightning-bolt",
         entity_registry_enabled_default=False,
         suggested_display_precision=2,
         feature=FEATURE_VENT
@@ -2129,7 +1949,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         suggested_display_precision=1,
         feature=FEATURE_VENT
@@ -2140,7 +1959,6 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        icon="mdi:home-thermometer",
         entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
@@ -2149,7 +1967,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         suggested_display_precision=0,
     ),
@@ -2159,7 +1976,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         suggested_display_precision=0,
     ),
@@ -2169,7 +1985,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         suggested_display_precision=0,
     ),
@@ -2179,7 +1994,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         suggested_display_precision=0,
     ),
@@ -2189,7 +2003,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         suggested_display_precision=0,
     ),
@@ -2201,7 +2014,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2212,7 +2024,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2223,7 +2034,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2234,7 +2044,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2245,7 +2054,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2256,7 +2064,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2267,7 +2074,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2278,7 +2084,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2289,7 +2094,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2300,7 +2104,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=True,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2311,7 +2114,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2322,7 +2124,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2333,7 +2134,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2344,7 +2144,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2355,7 +2154,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2366,7 +2164,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2377,7 +2174,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2388,7 +2184,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2399,7 +2194,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2410,7 +2204,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2421,7 +2214,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2432,7 +2224,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2443,7 +2234,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2454,7 +2244,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2465,7 +2254,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2476,7 +2264,6 @@ SENSOR_SENSORS: Final = [
         device_class=None,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
-        icon="mdi:gauge",
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=1,
@@ -2486,93 +2273,75 @@ SWITCH_SENSORS: Final = [
     ExtSwitchEntityDescription(
         key="HOLIDAY_ENABLED",
         tag=WKHPTag.HOLIDAY_ENABLED,
-        icon="mdi:calendar-check",
-        icon_off="mdi:calendar-blank",
         entity_registry_enabled_default=True
     ),
     ExtSwitchEntityDescription(
         key="SCHEDULE_WATER_DISINFECTION_1MO",
         tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_1MO,
-        icon="mdi:calendar-today",
         entity_registry_enabled_default=False,
         feature=FEATURE_DISINFECTION
     ),
     ExtSwitchEntityDescription(
         key="SCHEDULE_WATER_DISINFECTION_2TU",
         tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_2TU,
-        icon="mdi:calendar-today",
         entity_registry_enabled_default=False,
         feature=FEATURE_DISINFECTION
     ),
     ExtSwitchEntityDescription(
         key="SCHEDULE_WATER_DISINFECTION_3WE",
         tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_3WE,
-        icon="mdi:calendar-today",
         entity_registry_enabled_default=False,
         feature=FEATURE_DISINFECTION
     ),
     ExtSwitchEntityDescription(
         key="SCHEDULE_WATER_DISINFECTION_4TH",
         tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_4TH,
-        icon="mdi:calendar-today",
         entity_registry_enabled_default=False,
         feature=FEATURE_DISINFECTION
     ),
     ExtSwitchEntityDescription(
         key="SCHEDULE_WATER_DISINFECTION_5FR",
         tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_5FR,
-        icon="mdi:calendar-today",
         entity_registry_enabled_default=False,
         feature=FEATURE_DISINFECTION
     ),
     ExtSwitchEntityDescription(
         key="SCHEDULE_WATER_DISINFECTION_6SA",
         tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_6SA,
-        icon="mdi:calendar-today",
         entity_registry_enabled_default=False,
         feature=FEATURE_DISINFECTION
     ),
     ExtSwitchEntityDescription(
         key="SCHEDULE_WATER_DISINFECTION_7SU",
         tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_7SU,
-        icon="mdi:calendar-today",
         entity_registry_enabled_default=False,
         feature=FEATURE_DISINFECTION
     ),
     ExtSwitchEntityDescription(
         key="PERMANENT_HEATING_CIRCULATION_PUMP_WINTER_D1103",
         tag=WKHPTag.PERMANENT_HEATING_CIRCULATION_PUMP_WINTER_D1103,
-        icon="mdi:pump",
-        icon_off="mdi:pump-off",
         entity_registry_enabled_default=True
     ),
     ExtSwitchEntityDescription(
         key="PERMANENT_HEATING_CIRCULATION_PUMP_SUMMER_D1104",
         tag=WKHPTag.PERMANENT_HEATING_CIRCULATION_PUMP_SUMMER_D1104,
-        icon="mdi:pump",
-        icon_off="mdi:pump-off",
         entity_registry_enabled_default=False
     ),
     ExtSwitchEntityDescription(
         key="BASICVENT_FILTER_CHANGE_OPERATING_HOURS_RESET_D1544",
         tag=WKHPTag.BASICVENT_FILTER_CHANGE_OPERATING_HOURS_RESET_D1544,
-        icon="mdi:restart",
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
     ),
     ExtSwitchEntityDescription(
         key="BASICVENT_INCOMING_FAN_MANUAL_MODE",
         tag=WKHPTag.BASICVENT_INCOMING_FAN_MANUAL_MODE,
-        icon="mdi:toggle-switch",
-        icon_off="mdi:toggle-switch-off",
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
     ),
     ExtSwitchEntityDescription(
         key="BASICVENT_OUTGOING_FAN_MANUAL_MODE",
         tag=WKHPTag.BASICVENT_OUTGOING_FAN_MANUAL_MODE,
-        icon="mdi:toggle-switch",
-        icon_off="mdi:toggle-switch-off",
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
     ),
