@@ -5,6 +5,18 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: "ubuntu-latest"
+    steps:
+    - uses: "actions/checkout@v4"
+    - uses: "actions/setup-python@v5"
+      with:
+        python-version: "3.14"
+    - name: Install ruff
+      run: pip install $(grep "^ruff==" requirements_dev.txt)
+    - name: Run ruff
+      run: ruff check --output-format github .
+
   pytest:
     runs-on: "ubuntu-latest"
     steps:
@@ -15,4 +27,5 @@ jobs:
     - name: Install dependencies
       run: pip install -r requirements_dev.txt
     - name: Run tests
-      run: pytest
+      # the coverage must not drop below the current level (raise the limit, when the coverage grows)
+      run: pytest --cov=custom_components.waterkotte_heatpump --cov-report=term-missing --cov-fail-under=75
