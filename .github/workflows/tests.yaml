@@ -28,4 +28,4 @@ jobs:
       run: pip install -r requirements_dev.txt
     - name: Run tests
       # the coverage must not drop below the current level (raise the limit, when the coverage grows)
-      run: pytest --cov=custom_components.waterkotte_heatpump --cov-report=term-missing --cov-fail-under=75
+      run: pytest --cov=custom_components.waterkotte_heatpump --cov-report=term-missing --cov-fail-under=83
