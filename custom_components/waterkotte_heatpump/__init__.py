@@ -172,7 +172,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigE
     # enabled entities have registered their tags as coordinator context, so we fetch the data
     await coordinator.async_refresh()
 
-    config_entry.async_on_unload(config_entry.add_update_listener(entry_update_listener))
     return True
 
 
@@ -183,8 +182,3 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: WaterkotteConfig
         await config_entry.runtime_data.bridge.logout()
 
     return unload_ok
-
-
-async def entry_update_listener(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-    _LOGGER.debug("entry_update_listener() called for entry: %s", config_entry.entry_id)
-    await hass.config_entries.async_reload(config_entry.entry_id)

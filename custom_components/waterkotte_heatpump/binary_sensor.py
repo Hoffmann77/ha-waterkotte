@@ -17,6 +17,9 @@ from .entity import WKHPBaseEntity, WKHPEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
+# the entities are updated by the coordinator
+PARALLEL_UPDATES = 0
+
 
 @dataclass(frozen=True, kw_only=True)
 class ExtBinarySensorEntityDescription(WKHPEntityDescription, BinarySensorEntityDescription):

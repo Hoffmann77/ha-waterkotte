@@ -23,6 +23,9 @@ from .entity import WKHPBaseEntity, WKHPEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
+# one write at a time (the heat pump allows only a few sessions) - the entities are updated by the coordinator
+PARALLEL_UPDATES = 1
+
 
 @dataclass(frozen=True, kw_only=True)
 class ExtSelectEntityDescription(WKHPEntityDescription, SelectEntityDescription):

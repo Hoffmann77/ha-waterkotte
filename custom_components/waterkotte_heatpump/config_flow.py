@@ -51,7 +51,6 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = CONFIG_VERSION
     MINOR_VERSION = CONFIG_MINOR_VERSION
-    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     def __init__(self):
         """Initialize."""
@@ -309,7 +308,8 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         return WaterkotteHeatpumpOptionsFlowHandler()
 
 
-class WaterkotteHeatpumpOptionsFlowHandler(config_entries.OptionsFlow):
+class WaterkotteHeatpumpOptionsFlowHandler(config_entries.OptionsFlowWithReload):
+    """The options - the config entry is reloaded, when they have been changed."""
 
     async def async_step_init(self, user_input=None):  # pylint: disable=unused-argument
         """Manage the options."""

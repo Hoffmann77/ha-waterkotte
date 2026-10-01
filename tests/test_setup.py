@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import aiohttp
 import pytest
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
-from homeassistant.const import ATTR_CONFIG_ENTRY_ID, CONF_HOST, CONF_ID
+from homeassistant.const import ATTR_CONFIG_ENTRY_ID, CONF_HOST, CONF_ID, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -14,9 +14,11 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.waterkotte_heatpump.coordinator import WKHPDataUpdateCoordinator
 from custom_components.waterkotte_heatpump.const import (
+    CONF_POLLING_INTERVAL,
     CONF_SERIAL,
     CONF_SERIES,
     CONF_SYSTEMTYPE,
+    CONF_TAGS_PER_REQUEST,
     CONF_USE_POOL,
     DOMAIN,
     SERVICE_GET_ENERGY_BALANCE,
@@ -276,3 +278,22 @@ async def test_device_information_complete(hass: HomeAssistant, mock_bridge: Mag
     read_tags = [tag for call in mock_bridge.async_read_values.await_args_list for tag in call.args[0]]
     assert WKHPTag.INFO_SERIES not in read_tags
     assert (entry.data[CONF_SERIES], entry.title) == ("Ai1", "Waterkotte Ai1 (WE15123456)")
+
+
+async def test_options_reload(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    """Test that the config entry is reloaded with the new options."""
+    entry = _add_entry(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = entry.runtime_data
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_USERNAME: "waterkotte", CONF_PASSWORD: "waterkotte", CONF_POLLING_INTERVAL: 30, CONF_TAGS_PER_REQUEST: 50},
+    )
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data is not coordinator
+    assert entry.runtime_data.update_interval.total_seconds() == 30
