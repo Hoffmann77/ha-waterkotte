@@ -1,17 +1,17 @@
-import asyncio
 import logging
 import re
+from contextlib import asynccontextmanager
 from datetime import timedelta
 from typing import Sequence
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID, CONF_HOST, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import config_validation as config_val, device_registry as dev_reg, entity_registry as entity_reg
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity import Entity, EntityDescription
+from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
 
@@ -202,30 +202,17 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigEntry) -> bool:
     coordinator = WKHPDataUpdateCoordinator(hass, config_entry)
-    await coordinator.async_refresh()
-    if not coordinator.last_update_success:
-        raise ConfigEntryNotReady
-
-    # we check if the operation hours will be returned as TOTAL's (and if this is
-    # not the case, we enable it!
-    try:
-        res = await coordinator.bridge.async_read_value(WKHPTag.OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634)
-        if res.get('status', None) == "S_OK":
-            if not res.get('value', True):
-                _LOGGER.info(f"async_setup_entry(): enable 'total OPERATING_HOURS' counters via OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634")
-                await coordinator.bridge.async_write_value(WKHPTag.OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634, True)
-    except BaseException as e:
-        _LOGGER.warning(f"async_setup_entry(): could not enable OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634: {(type(e).__name__)} {e}")
-
-    # ok now init the platforms...
+    # connects to the heat pump (see WKHPDataUpdateCoordinator._async_setup) - raises ConfigEntryNotReady (or
+    # ConfigEntryAuthFailed), when this is not possible
+    await coordinator.async_config_entry_first_refresh()
     config_entry.runtime_data = coordinator
+
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     # the initial refresh ran before any entity was added (so no tags were requested) - now all
     # enabled entities have registered their tags as coordinator context, so we fetch the data
     await coordinator.async_refresh()
 
-    # ok we are done...
     config_entry.async_on_unload(config_entry.add_update_listener(entry_update_listener))
     return True
 
@@ -244,8 +231,12 @@ async def entry_update_listener(hass: HomeAssistant, config_entry: ConfigEntry) 
     await hass.config_entries.async_reload(config_entry.entry_id)
 
 
-class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass: HomeAssistant, config_entry):
+class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
+    """The values of the tags (of all enabled entities) - polled from the heat pump"""
+
+    config_entry: WaterkotteConfigEntry
+
+    def __init__(self, hass: HomeAssistant, config_entry: WaterkotteConfigEntry):
         # the serial number of the heat pump (or the config entry id, when the heat pump does not provide a
         # serial number) is used for the device identifier and as prefix of the unique_id's of the entities
         serial = config_entry.data.get(CONF_SERIAL)
@@ -253,7 +244,6 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
             serial = None
         self.unique_id_base = serial if serial is not None else config_entry.entry_id
 
-        self._config_entry = config_entry
         self.available_features = [feature for flag, feature in _FEATURE_FLAGS.items() if config_entry.data.get(flag)]
         _LOGGER.debug(f"available_features: {self.available_features}")
 
@@ -292,59 +282,75 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
         )
 
         # update_interval can be adjusted in the options
-        super().__init__(hass, _LOGGER, name=DOMAIN,
+        super().__init__(hass, _LOGGER, config_entry=config_entry, name=DOMAIN,
                          update_interval=timedelta(seconds=setting(CONF_POLLING_INTERVAL, 60)))
 
-    async def _async_update_data(self):
-        """Update data via library."""
+    async def _async_setup(self) -> None:
+        """Connect to the heat pump (once, during the first refresh)."""
+        async with self._map_errors():
+            # the EasyCon interface has no login - so we also read a tag to check the connection
+            await self.bridge.async_check_login()
+            if not await self.bridge.async_read_values([WKHPTag.VERSION_BIOS]):
+                raise UpdateFailed(f"no data could be read from the heat pump at {self.config_entry.data.get(CONF_HOST)}")
+
+        # we check if the operation hours will be returned as TOTAL's (and if this is
+        # not the case, we enable it!
         try:
-            # each entity registers its tag as coordinator context - so we only
-            # request the tags of the entities that are currently enabled
-            self.bridge.tags = list(set(self.async_contexts()))
-            await self.bridge.login()
-            _LOGGER.info(f"number of entities to query: {len(self.bridge.tags)} (1 entity can consist of n-tags)")
+            res = await self.bridge.async_read_value(WKHPTag.OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634)
+            if res.get('status', None) == "S_OK" and not res.get('value', True):
+                _LOGGER.info(f"enable 'total OPERATING_HOURS' counters via OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634")
+                await self.bridge.async_write_value(WKHPTag.OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634, True)
+        except Exception as e:  # pylint: disable=broad-except
+            _LOGGER.warning(f"could not enable OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634: {(type(e).__name__)} {e}")
+
+    async def _async_update_data(self) -> dict[WKHPTag, dict]:
+        """Update data via library."""
+        # each entity registers its tag as coordinator context - so we only
+        # request the tags of the entities that are currently enabled
+        self.bridge.tags = list(set(self.async_contexts()))
+        _LOGGER.debug(f"number of entities to query: {len(self.bridge.tags)} (1 entity can consist of n-tags)")
+        async with self._map_errors():
             result = await self.bridge.async_get_data()
-            _LOGGER.info(f"number of entity values read: {len(result)}")
+        _LOGGER.debug(f"number of entity values read: {len(result)}")
 
-            if self.data is None:
-                self.data = {}
+        # values that could not be read in this update keep their last value
+        data = dict(self.data or {})
+        data.update({tag: value for tag, value in result.items() if value is not None and value["status"] == "S_OK"})
+        return data
 
-            for a_tag_in_result in result:
-                if result[a_tag_in_result]["status"] == "S_OK":
-                    self.data[a_tag_in_result] = result[a_tag_in_result]
-
-            return self.data
-
-        except UpdateFailed as exception:
-            raise UpdateFailed() from exception
-        except InvalidPasswordException as invalid_pwd:
-            _LOGGER.info(f"invalid password for waterkotte! {invalid_pwd}")
-            raise UpdateFailed() from invalid_pwd
-        except TooManyUsersException as too_many_users:
-            _LOGGER.info(f"TooManyUsers response from waterkotte - waiting 30sec and then retry...")
-            await asyncio.sleep(30)
-            raise UpdateFailed() from too_many_users
-        except Exception as other:
-            _LOGGER.error(f"unexpected: {other}")
-            raise UpdateFailed() from other
+    @asynccontextmanager
+    async def _map_errors(self):
+        """Map the errors of the heat pump to the errors of the coordinator."""
+        try:
+            yield
+        except InvalidPasswordException as err:
+            # starts the reauth flow
+            raise ConfigEntryAuthFailed(f"invalid credentials for the heat pump at {self.config_entry.data.get(CONF_HOST)}") from err
+        except TooManyUsersException as err:
+            raise UpdateFailed("too many users are logged in to the heat pump", retry_after=30) from err
+        except (UpdateFailed, ConfigEntryAuthFailed):
+            raise
+        except Exception as err:
+            raise UpdateFailed(f"error communicating with the heat pump: {type(err).__name__} {err}") from err
 
     async def async_read_values(self, tags: Sequence[WKHPTag]) -> dict:
         """Get data from the API."""
         return await self.bridge.async_read_values(tags)
 
-    async def async_write_tag(self, tag: WKHPTag, value, entity: Entity = None):
-        """Update single data"""
+    async def async_write_tag(self, tag: WKHPTag, value):
+        """Write the value of a tag to the heat pump"""
         result = await self.bridge.async_write_value(tag, value)
         _LOGGER.debug(f"write result: {result}")
 
         if tag in result:
-            self.data[tag] = result[tag]
+            self.async_set_updated_data({**self.data, tag: result[tag]})
         else:
             _LOGGER.error(f"could not write value: '{value}' to: {tag} result was: {result}")
 
-        # after we have written something to the Waterkotte we should force an update of the data...
-        if entity is not None:
-            entity.async_schedule_update_ha_state(force_refresh=True)
+        # writing a value can change other values of the heat pump as well
+        await self.async_request_refresh()
+
+
 
 
 class WKHPBaseEntity(CoordinatorEntity):

@@ -47,6 +47,13 @@
           "host": "Host or IP"
         }
       },
+      "reauth_confirm": {
+        "description": "The login to the Waterkotte at {host} failed - please enter the current username and password.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      },
       "features": {
         "description": "Activation of additional Sensors und Controls:\n(These can also be activated later manually)",
         "data": {
@@ -64,6 +71,7 @@
       "unknown": "Unexpected error - please check the Home Assistant log."
     },
     "abort": {
+      "reauth_successful": "The credentials have been updated.",
       "single_instance_allowed": "Only a single instance is allowed.",
       "already_configured": "This Waterkotte heat pump is already configured.",
       "reconfigure_successful": "The configuration has been updated.",

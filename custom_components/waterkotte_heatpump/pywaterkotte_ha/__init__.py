@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import aiohttp
 import re
@@ -53,24 +52,6 @@ class WaterkotteClient:
             _LOGGER.info(f"number of tags to query set to: {len(tags)}")
         self.__tags = tags
 
-    async def login(self) -> None:
-        if self._internal_client.auth_cookies is None:
-            try:
-                await self._internal_client.login()
-
-            except TooManyUsersException:
-                _LOGGER.warning(f"TooManyUsers while try to login - will just sleep 30sec")
-                await asyncio.sleep(30)
-
-            except Exception as exc:  # pylint: disable=broad-except
-                _LOGGER.error(f"Error while login will retry in 15sec: {exc}")
-                await asyncio.sleep(15)
-                await self._internal_client.logout()
-                try:
-                    await self._internal_client.login()
-                except Exception as exc2:
-                    _LOGGER.error(f"Error while RETRY login: {exc2}")
-
     async def async_check_login(self) -> None:
         """Login without any retry - the exceptions of the login are raised to the caller"""
         await self._internal_client.login()
@@ -79,9 +60,10 @@ class WaterkotteClient:
         await self._internal_client.logout()
 
     async def async_get_data(self) -> dict:
-        if self.tags is not None:
-            res = await self._internal_client.read_values(self.tags)
-            return res
+        if not self.tags:
+            # nothing to request (e.g. before any entity has registered its tag)
+            return {}
+        return await self._internal_client.read_values(self.tags)
 
     async def async_read_values(self, tags: Sequence[WKHPTag]) -> dict:
         res = await self._internal_client.read_values(tags)

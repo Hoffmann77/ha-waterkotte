@@ -38,6 +38,6 @@ class WKHPNumber(WKHPBaseEntity, NumberEntity):
                 value = TEMP_ADJUST_LOOKUP.index(value)
             if self.wkhp_tag[0][0][0] == 'I':
                 value = int(value)
-            await self.coordinator.async_write_tag(self.wkhp_tag, value, self)
+            await self.coordinator.async_write_tag(self.wkhp_tag, value)
         except ValueError:
             return "unavailable"

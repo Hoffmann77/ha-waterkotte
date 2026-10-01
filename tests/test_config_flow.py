@@ -193,3 +193,50 @@ async def test_reconfigure_wrong_device(hass: HomeAssistant, mock_client: MagicM
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "wrong_device"
     assert entry.data[CONF_HOST] == HOST
+
+
+async def test_reauth(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
+    """Test that the reauth flow stores the new credentials (and removes the outdated ones from the options)."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL,
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH", CONF_USERNAME: "waterkotte"},
+        options={CONF_PASSWORD: "old-password", CONF_POLLING_INTERVAL: 30},
+    )
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reauth_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+
+    mock_client.async_check_login.side_effect = InvalidPasswordException("INVALID_PWD")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_USERNAME: "waterkotte", CONF_PASSWORD: "wrong"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_auth"}
+
+    mock_client.async_check_login.side_effect = None
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_USERNAME: "waterkotte", CONF_PASSWORD: "new-password"}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data[CONF_PASSWORD] == "new-password"
+    assert entry.options == {CONF_POLLING_INTERVAL: 30}
+
+
+async def test_reauth_wrong_device(hass: HomeAssistant, mock_client: MagicMock, mock_setup_entry: AsyncMock) -> None:
+    """Test that the reauth flow is aborted, when the host is another heat pump now."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL,
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH"},
+    )
+    entry.add_to_hass(hass)
+    mock_client.async_read_values.return_value = device_info_values(serial="WE15999999")
+
+    result = await entry.start_reauth_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_USERNAME: "waterkotte", CONF_PASSWORD: "new-password"}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "wrong_device"

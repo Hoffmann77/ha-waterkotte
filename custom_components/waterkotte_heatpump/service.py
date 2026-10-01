@@ -115,7 +115,6 @@ class WaterkotteHeatpumpService:
         try:
             await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_START_TIME, start)
             await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_END_TIME, end)
-            await self._coordinator.async_refresh()
         except ValueError as exc:
             if call.return_response:
                 return {"error": str(exc), "date": _now()}
@@ -130,7 +129,6 @@ class WaterkotteHeatpumpService:
         _LOGGER.debug(f"set_disinfection_start_time: {start_time}")
         try:
             await self._coordinator.async_write_tag(WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME, start_time)
-            await self._coordinator.async_refresh()
         except ValueError as exc:
             if call.return_response:
                 return {"error": str(exc), "date": _now()}

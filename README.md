@@ -137,6 +137,10 @@ The optional schedule entities (650+) and the 'Set a Schedule' service have been
 
 The sensors for the holiday start/end time and the BIOS time are timestamp sensors now: their state is an ISO 8601 timestamp (e.g. `2026-12-20T07:00:00+00:00`) instead of the former local text format `2026-12-20 08:00`. Templates or automations that parse the old format need to be adjusted.
 
+### Wrong credentials
+
+When the login to the heat pump fails because of wrong credentials, Home Assistant asks you to re-enter the username and password (`Settings -> Devices & services`) instead of retrying forever.
+
 ### Migrate from the previous 'ha-waterkotte' repository
 
 This is the new version of the previous 'ha-waterkotte' repository (which have now been renamed to [`ha-waterkotte-the-fork`](https://github.com/marq24/ha-waterkotte-the-fork)). After the refactoring process have been completed, I have decided to create an independent repository - since the refactored version does not have much in common with the origin sources.

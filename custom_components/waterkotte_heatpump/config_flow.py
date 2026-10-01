@@ -1,5 +1,7 @@
 """Adds config flow for Waterkotte Heatpump."""
 import logging
+from collections.abc import Mapping
+from typing import Any
 
 import aiohttp
 import voluptuous as vol
@@ -194,6 +196,47 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             errors=self._errors
         )
 
+    async def async_step_reauth(self, entry_data: Mapping[str, Any]):
+        """The login to the heat pump failed (invalid credentials)."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(self, user_input=None):
+        """Ask for the current credentials of the heat pump."""
+        self._errors = {}
+        entry = self._get_reauth_entry()
+
+        if user_input is not None:
+            error = await self._test_connection(
+                host=entry.data[CONF_HOST],
+                username=user_input.get(CONF_USERNAME),
+                pwd=user_input.get(CONF_PASSWORD),
+                system_type=entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH),
+                tags_per_request=entry.options.get(CONF_TAGS_PER_REQUEST, entry.data.get(CONF_TAGS_PER_REQUEST, 10)),
+            )
+            if error is None:
+                if entry.unique_id is not None:
+                    # make sure that it's still the same heat pump
+                    await self.async_set_unique_id(self._serial)
+                    self._abort_if_unique_id_mismatch(reason="wrong_device")
+                # the credentials are stored in the data - so we remove the (outdated) credentials from the options
+                credentials = {CONF_USERNAME: user_input.get(CONF_USERNAME, ""), CONF_PASSWORD: user_input[CONF_PASSWORD]}
+                return self.async_update_reload_and_abort(
+                    entry,
+                    data_updates=credentials,
+                    options={key: value for key, value in entry.options.items() if key not in credentials},
+                )
+            self._errors["base"] = error
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=vol.Schema({
+                vol.Optional(CONF_USERNAME, default=entry.options.get(CONF_USERNAME, entry.data.get(CONF_USERNAME, ""))): str,
+                vol.Required(CONF_PASSWORD): str,
+            }),
+            description_placeholders={"host": entry.data[CONF_HOST]},
+            errors=self._errors
+        )
+
     async def _test_connection(self, host, username, pwd, system_type, tags_per_request) -> str | None:
         """Connect to the heat pump and read the device information - returns an error key on failure"""
         # remove login credentials if not specified...
@@ -206,7 +249,7 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                                   web_session=async_create_clientsession(self.hass), tags=None,
                                   tags_per_request=tags_per_request, lang=self.hass.config.language.lower())
         try:
-            # the client.login() would swallow all errors (and retry) - so we check the login directly
+            # check the login first - so that an invalid password is reported as such
             await client.async_check_login()
             ret = await client.async_read_values([
                 WKHPTag.VERSION_BIOS,

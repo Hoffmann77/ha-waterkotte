@@ -47,6 +47,13 @@
           "host": "IP oder Hostname deiner Waterkotte"
         }
       },
+      "reauth_confirm": {
+        "description": "Die Anmeldung an der Waterkotte unter {host} ist fehlgeschlagen - bitte gib den aktuellen Benutzernamen und das Passwort ein.",
+        "data": {
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      },
       "features": {
         "description": "Automatische Aktivierung zusätzlicher Sensoren und Steuerelemente:\n(Diese können auch später von Hand aktiviert werden)",
         "data": {
@@ -64,6 +71,7 @@
       "unknown": "Unerwarteter Fehler - bitte prüfe das Home Assistant Log."
     },
     "abort": {
+      "reauth_successful": "Die Zugangsdaten wurden aktualisiert.",
       "single_instance_allowed": "Only a single instance is allowed.",
       "already_configured": "Diese Waterkotte Wärmepumpe ist bereits eingerichtet.",
       "reconfigure_successful": "Die Konfiguration wurde aktualisiert.",

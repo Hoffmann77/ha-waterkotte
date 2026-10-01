@@ -31,6 +31,6 @@ class WKHPSelect(WKHPBaseEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         try:
-            await self.coordinator.async_write_tag(self.wkhp_tag, option, self)
+            await self.coordinator.async_write_tag(self.wkhp_tag, option)
         except ValueError:
             return "unavailable"
