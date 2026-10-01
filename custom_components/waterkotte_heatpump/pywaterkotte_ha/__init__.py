@@ -8,16 +8,12 @@ from typing import (
     Any,
     Sequence,
     Tuple,
-    List,
     Collection
 )
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import (
     ECOTOUCH,
     EASYCON,
-    SERIES,
-    SYSTEM_IDS,
-    SIX_STEPS_MODES,
     TRANSLATIONS
 )
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import (
@@ -35,8 +31,6 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 class WaterkotteClient:
     def __init__(self, host: str, username: str, pwd: str, system_type: str, web_session,
                  tags: list, tags_per_request: int, lang: str = "en") -> None:
-        self._host = host
-        self._systemType = system_type
         if system_type == ECOTOUCH:
             self._internal_client = EcotouchBridge(host=host, web_session=web_session, username=username,
                                                    pwd=pwd, tags_per_request=tags_per_request, lang=lang)
@@ -99,10 +93,6 @@ class WaterkotteClient:
 
     async def async_write_value(self, tag: WKHPTag, value):
         res = await self._internal_client.write_value(tag, value)
-        return res
-
-    async def async_write_values(self, kv_pairs: Collection[Tuple[WKHPTag, Any]]):
-        res = await self._internal_client.write_values(kv_pairs)
         return res
 
 
@@ -255,6 +245,48 @@ class EcotouchBridge:
 
         return result
 
+    @staticmethod
+    def _parse_tag_response(content: str, tags: Sequence[str], results: dict, results_status: dict):
+        """Parse the values and states of the tags from the response of a readTags/writeTags request"""
+        for tag in tags:
+            match = re.search(
+                rf"#{tag}\t(?P<status>[A-Z_]+)\n(?P<opt>\d+)\t(?P<value>[-+]?(?:\d*\.?\d+))",
+                content,
+                re.MULTILINE,
+            )
+            if match is None:
+                match = re.search(
+                    rf"#{tag}\t(?P<status>[A-Z_]+)\n(?P<opt>\d+)\t",
+                    content,
+                    re.MULTILINE,
+                )
+                if match is None:
+                    # ok let's check for INACTIVETAG...
+                    match = re.search(
+                        rf"#{tag}\tE_INACTIVETAG",
+                        content,
+                        re.MULTILINE,
+                    )
+                    if match is None:
+                        # special handling for "unknown" tags in the ALARM_BITS field...  [if one of the
+                        # I2xxx Tags is not known, we're simply going to remove that tag from the tag list]
+                        if tag in WKHPTag.ALARM_BITS.tags:
+                            WKHPTag.ALARM_BITS.tags.remove(tag)
+                            _LOGGER.info(f"Tag: '{tag}' not found in response - removing tag from WKHPTag.ALARM_BITS")
+                        else:
+                            _LOGGER.warning(f"Tag: '{tag}' not found in response!")
+                        results_status[tag] = "E_NOTFOUND"
+                    else:
+                        results_status[tag] = "E_INACTIVE"
+                else:
+                    _LOGGER.warning(f"Tag: '{tag}' without value! -> opt-code: {match.group('opt')}")
+                    results_status[tag] = match.group("status")
+
+                results[tag] = None
+            else:
+                results_status[tag] = match.group("status")
+                results[tag] = match.group("value")
+
     async def _read_tags(self, tags: Sequence[WKHPTag], results=None, results_status=None):
         if results is None:
             results = {}
@@ -295,45 +327,7 @@ class EcotouchBridge:
                     if content.startswith("#E_TOO_MANY_USERS"):
                         return None
 
-                    for tag in tags:
-                        match = re.search(
-                            # rf"#{tag}\t(?P<status>[A-Z_]+)\n\d+\t(?P<value>\-?\d+)",
-                            rf"#{tag}\t(?P<status>[A-Z_]+)\n(?P<opt>\d+)\t(?P<value>[-+]?(?:\d*\.?\d+))",
-                            content,
-                            re.MULTILINE,
-                        )
-                        if match is None:
-                            match = re.search(
-                                rf"#{tag}\t(?P<status>[A-Z_]+)\n(?P<opt>\d+)\t",
-                                content,
-                                re.MULTILINE,
-                            )
-                            if match is None:
-                                # ok let's check for INACTIVETAG...
-                                match = re.search(
-                                    rf"#{tag}\tE_INACTIVETAG",
-                                    content,
-                                    re.MULTILINE,
-                                )
-                                if match is None:
-                                    # special handling for "unknown" tags in the ALARM_BITS field...  [if one of the
-                                    # I2xxx Tags is not known, we're simply going to remove that tag from the tag list]
-                                    if tag in WKHPTag.ALARM_BITS.tags:
-                                        WKHPTag.ALARM_BITS.tags.remove(tag)
-                                        _LOGGER.info(f"Tag: '{tag}' not found in response - removing tag from WKHPTag.ALARM_BITS")
-                                    else:
-                                        _LOGGER.warning(f"Tag: '{tag}' not found in response!")
-                                    results_status[tag] = "E_NOTFOUND"
-                                else:
-                                    results_status[tag] = "E_INACTIVE"
-                            else:
-                                _LOGGER.warning(f"Tag: '{tag}' without value! -> opt-code: {match.group('opt')}")
-                                results_status[tag] = match.group("status")
-
-                            results[tag] = None
-                        else:
-                            results_status[tag] = match.group("status")
-                            results[tag] = match.group("value")
+                    self._parse_tag_response(content, tags, results, results_status)
 
                 else:
                     _LOGGER.warning(f"{response}")
@@ -437,40 +431,7 @@ class EcotouchBridge:
                     if content.startswith("#E_TOO_MANY_USERS"):
                         return None
 
-                    ###
-                    for tag in tags:
-                        match = re.search(
-                            # rf"#{tag}\t(?P<status>[A-Z_]+)\n\d+\t(?P<value>\-?\d+)",
-                            rf"#{tag}\t(?P<status>[A-Z_]+)\n(?P<opt>\d+)\t(?P<value>[-+]?(?:\d*\.?\d+))",
-                            content,
-                            re.MULTILINE
-                        )
-                        if match is None:
-                            match = re.search(
-                                rf"#{tag}\t(?P<status>[A-Z_]+)\n(?P<opt>\d+)\t",
-                                content,
-                                re.MULTILINE,
-                            )
-                            if match is None:
-                                # ok let's check for INACTIVETAG...
-                                match = re.search(
-                                    rf"#{tag}\tE_INACTIVETAG",
-                                    content,
-                                    re.MULTILINE,
-                                )
-                                if match is None:
-                                    _LOGGER.warning(f"Tag: '{tag}' not found in response!")
-                                    results_status[tag] = "E_NOTFOUND"
-                                else:
-                                    results_status[tag] = "E_INACTIVE"
-                            else:
-                                _LOGGER.warning(f"Tag: '{tag}' without value! -> opt-code: {match.group('opt')}")
-                                results_status[tag] = match.group("status")
-
-                            results[tag] = None
-                        else:
-                            results_status[tag] = match.group("status")
-                            results[tag] = match.group("value")
+                    self._parse_tag_response(content, tags, results, results_status)
 
                 else:
                     _LOGGER.warning(f"{response}")
@@ -503,9 +464,6 @@ class EasyconBridge(EcotouchBridge):
         I = []  # pylint: disable=invalid-name
         A = []  # pylint: disable=invalid-name
         for tag in tags:
-            print(tag)
-            # for entry in tag.tags:
-            #     print(entry)
             if tag[0] == "D":
                 D.append(int(tag[1:]))
             elif tag[0] == "I":
@@ -524,8 +482,6 @@ class EasyconBridge(EcotouchBridge):
             query += f"|A|{A[0]}|{A[len(A) - 1]}"
         if len(I) > 0:
             query += f"|I|{I[0]}|{I[len(I) - 1]}"
-        # query="?" + query[1:]
-        print(query)
         if query == "":
             return None, None
 
@@ -541,13 +497,6 @@ class EasyconBridge(EcotouchBridge):
                         content = await response.text()  # pylint: disable=invalid-name
                         tree = ElemTree.fromstring(content)
                         root = tree[0]
-
-                        for tagType in root:
-                            for tag in tagType:
-                                if int(tag[0].text) < 50:
-                                    print(f"{tagType.tag[0]}{tag[0].text}={tag[1].text}")
-
-                        # return None, None
                     except Exception as exc:
                         _LOGGER.debug(f"Response was: {content} caused {exc}")
                         raise Exception(f"Error in easycon.py parsing. Received: {content}")

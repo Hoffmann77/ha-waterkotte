@@ -33,10 +33,7 @@ class DataTag(NamedTuple):
     def _decode_value_analog(self, str_vals: List[str]):
         return self.__decode_value_default(str_vals, factor=-1.0)
 
-    # def _decode_value_analog_op_hours(self, str_vals: List[str]):
-    #     return self.__decode_value_default(str_vals, factor=-1.0, hex_decode_single_value=True)
-
-    def __decode_value_default(self, str_vals: List[str], factor: float, hex_decode_single_value:bool=False):
+    def __decode_value_default(self, str_vals: List[str], factor: float):
         if str_vals is None:
             return None
 
@@ -61,15 +58,10 @@ class DataTag(NamedTuple):
                 #    return float('180.000000')
                 # if self.tags[0] == "A4504":
                 #    return float('19')
-                if hex_decode_single_value:
-                    i_val = int(str_vals[0]) & 0xFFFF
-                    hex_string = f"{i_val:04x}0000"
-                    return struct.unpack("!f", bytes.fromhex(hex_string))[0]
+                if factor > -1.0:
+                    return float(first_val) / factor
                 else:
-                    if factor > -1.0:
-                        return float(first_val) / factor
-                    else:
-                        return float(first_val)
+                    return float(first_val)
             # elif len(self.tags) == 2:
             #     high_word = (int(str_vals[0]) << 16) & 0xFFFFFFFF
             #     low_word = (int(str_vals[1])) & 0xFFFF
@@ -122,9 +114,6 @@ class DataTag(NamedTuple):
 
     def _encode_value_default(self, value, encoded_values):
         self.__encode_value_default(value, encoded_values, factor=10)
-
-    def _encode_value_analog(self, value, encoded_values):
-        self.__encode_value_default(value, encoded_values, factor=-1)
 
     def __encode_value_default(self, value, encoded_values, factor: int):
         assert len(self.tags) == 1
@@ -332,17 +321,6 @@ class DataTag(NamedTuple):
             return "disabled"
         else:
             return "Error"
-
-    def _encode_status(self, value, encoded_values):
-        assert len(self.tags) == 1
-        ecotouch_tag = self.tags[0]
-        assert ecotouch_tag[0] in ["I"]
-        if value == "off":
-            encoded_values[ecotouch_tag] = "0"
-        elif value == "on":
-            encoded_values[ecotouch_tag] = "1"
-        elif value == "disabled":
-            encoded_values[ecotouch_tag] = "2"
 
     def _decode_ro_series(self, str_vals: List[str]):
         if str_vals is None and str_vals[0] is not None:

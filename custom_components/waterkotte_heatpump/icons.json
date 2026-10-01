@@ -1,6 +1,5 @@
 {
   "services": {
-    "sync_time": "mdi:clock-outline",
     "set_holiday": "mdi:calendar",
     "set_disinfection_start_time": "mdi:calendar",
     "get_energy_balance": "mdi:home-lightning-bolt-outline",

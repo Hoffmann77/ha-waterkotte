@@ -5,10 +5,17 @@ from homeassistant.core import HomeAssistant
 from .const import DEVICE_NAME, DOMAIN, TITLE
 
 
+def str_or_none(value) -> str | None:
+    """Device information as string - or None, if the heat pump did not provide the value"""
+    if value is None or str(value) in ("", "None"):
+        return None
+    return str(value)
+
+
 def entry_title(series: str | None, serial: str | None) -> str:
     """Title of the config entry: 'Waterkotte <series> (<serial>)' - unknown parts are left out"""
     title = TITLE
-    if series is not None and series not in ("", "None") and not series.upper().startswith("UNKNOWN"):
+    if str_or_none(series) is not None and not series.upper().startswith("UNKNOWN"):
         title = f"{title} {series}"
     if serial is not None:
         title = f"{title} ({serial})"

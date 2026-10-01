@@ -2,11 +2,11 @@ import asyncio
 import logging
 import re
 from datetime import timedelta
-from typing import Collection, Sequence, Any, Tuple
+from typing import Sequence
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID, CONF_HOST, CONF_USERNAME, CONF_PASSWORD
-from homeassistant.core import HomeAssistant, Event, SupportsResponse
+from homeassistant.core import HomeAssistant, SupportsResponse
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as config_val, device_registry as dev_reg, entity_registry as entity_reg
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -47,11 +47,25 @@ from .const import (
     OPTIONS_KEYS,
     CONFIG_VERSION, CONFIG_MINOR_VERSION
 )
-from .naming import device_name, entry_title
+from .naming import device_name, entry_title, str_or_none
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
-SCAN_INTERVAL = timedelta(seconds=60)
 CONFIG_SCHEMA = config_val.removed(DOMAIN, raise_if_present=False)
+
+# the setup flags of the config entry -> the feature, whose entities are enabled by default
+_FEATURE_FLAGS = {
+    CONF_USE_VENT: FEATURE_VENT,
+    CONF_USE_HEATING_CURVE: FEATURE_HEATING_CURVE,
+    CONF_USE_DISINFECTION: FEATURE_DISINFECTION,
+}
+
+# the services of the integration (the handler is the method with the same name in WaterkotteHeatpumpService)
+_SERVICES = {
+    SERVICE_SET_HOLIDAY: SupportsResponse.OPTIONAL,
+    SERVICE_SET_DISINFECTION_START_TIME: SupportsResponse.OPTIONAL,
+    SERVICE_GET_ENERGY_BALANCE: SupportsResponse.ONLY,
+    SERVICE_GET_ENERGY_BALANCE_MONTHLY: SupportsResponse.ONLY,
+}
 
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
@@ -187,31 +201,15 @@ def _is_real_serial(serial: str | None) -> bool:
     return serial is not None and serial not in ("", "None") and re.fullmatch(r"[0-9a-f]{32}", serial) is None
 
 
-def _str_or_none(value) -> str | None:
-    """Device information as string - or None, if the heat pump did not provide the value"""
-    if value is None or str(value) in ("", "None"):
-        return None
-    return str(value)
-
-
-async def async_setup(hass: HomeAssistant, config: dict):  # pylint: disable=unused-argument
-    """Set up this integration using YAML is not supported."""
-    return True
-
-
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     if DOMAIN not in hass.data:
-        value = "UNKOWN"
         _LOGGER.info(STARTUP_MESSAGE)
-        hass.data.setdefault(DOMAIN, {"manifest_version": value})
+        hass.data[DOMAIN] = {}
 
     coordinator = WKHPDataUpdateCoordinator(hass, config_entry)
     await coordinator.async_refresh()
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
-    else:
-        # here we can do some init stuff (like read all data)...
-        pass
 
     # we check if the operation hours will be returned as TOTAL's (and if this is
     # not the case, we enable it!
@@ -229,14 +227,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     service = waterkotte_service.WaterkotteHeatpumpService(hass, config_entry, coordinator)
-    hass.services.async_register(DOMAIN, SERVICE_SET_HOLIDAY, service.set_holiday,
-                                 supports_response=SupportsResponse.OPTIONAL)
-    hass.services.async_register(DOMAIN, SERVICE_SET_DISINFECTION_START_TIME, service.set_disinfection_start_time,
-                                 supports_response=SupportsResponse.OPTIONAL)
-    hass.services.async_register(DOMAIN, SERVICE_GET_ENERGY_BALANCE, service.get_energy_balance,
-                                 supports_response=SupportsResponse.ONLY)
-    hass.services.async_register(DOMAIN, SERVICE_GET_ENERGY_BALANCE_MONTHLY, service.get_energy_balance_monthly,
-                                 supports_response=SupportsResponse.ONLY)
+    for name, supports_response in _SERVICES.items():
+        hass.services.async_register(DOMAIN, name, getattr(service, name), supports_response=supports_response)
 
     # the initial refresh ran before any entity was added (so no tags were requested) - now all
     # enabled entities have registered their tags as coordinator context, so we fetch the data
@@ -255,14 +247,12 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
         if DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]:
             # even if waterkotte does not support logout... I code it here...
             coordinator = hass.data[DOMAIN][config_entry.entry_id]
-            await coordinator.bridge._internal_client.logout()
+            await coordinator.bridge.logout()
 
             hass.data[DOMAIN].pop(config_entry.entry_id)
 
-        hass.services.async_remove(DOMAIN, SERVICE_SET_HOLIDAY)
-        hass.services.async_remove(DOMAIN, SERVICE_SET_DISINFECTION_START_TIME)
-        hass.services.async_remove(DOMAIN, SERVICE_GET_ENERGY_BALANCE)
-        hass.services.async_remove(DOMAIN, SERVICE_GET_ENERGY_BALANCE_MONTHLY)
+        for name in _SERVICES:
+            hass.services.async_remove(DOMAIN, name)
 
     return unload_ok
 
@@ -274,7 +264,6 @@ async def entry_update_listener(hass: HomeAssistant, config_entry: ConfigEntry) 
 
 class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, config_entry):
-        self.name = config_entry.title
         # the serial number of the heat pump (or the config entry id, when the heat pump does not provide a
         # serial number) is used for the device identifier and as prefix of the unique_id's of the entities
         serial = config_entry.data.get(CONF_SERIAL)
@@ -283,57 +272,46 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
         self.unique_id_base = serial if serial is not None else config_entry.entry_id
 
         self._config_entry = config_entry
-        self.available_features = []
-        if CONF_USE_VENT in config_entry.data and config_entry.data[CONF_USE_VENT]:
-            self.available_features.append(FEATURE_VENT)
-        if CONF_USE_HEATING_CURVE in config_entry.data and config_entry.data[CONF_USE_HEATING_CURVE]:
-            self.available_features.append(FEATURE_HEATING_CURVE)
-        if CONF_USE_DISINFECTION in config_entry.data and config_entry.data[CONF_USE_DISINFECTION]:
-            self.available_features.append(FEATURE_DISINFECTION)
+        self.available_features = [feature for flag, feature in _FEATURE_FLAGS.items() if config_entry.data.get(flag)]
         _LOGGER.debug(f"available_features: {self.available_features}")
+
+        def setting(key, default):
+            # settings that have not been changed via the options yet, are taken from the initial configuration
+            return config_entry.options.get(key, config_entry.data.get(key, default))
 
         # the connection data is only stored in the config entry data (not in the options)
         _system_type = config_entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH)
         _host = config_entry.data.get(CONF_HOST)
-        _user = config_entry.options.get(CONF_USERNAME, config_entry.data.get(CONF_USERNAME, "@@@µµµ@@@" if _system_type == EASYCON else "waterkotte"))
-        _pwd = config_entry.options.get(CONF_PASSWORD, config_entry.data.get(CONF_PASSWORD, "@@@µµµ@@@" if _system_type == EASYCON else "waterkotte"))
-        _tags_num = config_entry.options.get(CONF_TAGS_PER_REQUEST, config_entry.data.get(CONF_TAGS_PER_REQUEST, 10))
-
-        if _system_type == EASYCON:
-            # by default, EASYCON does not have a password option... BUT if the user specified login credentials,
-            # then we must use them!
-            if _user == "@@@µµµ@@@" or _pwd == "@@@µµµ@@@":
-                _user = None
-                _pwd = None
+        # by default, EASYCON does not have a password option... BUT if the user specified login credentials,
+        # then we must use them!
+        _default_credential = None if _system_type == EASYCON else "waterkotte"
+        _user = setting(CONF_USERNAME, _default_credential)
+        _pwd = setting(CONF_PASSWORD, _default_credential)
+        if _system_type == EASYCON and (_user is None or _pwd is None):
+            _user = None
+            _pwd = None
 
         self.bridge = WaterkotteClient(host=_host, username=_user, pwd=_pwd, system_type=_system_type,
                                        web_session=async_get_clientsession(hass), tags=[],
-                                       tags_per_request=_tags_num, lang=hass.config.language.lower())
-
-        global SCAN_INTERVAL
-        # update_interval can be adjusted in the options (not for WebAPI)
-        SCAN_INTERVAL = timedelta(seconds=config_entry.options.get(CONF_POLLING_INTERVAL,
-                                                                   config_entry.data.get(CONF_POLLING_INTERVAL, 60)))
+                                       tags_per_request=setting(CONF_TAGS_PER_REQUEST, 10),
+                                       lang=hass.config.language.lower())
 
         fw = config_entry.data.get(CONF_FW)
         bios = config_entry.data.get(CONF_BIOS)
-        self._device_info_dict = DeviceInfo(
+        self.device_info = DeviceInfo(
             identifiers={(DOMAIN, self.unique_id_base)},
             manufacturer=MANUFACTURER,
             name=device_name(hass, config_entry, serial),
-            model=_str_or_none(config_entry.data.get(CONF_SERIES)),
-            model_id=_str_or_none(config_entry.data.get(CONF_ID)),
+            model=str_or_none(config_entry.data.get(CONF_SERIES)),
+            model_id=str_or_none(config_entry.data.get(CONF_ID)),
             serial_number=serial,
             sw_version=f"{fw} BIOS: {bios}" if fw is not None else None,
             configuration_url=f"http://{_host}",
         )
 
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
-
-    # Callable[[Event], Any]
-    def __call__(self, evt: Event) -> bool:
-        _LOGGER.debug(f"Event arrived: {evt}")
-        return True
+        # update_interval can be adjusted in the options
+        super().__init__(hass, _LOGGER, name=DOMAIN,
+                         update_interval=timedelta(seconds=setting(CONF_POLLING_INTERVAL, 60)))
 
     async def _async_update_data(self):
         """Update data via library."""
@@ -370,13 +348,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def async_read_values(self, tags: Sequence[WKHPTag]) -> dict:
         """Get data from the API."""
-        ret = await self.bridge.async_read_values(tags)
-        return ret
-
-    async def async_write_tags(self, kv_pairs: Collection[Tuple[WKHPTag, Any]]) -> dict:
-        """Get data from the API."""
-        ret = await self.bridge.async_write_values(kv_pairs)
-        return ret
+        return await self.bridge.async_read_values(tags)
 
     async def async_write_tag(self, tag: WKHPTag, value, entity: Entity = None):
         """Update single data"""
@@ -399,29 +371,22 @@ class WKHPBaseEntity(CoordinatorEntity):
     def __init__(self, coordinator: WKHPDataUpdateCoordinator, description: EntityDescription) -> None:
         super().__init__(coordinator, context=description.tag)
         self._attr_translation_key = description.key.lower()
-        self.coordinator = coordinator
+        self._attr_unique_id = f"{coordinator.unique_id_base}_{description.key}".lower()
+        self._attr_device_info = coordinator.device_info
         self.entity_description = description
 
         # check, if the feature should be enabled by default (if activated during setup)
         if not description.entity_registry_enabled_default and description.feature is not None:
-            if description.feature in self.coordinator.available_features:
+            if description.feature in coordinator.available_features:
                 self._attr_entity_registry_enabled_default = True
 
     @property
     def wkhp_tag(self):
-        """Return a unique ID to use for this entity."""
+        """The tag of the heat pump, that provides the value of this entity."""
         return self.entity_description.tag
 
     @property
-    def device_info(self) -> DeviceInfo:
-        return self.coordinator._device_info_dict
-
-    @property
-    def available(self):
-        """Return True if entity is available."""
-        return self.coordinator.last_update_success
-
-    @property
-    def unique_id(self):
-        """Return a unique ID to use for this entity."""
-        return f"{self.coordinator.unique_id_base}_{self.entity_description.key}".lower()
+    def _tag_value(self):
+        """The current value of the tag - or None, if the heat pump did not provide a value"""
+        value = (self.coordinator.data or {}).get(self.wkhp_tag, {}).get("value")
+        return None if value == "" else value

@@ -28,17 +28,14 @@ from .const import (
     CONFIG_VERSION, CONFIG_MINOR_VERSION
 )
 from .pywaterkotte_ha.error import Http404Exception, InvalidPasswordException, TooManyUsersException
-from .naming import entry_title
+from .naming import entry_title, str_or_none
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 def _tag_value(values: dict, tag: WKHPTag) -> str | None:
     """Return the value of a tag as string - or None, if the heat pump did not provide a value"""
-    entry = values.get(tag)
-    if entry is None or entry.get("value") is None or str(entry["value"]) in ("", "None"):
-        return None
-    return str(entry["value"])
+    return str_or_none((values.get(tag) or {}).get("value"))
 
 
 class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -96,19 +93,24 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user_easycon(self, user_input=None):
         """Handle a flow initialized by the user."""
-        self._errors = {}
+        return await self._async_step_connection(EASYCON, user_input)
 
-        # Uncomment the next 2 lines if only a single instance of the integration is allowed:
-        # if self._async_current_entries():
-        #     return self.async_abort(reason="single_instance_allowed")
+    async def async_step_user_ecotouch(self, user_input=None):
+        """Handle a flow initialized by the user."""
+        return await self._async_step_connection(ECOTOUCH, user_input)
+
+    async def _async_step_connection(self, system_type: str, user_input: dict | None):
+        """The connection settings of the heat pump (the step 'user_easycon' or 'user_ecotouch')"""
+        self._errors = {}
+        is_easycon = system_type == EASYCON
 
         if user_input is not None:
-            user_input[CONF_SYSTEMTYPE] = EASYCON
+            user_input[CONF_SYSTEMTYPE] = system_type
             error = await self._test_connection(
                 host=user_input[CONF_HOST],
                 username=user_input.get(CONF_USERNAME),
                 pwd=user_input.get(CONF_PASSWORD),
-                system_type=user_input[CONF_SYSTEMTYPE],
+                system_type=system_type,
                 tags_per_request=user_input[CONF_TAGS_PER_REQUEST],
             )
             if error is None:
@@ -123,68 +125,21 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 self._errors["base"] = error
         else:
-            user_input = {}
-            user_input[CONF_HOST] = ""
-            user_input[CONF_USERNAME] = ""
-            user_input[CONF_PASSWORD] = ""
+            # EasyCon does not require a login by default
+            default_credential = "" if is_easycon else "waterkotte"
+            user_input = {CONF_HOST: "", CONF_USERNAME: default_credential, CONF_PASSWORD: default_credential}
 
+        password_key = vol.Optional if is_easycon else vol.Required
         return self.async_show_form(
-            step_id="user_easycon",
+            step_id=f"user_{system_type.lower()}",
             data_schema=vol.Schema({
                 vol.Required(CONF_HOST, default=user_input.get(CONF_HOST)): str,
                 vol.Optional(CONF_USERNAME, default=user_input.get(CONF_USERNAME)): str,
-                vol.Optional(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)): str,
-                vol.Required(CONF_POLLING_INTERVAL, default=500): int,
-                vol.Required(CONF_TAGS_PER_REQUEST, default=25): int
+                password_key(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)): str,
+                vol.Required(CONF_POLLING_INTERVAL, default=500 if is_easycon else 60): int,
+                vol.Required(CONF_TAGS_PER_REQUEST, default=25 if is_easycon else 75): int,
             }),
             description_placeholders={"repo": "https://github.com/marq24/ha-waterkotte"},
-            last_step=False,
-            errors=self._errors
-        )
-
-    async def async_step_user_ecotouch(self, user_input=None):
-        """Handle a flow initialized by the user."""
-        self._errors = {}
-
-        # Uncomment the next 2 lines if only a single instance of the integration is allowed:
-        # if self._async_current_entries():
-        #     return self.async_abort(reason="single_instance_allowed")
-
-        if user_input is not None:
-            user_input[CONF_SYSTEMTYPE] = ECOTOUCH
-            error = await self._test_connection(
-                host=user_input[CONF_HOST],
-                username=user_input.get(CONF_USERNAME),
-                pwd=user_input[CONF_PASSWORD],
-                system_type=user_input[CONF_SYSTEMTYPE],
-                tags_per_request=user_input[CONF_TAGS_PER_REQUEST],
-            )
-            if error is None:
-                await self._async_abort_if_already_configured(user_input[CONF_HOST])
-                user_input[CONF_BIOS] = self._bios
-                user_input[CONF_FW] = self._firmware
-                user_input[CONF_SERIES] = self._series
-                user_input[CONF_SERIAL] = self._serial
-                user_input[CONF_ID] = self._id
-                self._user_step_user_input = dict(user_input)
-                return await self.async_step_features()
-            else:
-                self._errors["base"] = error
-        else:
-            user_input = {}
-            user_input[CONF_HOST] = ""
-            user_input[CONF_USERNAME] = "waterkotte"
-            user_input[CONF_PASSWORD] = "waterkotte"
-
-        return self.async_show_form(
-            step_id="user_ecotouch",
-            data_schema=vol.Schema({
-                vol.Required(CONF_HOST, default=user_input.get(CONF_HOST)): str,
-                vol.Optional(CONF_USERNAME, default=user_input.get(CONF_USERNAME)): str,
-                vol.Required(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)): str,
-                vol.Required(CONF_POLLING_INTERVAL, default=60): int,
-                vol.Required(CONF_TAGS_PER_REQUEST, default=75): int,
-            }),
             last_step=False,
             errors=self._errors
         )

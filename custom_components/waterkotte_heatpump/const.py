@@ -47,22 +47,18 @@ DEVICE_CLASS_ENUM: Final = "enum"
 # States
 STATE_AUTO: Final = "auto"
 STATE_MANUAL: Final = "manual"
-STATE_ON: Final = "on"
 STATE_OFF: Final = "off"
 # # #### Enum Options ####
-ENUM_ONOFFAUTO: Final = [STATE_ON, STATE_OFF, STATE_AUTO]
 ENUM_OFFAUTOMANUAL: Final = [STATE_OFF, STATE_AUTO, STATE_MANUAL]
 ENUM_POOL_MODE: Final = list(FOUR_STEPS_MODES.values())
 ENUM_HEATING_MODE: Final = list(SIX_STEPS_MODES.values())
 ENUM_VENT_OPERATION_MODE: Final = list(SIX_STEPS_MODES.values())
 ENUM_OPTIONS_0_1: Final = ["0", "1"]
 ENUM_OPTIONS_0_2: Final = ["0", "1", "2"]
-ENUM_OPTIONS_0_3: Final = ["0", "1", "2", "3"]
 ENUM_OPTIONS_0_4: Final = ["0", "1", "2", "3", "4"]
 
 
 # Configuration and options
-CONF_IP: Final = "ip"
 CONF_POLLING_INTERVAL: Final = "polling_interval"
 CONF_TAGS_PER_REQUEST: Final = "tags_per_request"
 CONF_BIOS: Final = "bios"
@@ -1946,6 +1942,7 @@ SENSOR_SENSORS: Final = [
         state_class=None,
         native_unit_of_measurement=None,
         icon="mdi:alarm-light",
+        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=True
     ),
     ExtSensorEntityDescription(
@@ -1955,6 +1952,7 @@ SENSOR_SENSORS: Final = [
         state_class=None,
         native_unit_of_measurement=None,
         icon="mdi:alert-circle",
+        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=True
     ),
 
