@@ -133,6 +133,10 @@ Please note: After the update, older versions of the integration can't be used a
 
 The optional schedule entities (650+) and the 'Set a Schedule' service have been removed. When you update, the schedule entities are removed automatically from your Home Assistant installation (incl. the disabled ones). The schedules can still be adjusted via the web interface of your Waterkotte. The water disinfection schedule is not affected.
 
+### Holiday & BIOS time sensors
+
+The sensors for the holiday start/end time and the BIOS time are timestamp sensors now: their state is an ISO 8601 timestamp (e.g. `2026-12-20T07:00:00+00:00`) instead of the former local text format `2026-12-20 08:00`. Templates or automations that parse the old format need to be adjusted.
+
 ### Migrate from the previous 'ha-waterkotte' repository
 
 This is the new version of the previous 'ha-waterkotte' repository (which have now been renamed to [`ha-waterkotte-the-fork`](https://github.com/marq24/ha-waterkotte-the-fork)). After the refactoring process have been completed, I have decided to create an independent repository - since the refactored version does not have much in common with the origin sources.

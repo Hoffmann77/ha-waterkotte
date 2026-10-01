@@ -1733,7 +1733,7 @@ SENSOR_SENSORS: Final = [
     ExtSensorEntityDescription(
         key="WATERKOTTE_BIOS_TIME",
         tag=WKHPTag.WATERKOTTE_BIOS_TIME,
-        device_class=SensorDeviceClass.DATE,
+        device_class=SensorDeviceClass.TIMESTAMP,
         state_class=None,
         native_unit_of_measurement=None,
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -1742,7 +1742,7 @@ SENSOR_SENSORS: Final = [
     ExtSensorEntityDescription(
         key="HOLIDAY_START_TIME",
         tag=WKHPTag.HOLIDAY_START_TIME,
-        device_class=SensorDeviceClass.DATE,
+        device_class=SensorDeviceClass.TIMESTAMP,
         state_class=None,
         native_unit_of_measurement=None,
         entity_registry_enabled_default=True
@@ -1750,7 +1750,7 @@ SENSOR_SENSORS: Final = [
     ExtSensorEntityDescription(
         key="HOLIDAY_END_TIME",
         tag=WKHPTag.HOLIDAY_END_TIME,
-        device_class=SensorDeviceClass.DATE,
+        device_class=SensorDeviceClass.TIMESTAMP,
         state_class=None,
         native_unit_of_measurement=None,
         entity_registry_enabled_default=True
@@ -1758,7 +1758,7 @@ SENSOR_SENSORS: Final = [
     ExtSensorEntityDescription(
         key="SCHEDULE_WATER_DISINFECTION_START_TIME",
         tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME,
-        device_class=SensorDeviceClass.DATE,
+        device_class=None,
         state_class=None,
         native_unit_of_measurement=None,
         entity_registry_enabled_default=False,

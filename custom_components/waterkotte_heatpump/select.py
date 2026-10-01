@@ -22,7 +22,7 @@ class WKHPSelect(WKHPBaseEntity, SelectEntity):
     def current_option(self) -> str | None:
         value = self._tag_value
         if value is None:
-            return "unknown"
+            return None
         if isinstance(value, bool):
             # for "switches" that we want to show as selects, we need to convert
             # the bool True/False to 1 and 0

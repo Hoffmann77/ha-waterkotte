@@ -24,13 +24,13 @@ class WKHPNumber(WKHPBaseEntity, NumberEntity):
     def native_value(self) -> float | None:
         value = self._tag_value
         if value is None:
-            return "unknown"
+            return None
         try:
             if str(self.wkhp_tag.name).upper().endswith("_ADJUST"):
                 value = TEMP_ADJUST_LOOKUP[value]
-        except TypeError:
+            return float(value)
+        except (TypeError, ValueError, IndexError):
             return None
-        return float(value)
 
     async def async_set_native_value(self, value: float) -> None:
         try:

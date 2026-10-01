@@ -1,10 +1,11 @@
 import logging
 from datetime import datetime, time
 
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 from . import WKHPBaseEntity
 from .const import DOMAIN, SENSOR_SENSORS
 
@@ -24,24 +25,14 @@ class WKHPSensor(WKHPBaseEntity, SensorEntity):
         return self.entity_description.key == "ALARM_BITS" or self.entity_description.key == "INTERRUPTION_BITS"
 
     @property
-    def state(self):
-        # for SensorDeviceClass.DATE we will use out OWN 'state' render impl!!!
-        if self.entity_description.device_class == SensorDeviceClass.DATE:
-            value = self.native_value
-            if value is None:
-                value = "unknown"
-            return value
-        else:
-            return SensorEntity.state.fget(self)
-
-    @property
     def native_value(self):
         """Return the state of the sensor."""
         value = self._tag_value
         if value is None:
             return "none" if self._is_bit_field else None
         if isinstance(value, datetime):
-            return value.isoformat(sep=' ', timespec="minutes")
+            # the heat pump provides the local time (SensorDeviceClass.TIMESTAMP requires the time zone)
+            return value.replace(tzinfo=dt_util.get_default_time_zone())
         if isinstance(value, time):
             return value.isoformat(timespec="minutes")
         if isinstance(value, bool):
