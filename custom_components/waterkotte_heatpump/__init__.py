@@ -11,9 +11,8 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import config_validation as config_val, device_registry as dev_reg, entity_registry as entity_reg
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha import WaterkotteClient
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import ECOTOUCH, EASYCON
@@ -361,32 +360,3 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
 
         # writing a value can change other values of the heat pump as well
         await self.async_request_refresh()
-
-
-
-
-class WKHPBaseEntity(CoordinatorEntity):
-    _attr_has_entity_name = True
-
-    def __init__(self, coordinator: WKHPDataUpdateCoordinator, description: EntityDescription) -> None:
-        super().__init__(coordinator, context=description.tag)
-        self._attr_translation_key = description.key.lower()
-        self._attr_unique_id = f"{coordinator.unique_id_base}_{description.key}".lower()
-        self._attr_device_info = coordinator.device_info
-        self.entity_description = description
-
-        # check, if the feature should be enabled by default (if activated during setup)
-        if not description.entity_registry_enabled_default and description.feature is not None:
-            if description.feature in coordinator.available_features:
-                self._attr_entity_registry_enabled_default = True
-
-    @property
-    def wkhp_tag(self):
-        """The tag of the heat pump, that provides the value of this entity."""
-        return self.entity_description.tag
-
-    @property
-    def _tag_value(self):
-        """The current value of the tag - or None, if the heat pump did not provide a value"""
-        value = (self.coordinator.data or {}).get(self.wkhp_tag, {}).get("value")
-        return None if value == "" else value

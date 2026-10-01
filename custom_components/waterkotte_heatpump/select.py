@@ -3,7 +3,8 @@ import logging
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from . import WaterkotteConfigEntry, WKHPBaseEntity
+from . import WaterkotteConfigEntry
+from .entity import WKHPBaseEntity
 from .const import SELECT_SENSORS
 
 _LOGGER = logging.getLogger(__name__)

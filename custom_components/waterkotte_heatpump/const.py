@@ -24,6 +24,8 @@ from homeassistant.const import (
     Platform
 )
 
+from .entity import WKHPEntityDescription
+
 # Base component constants
 NAME: Final = "Waterkotte Heatpump [+2020]"
 DOMAIN: Final = "waterkotte_heatpump"
@@ -99,37 +101,29 @@ TENTH_STEP = 0.1
 FIFTH_STEP = 0.5
 
 
-@dataclass(frozen=True)
-class ExtBinarySensorEntityDescription(BinarySensorEntityDescription):
-    tag: WKHPTag | None = None
-    feature: str | None = None
+@dataclass(frozen=True, kw_only=True)
+class ExtBinarySensorEntityDescription(WKHPEntityDescription, BinarySensorEntityDescription):
+    """The description of an entity of the platform (with the tag of the heat pump)."""
 
 
-@dataclass(frozen=True)
-class ExtNumberEntityDescription(NumberEntityDescription):
-    tag: WKHPTag | None = None
-    feature: str | None = None
+@dataclass(frozen=True, kw_only=True)
+class ExtNumberEntityDescription(WKHPEntityDescription, NumberEntityDescription):
+    """The description of an entity of the platform (with the tag of the heat pump)."""
 
 
-@dataclass(frozen=True)
-class ExtSelectEntityDescription(SelectEntityDescription):
-    tag: WKHPTag | None = None
-    feature: str | None = None
-    # controls: list[str] | None = None
+@dataclass(frozen=True, kw_only=True)
+class ExtSelectEntityDescription(WKHPEntityDescription, SelectEntityDescription):
+    """The description of an entity of the platform (with the tag of the heat pump)."""
 
 
-@dataclass(frozen=True)
-class ExtSensorEntityDescription(SensorEntityDescription):
-    tag: WKHPTag | None = None
-    feature: str | None = None
-    # selfimplemented_display_precision: int | None = None
-    # controls: list[str] | None = None
+@dataclass(frozen=True, kw_only=True)
+class ExtSensorEntityDescription(WKHPEntityDescription, SensorEntityDescription):
+    """The description of an entity of the platform (with the tag of the heat pump)."""
 
 
-@dataclass(frozen=True)
-class ExtSwitchEntityDescription(SwitchEntityDescription):
-    tag: WKHPTag | None = None
-    feature: str | None = None
+@dataclass(frozen=True, kw_only=True)
+class ExtSwitchEntityDescription(WKHPEntityDescription, SwitchEntityDescription):
+    """The description of an entity of the platform (with the tag of the heat pump)."""
 
 
 PLATFORMS: Final = [Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.SWITCH]

@@ -5,7 +5,8 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
-from . import WaterkotteConfigEntry, WKHPBaseEntity
+from . import WaterkotteConfigEntry
+from .entity import WKHPBaseEntity
 from .const import SENSOR_SENSORS
 
 _LOGGER = logging.getLogger(__name__)
