@@ -278,15 +278,15 @@
           "mode5": "Bypass"
         }
       },
-      "enable_cooling": {"name": "Operation mode cooling"},
-      "enable_heating": {"name": "Operation mode heating"},
-      "enable_pv": {"name": "Operation mode PV"},
-      "enable_warmwater": {"name": "Operation mode hot water"},
-      "enable_pool": {"name": "Operation mode pool"},
-      "enable_external_heater": {"name": "Operation mode external heater"},
-      "enable_mixing1": {"name": "Operation mode Mixer 1"},
-      "enable_mixing2": {"name": "Operation mode Mixer 2"},
-      "enable_mixing3": {"name": "Operation mode Mixer 3"},
+      "enable_cooling": {"name": "Operation mode cooling", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_heating": {"name": "Operation mode heating", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_pv": {"name": "Operation mode PV", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_warmwater": {"name": "Operation mode hot water", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_pool": {"name": "Operation mode pool", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_external_heater": {"name": "Operation mode external heater", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_mixing1": {"name": "Operation mode Mixer 1", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_mixing2": {"name": "Operation mode Mixer 2", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_mixing3": {"name": "Operation mode Mixer 3", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
       "pumpservice_sourcepump_i1281": {
         "name": "Service: Sourcepump",
         "state": {

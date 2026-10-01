@@ -45,6 +45,14 @@ def test_entity_names(platform: str) -> None:
     assert all("name" in names[key] for key in keys)
 
 
+def test_select_options() -> None:
+    """Test that every option of a select has a translation (shown in the frontend)."""
+    for language, translations in TRANSLATIONS.items():
+        for description in DESCRIPTIONS["select"]:
+            states = translations["entity"]["select"][description.key.lower()].get("state", {})
+            assert set(description.options) - set(states) == set(), (language, description.key)
+
+
 def test_services() -> None:
     """Test that every service (and every field of a service) is translated."""
     services = yaml.safe_load((INTEGRATION / "services.yaml").read_text(encoding="utf-8"))

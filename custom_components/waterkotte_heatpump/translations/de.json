@@ -278,15 +278,15 @@
           "mode5": "Bypass"
         }
       },
-      "enable_cooling": {"name": "Betriebsmodus Kühlung"},
-      "enable_heating": {"name": "Betriebsmodus Heizung"},
-      "enable_pv": {"name": "Betriebsmodus PV"},
-      "enable_warmwater": {"name": "Betriebsmodus Warmwasser"},
-      "enable_pool": {"name": "Betriebsmodus Pool"},
-      "enable_external_heater": {"name": "Betriebsmodus Heizstab"},
-      "enable_mixing1": {"name": "Betriebsmodus Mischerkreis 1"},
-      "enable_mixing2": {"name": "Betriebsmodus Mischerkreis 2"},
-      "enable_mixing3": {"name": "Betriebsmodus Mischerkreis 3"},
+      "enable_cooling": {"name": "Betriebsmodus Kühlung", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_heating": {"name": "Betriebsmodus Heizung", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_pv": {"name": "Betriebsmodus PV", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_warmwater": {"name": "Betriebsmodus Warmwasser", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_pool": {"name": "Betriebsmodus Pool", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_external_heater": {"name": "Betriebsmodus Heizstab", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_mixing1": {"name": "Betriebsmodus Mischerkreis 1", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_mixing2": {"name": "Betriebsmodus Mischerkreis 2", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_mixing3": {"name": "Betriebsmodus Mischerkreis 3", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
       "pumpservice_sourcepump_i1281": {
         "name": "Service: Quellenpumpe",
         "state": {
