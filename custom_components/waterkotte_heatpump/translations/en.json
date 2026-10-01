@@ -5,31 +5,6 @@
         "ecotouch": "EcoTouch Mode [web-form interface require username & password]",
         "easycon": "EasyCon Mode [older Waterkotte Models with basic-auth login]"
       }
-    },
-    "set_schedule_data_schedule_type": {
-      "options": {
-        "heating": "Heating",
-        "cooling": "Cooling",
-        "water": "Hot Water",
-        "pool": "Pool",
-        "mix1": "Mixer 1",
-        "mix2": "Mixer 2",
-        "mix3": "Mixer 3",
-        "buffer_tank_circulation_pump": "Circulation pump buffer tank",
-        "solar": "Solar Control",
-        "pv": "Photovoltaic"
-    }
-    },
-    "set_schedule_data_schedule_days": {
-      "options": {
-        "1mo":  "Mondays",
-        "2tu":  "Tuesdays",
-        "3we":  "Wednesdays",
-        "4th":  "Thursdays",
-        "5fr":  "Fridays",
-        "6sa":  "Saturdays",
-        "7su":  "Sundays"
-      }
     }
   },
   "config": {

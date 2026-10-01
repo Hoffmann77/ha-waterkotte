@@ -38,7 +38,6 @@ from .const import (
     PLATFORMS,
     STARTUP_MESSAGE,
     SERVICE_SET_HOLIDAY,
-    SERVICE_SET_SCHEDULE_DATA,
     SERVICE_SET_DISINFECTION_START_TIME,
     SERVICE_GET_ENERGY_BALANCE,
     SERVICE_GET_ENERGY_BALANCE_MONTHLY,
@@ -231,8 +230,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
     service = waterkotte_service.WaterkotteHeatpumpService(hass, config_entry, coordinator)
     hass.services.async_register(DOMAIN, SERVICE_SET_HOLIDAY, service.set_holiday,
-                                 supports_response=SupportsResponse.OPTIONAL)
-    hass.services.async_register(DOMAIN, SERVICE_SET_SCHEDULE_DATA, service.set_schedule_data,
                                  supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(DOMAIN, SERVICE_SET_DISINFECTION_START_TIME, service.set_disinfection_start_time,
                                  supports_response=SupportsResponse.OPTIONAL)

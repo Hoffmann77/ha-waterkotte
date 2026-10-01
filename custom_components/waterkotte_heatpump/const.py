@@ -94,7 +94,6 @@ If you have any issues with this you need to open an issue here:
 
 SERVICE_SET_HOLIDAY: Final = "set_holiday"
 SERVICE_SET_DISINFECTION_START_TIME: Final = "set_disinfection_start_time"
-SERVICE_SET_SCHEDULE_DATA: Final = "set_schedule_data"
 SERVICE_GET_ENERGY_BALANCE: Final = "get_energy_balance"
 SERVICE_GET_ENERGY_BALANCE_MONTHLY: Final = "get_energy_balance_monthly"
 
