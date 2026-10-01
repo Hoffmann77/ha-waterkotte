@@ -73,7 +73,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     if config_entry.version == 1:
         if config_entry.minor_version < 2:
             # update from 1.x to 1.2 [ensure that all unique_id's are lower case!]
-            _LOGGER.info(f"async_migrate_entry(): Migration: from v{config_entry.version}.{config_entry.minor_version} to v{CONFIG_VERSION}.{CONFIG_MINOR_VERSION}")
+            _LOGGER.info("async_migrate_entry(): Migration: from v%s.%s to v%s.%s", config_entry.version, config_entry.minor_version, CONFIG_VERSION, CONFIG_MINOR_VERSION)
             registry = entity_reg.async_get(hass)
 
             # 1'st run - ensure that all 'unique_id' are lower case...
@@ -81,10 +81,10 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
             for entity in entities:
                 if entity.unique_id != entity.unique_id.lower():
                     new_unique_id = entity.unique_id.lower()
-                    _LOGGER.info(f"Entity ID: {entity.entity_id}, Unique ID: {entity.unique_id} updated!")
+                    _LOGGER.info("Entity ID: %s, Unique ID: %s updated!", entity.entity_id, entity.unique_id)
                     for already_existing_entity in entities:
                         if already_existing_entity.unique_id == new_unique_id:
-                            _LOGGER.info(f"Entity ID: {entity.entity_id}, Unique ID: {new_unique_id} already exists! - Will PURGE previous {already_existing_entity.entity_id}")
+                            _LOGGER.info("Entity ID: %s, Unique ID: %s already exists! - Will PURGE previous %s", entity.entity_id, new_unique_id, already_existing_entity.entity_id)
                             registry.async_remove(already_existing_entity.entity_id)
 
                     registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
@@ -95,15 +95,15 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
             for entity in entities:
                 if not entity.unique_id.startswith(prefix):
                     new_unique_id = f"{DOMAIN}.{entity.unique_id}".lower()
-                    _LOGGER.debug(f"Entity ID: {entity.entity_id}, Unique ID: {entity.unique_id} will be updated!")
+                    _LOGGER.debug("Entity ID: %s, Unique ID: %s will be updated!", entity.entity_id, entity.unique_id)
                     registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
 
             hass.config_entries.async_update_entry(config_entry, version=1, minor_version=2)
-            _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
+            _LOGGER.info("async_migrate_entry(): Migration to configuration version %s.%s successful", config_entry.version, config_entry.minor_version)
 
         if config_entry.minor_version < 3:
             # update from 1.2 to 1.3 [use the serial number as unique_id of the config entry]
-            _LOGGER.info(f"async_migrate_entry(): Migration: from v{config_entry.version}.{config_entry.minor_version} to v1.3")
+            _LOGGER.info("async_migrate_entry(): Migration: from v%s.%s to v1.3", config_entry.version, config_entry.minor_version)
             new_unique_id = config_entry.unique_id
             serial = config_entry.data.get(CONF_SERIAL)
             if new_unique_id is None and _is_real_serial(serial):
@@ -117,12 +117,12 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
             hass.config_entries.async_update_entry(config_entry, unique_id=new_unique_id, options=new_options,
                                                    version=1, minor_version=3)
-            _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
+            _LOGGER.info("async_migrate_entry(): Migration to configuration version %s.%s successful", config_entry.version, config_entry.minor_version)
 
     if config_entry.version == 1:
         # update from 1.3 to 2.1 [the serial number (or the config entry id) is the base of the device identifier
         # and of the unique_id's of the entities - the 'add_serial_as_id' option is not required anymore]
-        _LOGGER.info(f"async_migrate_entry(): Migration: from v{config_entry.version}.{config_entry.minor_version} to v2.1")
+        _LOGGER.info("async_migrate_entry(): Migration: from v%s.%s to v2.1", config_entry.version, config_entry.minor_version)
         new_data = dict(config_entry.data)
         old_serial = new_data.get(CONF_SERIAL)
         was_multi_instances = new_data.pop(CONF_ADD_SERIAL_AS_ID, False)
@@ -154,9 +154,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
             # migration must not fail in this case (the entry could not be loaded anymore)
             existing_entity_id = registry.async_get_entity_id(entity.domain, DOMAIN, new_unique_id)
             if existing_entity_id is not None and existing_entity_id != entity.entity_id:
-                _LOGGER.warning(f"async_migrate_entry(): Entity ID: {entity.entity_id}, Unique ID: {entity.unique_id} "
-                                f"not migrated - the new Unique ID: {new_unique_id} is already used by "
-                                f"{existing_entity_id}. You can remove {entity.entity_id} manually.")
+                _LOGGER.warning("async_migrate_entry(): Entity ID: %s, Unique ID: %s not migrated - the new Unique ID: %s is already used by %s. You can remove %s manually.", entity.entity_id, entity.unique_id, new_unique_id, existing_entity_id, entity.entity_id)
                 continue
 
             registry.async_update_entity(entity.entity_id, new_unique_id=new_unique_id)
@@ -167,12 +165,12 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
             device_registry.async_update_device(device.id, new_identifiers={(DOMAIN, unique_id_base)})
 
         hass.config_entries.async_update_entry(config_entry, data=new_data, title=new_title, version=2, minor_version=1)
-        _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
+        _LOGGER.info("async_migrate_entry(): Migration to configuration version %s.%s successful", config_entry.version, config_entry.minor_version)
 
     if config_entry.version == 2 and config_entry.minor_version < 2:
         # update from 2.1 to 2.2 [the optional schedule entities have been removed - so we remove them (incl. the
         # disabled ones) from the entity registry, and the 'add_schedule_entities' option is not required anymore]
-        _LOGGER.info(f"async_migrate_entry(): Migration: from v{config_entry.version}.{config_entry.minor_version} to v2.2")
+        _LOGGER.info("async_migrate_entry(): Migration: from v%s.%s to v2.2", config_entry.version, config_entry.minor_version)
         registry = entity_reg.async_get(hass)
         for entity in entity_reg.async_entries_for_config_entry(registry, config_entry.entry_id):
             if _SCHEDULE_ENTITY_UNIQUE_ID.search(entity.unique_id):
@@ -182,7 +180,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         new_options = {key: value for key, value in config_entry.options.items() if key != CONF_ADD_SCHEDULE_ENTITIES}
         hass.config_entries.async_update_entry(config_entry, data=new_data, options=new_options, version=2,
                                                minor_version=2)
-        _LOGGER.info(f"async_migrate_entry(): Migration to configuration version {config_entry.version}.{config_entry.minor_version} successful")
+        _LOGGER.info("async_migrate_entry(): Migration to configuration version %s.%s successful", config_entry.version, config_entry.minor_version)
 
     return True
 
@@ -227,7 +225,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigE
 
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: WaterkotteConfigEntry) -> bool:
-    _LOGGER.debug(f"async_unload_entry() called for entry: {config_entry.entry_id}")
+    _LOGGER.debug("async_unload_entry() called for entry: %s", config_entry.entry_id)
     unload_ok = await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
     if unload_ok:
         await config_entry.runtime_data.bridge.logout()
@@ -236,7 +234,7 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: WaterkotteConfig
 
 
 async def entry_update_listener(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-    _LOGGER.debug(f"entry_update_listener() called for entry: {config_entry.entry_id}")
+    _LOGGER.debug("entry_update_listener() called for entry: %s", config_entry.entry_id)
     await hass.config_entries.async_reload(config_entry.entry_id)
 
 
@@ -254,7 +252,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
         self.unique_id_base = serial if serial is not None else config_entry.entry_id
 
         self.available_features = [feature for flag, feature in _FEATURE_FLAGS.items() if config_entry.data.get(flag)]
-        _LOGGER.debug(f"available_features: {self.available_features}")
+        _LOGGER.debug("available_features: %s", self.available_features)
 
         def setting(key, default):
             # settings that have not been changed via the options yet, are taken from the initial configuration
@@ -310,17 +308,17 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
                 _LOGGER.info("enable 'total OPERATING_HOURS' counters via OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634")
                 await self.bridge.async_write_value(WKHPTag.OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634, True)
         except Exception as e:  # pylint: disable=broad-except
-            _LOGGER.warning(f"could not enable OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634: {(type(e).__name__)} {e}")
+            _LOGGER.warning("could not enable OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634: %s %s", type(e).__name__, e)
 
     async def _async_update_data(self) -> dict[WKHPTag, dict]:
         """Update data via library."""
         # each entity registers its tag as coordinator context - so we only
         # request the tags of the entities that are currently enabled
         self.bridge.tags = list(set(self.async_contexts()))
-        _LOGGER.debug(f"number of entities to query: {len(self.bridge.tags)} (1 entity can consist of n-tags)")
+        _LOGGER.debug("number of entities to query: %s (1 entity can consist of n-tags)", len(self.bridge.tags))
         async with self._map_errors():
             result = await self.bridge.async_get_data()
-        _LOGGER.debug(f"number of entity values read: {len(result)}")
+        _LOGGER.debug("number of entity values read: %s", len(result))
 
         # only the values that have been read in this update - the entities of the other tags are unavailable
         # (and don't show an outdated value)
@@ -363,7 +361,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             raise HomeAssistantError(translation_domain=DOMAIN, translation_key="write_failed",
                                      translation_placeholders={**placeholders,
                                                                "error": f"{type(err).__name__} {err}"}) from err
-        _LOGGER.debug(f"write result: {result}")
+        _LOGGER.debug("write result: %s", result)
 
         if tag in result:
             self.async_set_updated_data({**self.data, tag: result[tag]})

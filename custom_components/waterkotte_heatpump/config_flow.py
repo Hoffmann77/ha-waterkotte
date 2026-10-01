@@ -272,10 +272,10 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             return "too_many_users"
         except (Http404Exception, aiohttp.ClientError, TimeoutError) as exc:
             # a HTTP 404 is also the result, when the wrong interface type have been selected
-            _LOGGER.info(f"could not connect to waterkotte@{host}: {type(exc).__name__} {exc}")
+            _LOGGER.info("could not connect to waterkotte@%s: %s %s", host, type(exc).__name__, exc)
             return "cannot_connect"
         except Exception as exc:  # pylint: disable=broad-except
-            _LOGGER.exception(f"unexpected exception while connecting to waterkotte@{host}: {exc}")
+            _LOGGER.exception("unexpected exception while connecting to waterkotte@%s: %s", host, exc)
             return "unknown"
         finally:
             # the heat pump allows only a few logged in users at the same time (a failed logout is no error)
@@ -287,7 +287,7 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             # nothing could be read (e.g. wrong interface type or wrong BasicAuth credentials for EasyCon)
             return "cannot_connect"
 
-        _LOGGER.info(f"successfully validated login -> result: {ret}")
+        _LOGGER.debug("successfully validated login -> result: %s", ret)
         self._bios = _tag_value(ret, WKHPTag.VERSION_BIOS)
         self._firmware = _tag_value(ret, WKHPTag.VERSION_CONTROLLER)
         self._id = _tag_value(ret, WKHPTag.INFO_ID)

@@ -111,7 +111,7 @@ class WaterkotteHeatpumpService:
         """Handle the service call."""
         start = call.data["start"]
         end = call.data["end"]
-        _LOGGER.debug(f"set_holiday start: {start} end: {end}")
+        _LOGGER.debug("set_holiday start: %s end: %s", start, end)
         try:
             await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_START_TIME, start)
             await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_END_TIME, end)
@@ -126,7 +126,7 @@ class WaterkotteHeatpumpService:
 
     async def set_disinfection_start_time(self, call: ServiceCall):
         start_time = call.data["starthhmm"]
-        _LOGGER.debug(f"set_disinfection_start_time: {start_time}")
+        _LOGGER.debug("set_disinfection_start_time: %s", start_time)
         try:
             await self._coordinator.async_write_tag(WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME, start_time)
         except HomeAssistantError as exc:

@@ -97,7 +97,6 @@ class DataTag(NamedTuple):
                     ret = [False] * len(self.bits)
                     for idx in range(len(self.bits)):
                         ret[idx] = (int(first_val) & (1 << self.bits[idx])) > 0
-                    # _LOGGER.debug(f"BITS: {first_tag} ({first_val}) -> {ret}")
                     return ret
 
                 # default implementation
@@ -198,7 +197,7 @@ class DataTag(NamedTuple):
             dt_val = datetime(*int_vals)
             return dt_val + timedelta(days=1) if next_day else dt_val
         except BaseException as ex:
-            _LOGGER.info(f"_decode_datetime(): values: '{str_vals}' caused {type(ex)}.__name__ {ex}")
+            _LOGGER.debug("_decode_datetime(): values: '%s' caused %s %s", str_vals, type(ex).__name__, ex)
             return None
 
     def _encode_datetime(self, value, encoded_values):
