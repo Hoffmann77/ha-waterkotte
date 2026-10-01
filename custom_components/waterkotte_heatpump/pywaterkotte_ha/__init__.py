@@ -141,7 +141,7 @@ class EcotouchBridge:
                     self.auth_cookies = response.cookies
                     _LOGGER.debug(f"{self.auth_cookies}")
                     if hasattr(self.web_session, "_cookie_jar"):
-                        jar = getattr(self.web_session, "_cookie_jar")
+                        jar = self.web_session._cookie_jar
                         jar.update_cookies(response.cookies)
 
             else:
@@ -488,7 +488,7 @@ class EasyconBridge(EcotouchBridge):
                         root = tree[0]
                     except Exception as exc:
                         _LOGGER.debug(f"Response was: {content} caused {exc}")
-                        raise Exception(f"Error in easycon.py parsing. Received: {content}")
+                        raise InvalidResponseException(f"Error in easycon.py parsing. Received: {content}") from exc
 
                     for tag in tags:
                         if tag[0] == "D":
@@ -533,7 +533,7 @@ class EasyconBridge(EcotouchBridge):
             except Exception as exc:
                 if response is not None and response.status == 404:
                     _LOGGER.debug(f"http 404 caused by requesting {response.url} - full: {response}")
-                    raise Http404Exception(f"HTTP 404 {response.url}")
+                    raise Http404Exception(f"HTTP 404 {response.url}") from exc
                 else:
                     _LOGGER.warning(f"{exc}")
 

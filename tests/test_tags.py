@@ -32,4 +32,4 @@ def test_monthly_tags_are_unique() -> None:
                    "ENG_PRODUCTION_POOL"):
         tags = [WKHPTag[f"{prefix}{month:02d}"] for month in range(1, 13)]
         assert len({tag.tags[0] for tag in tags}) == 12, prefix
-        assert all(tag.name == f"{prefix}{month:02d}" for month, tag in zip(range(1, 13), tags)), prefix
+        assert all(tag.name == f"{prefix}{month:02d}" for month, tag in zip(range(1, 13), tags, strict=True)), prefix

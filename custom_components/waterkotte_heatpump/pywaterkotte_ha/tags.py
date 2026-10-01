@@ -367,7 +367,7 @@ class DataTag(NamedTuple):
             # str fw2 = f"{str_val1[:-4]:0>2}.{str_val1[-4:-2]}.{str_val1[-2:]}"
             return f"0{str_val1[0]}.{str_val1[1:3]}.{str_val1[3:]}-{str_val2}"
         except Exception as ex:
-            _LOGGER.warning("could not decode FW",ex)
+            _LOGGER.warning("could not decode FW: %s", ex)
             return f"FW_{str_val1}-{str_val2}"
 
     def _decode_ro_sn(self, str_vals: List[str]):
@@ -383,7 +383,7 @@ class DataTag(NamedTuple):
             s2 = "0" + str(s2) if s2 < 10 else s2  # pylint: disable=invalid-name
             return str(s1) + str(s2) + str(sn2)
         except Exception as ex:
-            _LOGGER.warning("could not decode Serial",ex)
+            _LOGGER.warning("could not decode Serial: %s", ex)
             return f"Serial_{sn1}-{sn2}"
 
     def _decode_year(self, str_vals: List[str]):
