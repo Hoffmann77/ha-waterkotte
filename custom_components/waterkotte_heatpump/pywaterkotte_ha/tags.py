@@ -146,32 +146,26 @@ class DataTag(NamedTuple):
         if str_vals is None:
             return None
 
-        error_tag_index = 0
-        final_value = ""
-        for a_val in str_vals:
-            if a_val is not None and isinstance(a_val, int):
-                if self.tags[error_tag_index] in lang_map:
-                    if error_tag_index+1 == len(str_vals):
-                        # the last error field [I2614] only contain 13 bits
-                        bits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-                    elif error_tag_index == 0:
-                        # the bit13 (= "-") & bit14(= "Kommunikationstrigger") of I52 are NO alarms
-                        bits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15]
-                    else:
-                        bits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        alarms = []
+        for error_tag_index, a_val in enumerate(str_vals):
+            # the values of the heat pump are strings (e.g. '8' or '8.0')
+            if a_val is None or str(a_val).strip() == "" or self.tags[error_tag_index] not in lang_map:
+                continue
+            if error_tag_index + 1 == len(str_vals):
+                # the last error field [I2614] only contain 13 bits
+                bits = range(13)
+            elif error_tag_index == 0:
+                # the bit13 (= "-") & bit14(= "Kommunikationstrigger") of I52 are NO alarms
+                bits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15]
+            else:
+                bits = range(16)
 
-                    for idx in range(len(bits)):
-                        if (int(a_val) & (1 << bits[idx])) > 0:
-                            final_value = final_value + ", " + str(lang_map[self.tags[error_tag_index]][idx])
+            int_val = int(float(a_val))
+            labels = lang_map[self.tags[error_tag_index]]
+            # the labels are mapped by the bit number
+            alarms.extend(str(labels[bit]) for bit in bits if int_val & (1 << bit))
 
-                    #_LOGGER.error(f"{self.tags[error_tag_index]} {a_val} -> '{final_value}'")
-                error_tag_index = error_tag_index + 1
-
-        # we need to trim the firsts initial added ', '
-        if len(final_value) > 0:
-            return final_value[2:]
-        else:
-            return final_value
+        return ", ".join(alarms)
 
     def _decode_datetime(self, str_vals: List[str]):
         try:
