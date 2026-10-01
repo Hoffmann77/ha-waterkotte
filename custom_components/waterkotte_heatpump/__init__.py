@@ -7,7 +7,7 @@ from typing import Sequence
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID, CONF_HOST, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import config_validation as config_val, device_registry as dev_reg, entity_registry as entity_reg
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -17,7 +17,11 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpda
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha import WaterkotteClient
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import ECOTOUCH, EASYCON
-from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import TooManyUsersException, InvalidPasswordException
+from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import (
+    InvalidPasswordException,
+    StatusException,
+    TooManyUsersException,
+)
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .service import async_setup_services
 from .const import (
@@ -339,7 +343,11 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
 
     async def async_write_tag(self, tag: WKHPTag, value):
         """Write the value of a tag to the heat pump"""
-        result = await self.bridge.async_write_value(tag, value)
+        try:
+            result = await self.bridge.async_write_value(tag, value)
+        except StatusException as err:
+            # e.g. too many users are logged in to the heat pump
+            raise HomeAssistantError(f"could not write {tag.name}: {err}") from err
         _LOGGER.debug(f"write result: {result}")
 
         if tag in result:

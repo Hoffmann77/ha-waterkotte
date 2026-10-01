@@ -178,6 +178,7 @@ class EcotouchBridge:
         result = {}
         if e_values is not None and len(e_values) > 0:
             for a_wphp_tag in tags:
+                t_values = t_states = None
                 try:
                     t_values = [e_values[a_tag] for a_tag in a_wphp_tag.tags]
                     t_states = [e_status[a_tag] for a_tag in a_wphp_tag.tags]
@@ -269,7 +270,7 @@ class EcotouchBridge:
                 results_status[tag] = match.group("status")
                 results[tag] = match.group("value")
 
-    async def _read_tags(self, tags: Sequence[WKHPTag], results=None, results_status=None):
+    async def _read_tags(self, tags: Sequence[WKHPTag], results=None, results_status=None, retry: bool = True):
         if results is None:
             results = {}
         if results_status is None:
@@ -298,30 +299,34 @@ class EcotouchBridge:
                     # faking READING 3:HREG values... [DEBUG ONLY]
                     # content = content.replace('\n4\t', '\n192\t52')
 
-                    if content.startswith("#E_NEED_LOGIN"):
-                        try:
-                            await self.login()
-                            return await self._read_tags(tags=tags, results=results, results_status=results_status)
-                        except StatusException as status_exec:
-                            _LOGGER.warning(f"StatusException (_read_tags) while trying to login: {status_exec}")
-                            return None, None
-
-                    if content.startswith("#E_TOO_MANY_USERS"):
-                        return None
-
+                    if content.startswith("#E_NEED_LOGIN") and retry:
+                        # the session expired - the errors of the login are raised to the caller
+                        await self.login()
+                        return await self._read_tags(tags, results, results_status, retry=False)
+                    self._raise_for_status_response(content)
                     self._parse_tag_response(content, tags, results, results_status)
 
                 else:
                     _LOGGER.warning(f"{response}")
+            except StatusException:
+                raise
             except Exception as exc:
-                if response is not None and response.status == 500:
+                if response is not None and response.status == 500 and retry:
+                    # login again and retry once (keeping the results of the previous requests)
                     self.auth_cookies = None
                     await self.login()
-                    return await self._read_tags(tags)
-                else:
-                    _LOGGER.warning(f"{exc}")
+                    return await self._read_tags(tags, results, results_status, retry=False)
+                _LOGGER.warning(f"{exc}")
 
         return results, results_status
+
+    @staticmethod
+    def _raise_for_status_response(content: str):
+        """Raise the errors of a readTags/writeTags response, that affect the whole request"""
+        if content.startswith("#E_TOO_MANY_USERS"):
+            raise TooManyUsersException("TOO_MANY_USERS")
+        if content.startswith("#E_NEED_LOGIN"):
+            raise StatusException("E_NEED_LOGIN (also after a new login)")
 
     async def write_value(self, tag, value):
         """Write a value"""
@@ -373,7 +378,8 @@ class EcotouchBridge:
                     }
         return result
 
-    async def _write_tags(self, tags: list[str], values: list[Any], results=None, results_status=None):
+    async def _write_tags(self, tags: list[str], values: list[Any], results=None, results_status=None,
+                          retry: bool = True):
         if results is None:
             results = {}
         if results_status is None:
@@ -403,20 +409,17 @@ class EcotouchBridge:
                 if response.status == 200:
                     _LOGGER.debug(f"requested: {response.url}")
                     content = await response.text()  # pylint: disable=invalid-name
-                    if content.startswith("#E_NEED_LOGIN"):
-                        try:
-                            await self.login()
-                            return await self._write_tags(tags=tags, values=values)
-                        except StatusException as status_exec:
-                            _LOGGER.warning(f"StatusException (_write_tags) while trying to login: {status_exec}")
-                            return None
-                    if content.startswith("#E_TOO_MANY_USERS"):
-                        return None
-
+                    if content.startswith("#E_NEED_LOGIN") and retry:
+                        # the session expired - the errors of the login are raised to the caller
+                        await self.login()
+                        return await self._write_tags(tags, values, results, results_status, retry=False)
+                    self._raise_for_status_response(content)
                     self._parse_tag_response(content, tags, results, results_status)
 
                 else:
                     _LOGGER.warning(f"{response}")
+            except StatusException:
+                raise
             except Exception as exc:
                 _LOGGER.warning(f"{exc}")
 
