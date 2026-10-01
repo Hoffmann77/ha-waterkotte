@@ -74,4 +74,5 @@ SERVICE_GET_ENERGY_BALANCE_MONTHLY: Final = "get_energy_balance_monthly"
 TENTH_STEP = 0.1
 FIFTH_STEP = 0.5
 
-PLATFORMS: Final = [Platform.BINARY_SENSOR, Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.SWITCH]
+PLATFORMS: Final = [Platform.BINARY_SENSOR, Platform.DATETIME, Platform.NUMBER, Platform.SELECT, Platform.SENSOR,
+                    Platform.SWITCH, Platform.TIME]

@@ -170,6 +170,10 @@
       "basicvent_status_holiday_enabled_d1503": {"name": "Lüfter Ferienmodus aktiv"},
       "basicvent_filter_change_display_d1469": {"name": "Lüfter Filterwechsel notwendig"}
     },
+    "datetime": {
+      "holiday_start_time": {"name": "Urlaub Start"},
+      "holiday_end_time": {"name": "Urlaub Ende"}
+    },
     "number": {
       "temperature_return_setpoint": {"name": "T Sollwert"},
       "temperature_cooling_setpoint": {"name": "Kühltemperatur"},
@@ -486,6 +490,9 @@
       "basicvent_outgoing_fan_manual_mode": {"name": "Lüfter 2 (Innen) manuelle Drehzahl-Steuerung"},
       "pumpservice_sourcepump_cable_break_monitoring_d881": {"name": "Service: Quellenpumpe Kabelbruchüberwachung"},
       "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Quellenpumpe Regeneration"}
+    },
+    "time": {
+      "schedule_water_disinfection_start_time": {"name": "Startzeit Desinfektion"}
     }
   }
 }

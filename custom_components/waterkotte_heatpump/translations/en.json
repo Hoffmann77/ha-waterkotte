@@ -170,6 +170,10 @@
       "basicvent_status_holiday_enabled_d1503": {"name": "Vent Holiday Enabled"},
       "basicvent_filter_change_display_d1469": {"name": "Vent Filter change required"}
     },
+    "datetime": {
+      "holiday_start_time": {"name": "Holiday start"},
+      "holiday_end_time": {"name": "Holiday end"}
+    },
     "number": {
       "temperature_return_setpoint": {"name": "T setpoint"},
       "temperature_cooling_setpoint": {"name": "T Cooling"},
@@ -486,6 +490,9 @@
       "basicvent_outgoing_fan_manual_mode": {"name": "Vent 2 (inner) Manual-Mode"},
       "pumpservice_sourcepump_cable_break_monitoring_d881": {"name": "Service: Sourcepump cable-break Monitor"},
       "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Sourcepump regeneration"}
+    },
+    "time": {
+      "schedule_water_disinfection_start_time": {"name": "Start time disinfection"}
     }
   }
 }

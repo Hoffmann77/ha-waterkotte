@@ -82,7 +82,7 @@ async def test_entity_states(hass: HomeAssistant, mock_bridge: MagicMock) -> Non
         return hass.states.get(entity_id).state
 
     # the heat pump provides the local time
-    assert state("sensor", "HOLIDAY_START_TIME") == dt_util.as_utc(
+    assert state("datetime", "HOLIDAY_START_TIME") == dt_util.as_utc(
         datetime(2026, 12, 20, 8, 0, tzinfo=dt_util.get_default_time_zone())).isoformat()
     # not read: unavailable - read without a value: unknown
     assert state("number", "TEMPERATURE_HEATING_SETPOINT") == "unavailable"
@@ -93,7 +93,7 @@ async def test_entity_states(hass: HomeAssistant, mock_bridge: MagicMock) -> Non
     await hass.async_block_till_done()
     assert state("number", "TEMPERATURE_HEATING_SETPOINT") == "unknown"
     # a value that could not be read anymore is not shown (outdated)
-    assert state("sensor", "HOLIDAY_START_TIME") == "unavailable"
+    assert state("datetime", "HOLIDAY_START_TIME") == "unavailable"
     mock_bridge.async_get_data.return_value = {
         WKHPTag.HOLIDAY_START_TIME: {"value": datetime(2026, 12, 20, 8, 0), "status": "S_OK"},
         WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME: {"value": time(3, 30), "status": "S_OK"},
@@ -297,3 +297,36 @@ async def test_options_reload(hass: HomeAssistant, mock_bridge: MagicMock) -> No
     assert entry.state is ConfigEntryState.LOADED
     assert entry.runtime_data is not coordinator
     assert entry.runtime_data.update_interval.total_seconds() == 30
+
+
+async def test_holiday_and_disinfection_entities(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    """Test that the holiday (datetime) and the start of the disinfection (time) can be changed - and that the
+    holiday sensors are not enabled for new installations (replaced by the datetime entities)."""
+    entry = _add_entry(hass)
+    registry = er.async_get(hass)
+    # the disinfection is disabled by default
+    time_entity_id = registry.async_get_or_create(
+        "time", DOMAIN, f"{SERIAL}_schedule_water_disinfection_start_time".lower(), config_entry=entry
+    ).entity_id
+    mock_bridge.async_get_data.return_value = {
+        WKHPTag.HOLIDAY_START_TIME: {"value": datetime(2026, 12, 20, 8, 0), "status": "S_OK"},
+        WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME: {"value": time(3, 30), "status": "S_OK"},
+    }
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    sensor_entry = registry.async_get(registry.async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_holiday_start_time".lower()))
+    assert sensor_entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert hass.states.get(time_entity_id).state == "03:30:00"
+
+    # the heat pump expects the local time (without time zone)
+    datetime_entity_id = registry.async_get_entity_id("datetime", DOMAIN, f"{SERIAL}_holiday_start_time".lower())
+    local = datetime(2026, 12, 24, 18, 30, tzinfo=dt_util.get_default_time_zone())
+    await hass.services.async_call(
+        "datetime", "set_value", {"entity_id": datetime_entity_id, "datetime": dt_util.as_utc(local)}, blocking=True
+    )
+    mock_bridge.async_write_value.assert_awaited_with(WKHPTag.HOLIDAY_START_TIME, datetime(2026, 12, 24, 18, 30))
+
+    await hass.services.async_call("time", "set_value", {"entity_id": time_entity_id, "time": "04:15:00"},
+                                   blocking=True)
+    mock_bridge.async_write_value.assert_awaited_with(WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME, time(4, 15))

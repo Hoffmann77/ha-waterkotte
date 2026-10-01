@@ -19,6 +19,8 @@ All data will be fetched (or send) to your Waterkotte via the build in webserver
 | `switch`        | Switch something `True` or `False`.                  |
 | `select`        | Select a value from options.                         |
 | `number`        | adjustable Temperatures (demanded or heating curves) |
+| `datetime`      | Start and end of the holiday                         |
+| `time`          | Start time of the water disinfection                 |
 | `service`       | Provides services to interact with heatpump          |
 
 ## Disclaimer
@@ -103,6 +105,8 @@ The Integration provides currently 4 services. When more than one heat pump is c
 
 ### Setting dates & times
 
+The start and the end of the holiday (`datetime` entities) and the start time of the water disinfection (`time` entity) can be changed directly on the device page, in dashboards and with the standard actions (`datetime.set_value` / `time.set_value`). The following services are still available (e.g. for existing automations).
+
 #### SET_HOLIDAY
 To set the times for the holiday mode use the provided service `waterkotte_heatpump.set_holiday` and set `start` and `end` parameter.
 
@@ -135,7 +139,7 @@ The optional schedule entities (650+) and the 'Set a Schedule' service have been
 
 ### Holiday & BIOS time sensors
 
-The sensors for the holiday start/end time and the BIOS time are timestamp sensors now: their state is an ISO 8601 timestamp (e.g. `2026-12-20T07:00:00+00:00`) instead of the former local text format `2026-12-20 08:00`. Templates or automations that parse the old format need to be adjusted.
+The holiday start/end time can be changed with the new `datetime` entities - the holiday sensors are not enabled anymore for new installations (existing installations keep them). The sensors for the holiday start/end time and the BIOS time are timestamp sensors now: their state is an ISO 8601 timestamp (e.g. `2026-12-20T07:00:00+00:00`) instead of the former local text format `2026-12-20 08:00`. Templates or automations that parse the old format need to be adjusted.
 
 ### Unavailable entities
 

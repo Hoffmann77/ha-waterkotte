@@ -753,6 +753,19 @@
           "off": "mdi:toggle-switch-off"
         }
       }
+    },
+    "datetime": {
+      "holiday_start_time": {
+        "default": "mdi:calendar-arrow-right"
+      },
+      "holiday_end_time": {
+        "default": "mdi:calendar-arrow-left"
+      }
+    },
+    "time": {
+      "schedule_water_disinfection_start_time": {
+        "default": "mdi:clock-digital"
+      }
     }
   },
   "services": {

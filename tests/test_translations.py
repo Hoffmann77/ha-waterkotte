@@ -6,17 +6,19 @@ from pathlib import Path
 import pytest
 import yaml
 
-from custom_components.waterkotte_heatpump import binary_sensor, number, select, sensor, switch
+from custom_components.waterkotte_heatpump import binary_sensor, datetime, number, select, sensor, switch, time
 
 INTEGRATION = Path(__file__).parent.parent / "custom_components" / "waterkotte_heatpump"
 TRANSLATIONS = {lang: json.loads((INTEGRATION / "translations" / f"{lang}.json").read_text(encoding="utf-8"))
                 for lang in ("en", "de")}
 DESCRIPTIONS = {
     "binary_sensor": binary_sensor.BINARY_SENSORS,
+    "datetime": datetime.DATETIME_ENTITIES,
     "number": number.NUMBER_SENSORS,
     "select": select.SELECT_SENSORS,
     "sensor": sensor.SENSOR_SENSORS,
     "switch": switch.SWITCH_SENSORS,
+    "time": time.TIME_ENTITIES,
 }
 
 

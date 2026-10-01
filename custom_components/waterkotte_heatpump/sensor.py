@@ -510,7 +510,8 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TIMESTAMP,
         state_class=None,
         native_unit_of_measurement=None,
-        entity_registry_enabled_default=True
+        # replaced by the datetime entity (that can be changed)
+        entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
         key="HOLIDAY_END_TIME",
@@ -518,7 +519,8 @@ SENSOR_SENSORS: Final = [
         device_class=SensorDeviceClass.TIMESTAMP,
         state_class=None,
         native_unit_of_measurement=None,
-        entity_registry_enabled_default=True
+        # replaced by the datetime entity (that can be changed)
+        entity_registry_enabled_default=False
     ),
     ExtSensorEntityDescription(
         key="SCHEDULE_WATER_DISINFECTION_START_TIME",
