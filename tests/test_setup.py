@@ -92,6 +92,24 @@ async def test_entity_states(hass: HomeAssistant, mock_bridge: MagicMock) -> Non
     assert state("sensor", "SCHEDULE_WATER_DISINFECTION_START_TIME") == "03:30"
 
 
+async def test_select_digital_tag(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    """Test that a select of a digital tag ("switch" shown as select) writes a bool."""
+    tag = WKHPTag.PUMPSERVICE_SOURCEPUMP_HEATMODE_CONTROL_BEHAVIOUR_D789
+    mock_bridge.async_get_data.return_value = {tag: {"value": False, "status": "S_OK"}}
+    entry = _add_entry(hass)
+    registry = er.async_get(hass)
+    # the select is disabled by default
+    entity_id = registry.async_get_or_create(
+        "select", DOMAIN, f"{SERIAL}_{tag.name}".lower(), config_entry=entry
+    ).entity_id
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).state == "0"
+
+    await hass.services.async_call("select", "select_option", {"entity_id": entity_id, "option": "1"}, blocking=True)
+    mock_bridge.async_write_value.assert_awaited_with(tag, True)
+
+
 @pytest.mark.parametrize(
     "side_effect",
     [aiohttp.ClientError("offline"), TooManyUsersException("TOO_MANY_USERS"), TimeoutError()],
