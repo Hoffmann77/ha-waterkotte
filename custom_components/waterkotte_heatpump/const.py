@@ -60,6 +60,8 @@ ENUM_OPTIONS_0_4: Final = ["0", "1", "2", "3", "4"]
 
 # Configuration and options
 CONF_POLLING_INTERVAL: Final = "polling_interval"
+# the minimal polling interval in seconds
+MIN_POLLING_INTERVAL: Final = 10
 CONF_TAGS_PER_REQUEST: Final = "tags_per_request"
 CONF_BIOS: Final = "bios"
 CONF_FW: Final = "fw"

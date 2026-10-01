@@ -87,7 +87,7 @@ class EcotouchBridge:
         self.username = username
         self.pwd = pwd
         self.web_session = web_session
-        self.tags_per_request = min(tags_per_request, 75)
+        self.tags_per_request = max(1, min(tags_per_request, 75))
         self.lang_map = None
         if lang in TRANSLATIONS:
             self.lang_map = TRANSLATIONS[lang]

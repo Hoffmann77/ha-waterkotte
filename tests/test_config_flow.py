@@ -6,7 +6,7 @@ import pytest
 from homeassistant.config_entries import SOURCE_RECONFIGURE, SOURCE_USER
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.data_entry_flow import FlowResultType, InvalidData
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.waterkotte_heatpump.const import (
@@ -158,6 +158,24 @@ async def test_options_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) ->
         CONF_TAGS_PER_REQUEST: 50,
     }
     assert entry.data[CONF_HOST] == HOST
+
+
+@pytest.mark.parametrize(
+    "invalid_input",
+    [{CONF_TAGS_PER_REQUEST: 0}, {CONF_TAGS_PER_REQUEST: 76}, {CONF_POLLING_INTERVAL: 0}],
+)
+async def test_options_flow_invalid_input(hass: HomeAssistant, mock_setup_entry: AsyncMock, invalid_input: dict) -> None:
+    """Test that the polling interval and the number of tags per request are validated."""
+    entry = MockConfigEntry(domain=DOMAIN, version=2, minor_version=2, unique_id=SERIAL, data={**USER_INPUT_ECOTOUCH, CONF_SYSTEMTYPE: "ECOTOUCH"})
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    with pytest.raises(InvalidData):
+        await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_USERNAME: "waterkotte", CONF_PASSWORD: "waterkotte", CONF_POLLING_INTERVAL: 60,
+             CONF_TAGS_PER_REQUEST: 75, **invalid_input},
+        )
 
 
 async def _start_reconfigure_flow(hass: HomeAssistant, entry: MockConfigEntry) -> dict:

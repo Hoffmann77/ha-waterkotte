@@ -26,6 +26,7 @@ from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .service import async_setup_services
 from .const import (
     CONF_POLLING_INTERVAL,
+    MIN_POLLING_INTERVAL,
     CONF_TAGS_PER_REQUEST,
     CONF_BIOS,
     CONF_FW,
@@ -290,7 +291,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
 
         # update_interval can be adjusted in the options
         super().__init__(hass, _LOGGER, config_entry=config_entry, name=DOMAIN,
-                         update_interval=timedelta(seconds=setting(CONF_POLLING_INTERVAL, 60)))
+                         update_interval=timedelta(seconds=max(MIN_POLLING_INTERVAL, setting(CONF_POLLING_INTERVAL, 60))))
 
     async def _async_setup(self) -> None:
         """Connect to the heat pump (once, during the first refresh)."""

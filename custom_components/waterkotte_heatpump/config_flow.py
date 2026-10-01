@@ -17,6 +17,7 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from .const import (
     DOMAIN,
     CONF_POLLING_INTERVAL,
+    MIN_POLLING_INTERVAL,
     CONF_TAGS_PER_REQUEST,
     CONF_BIOS,
     CONF_FW,
@@ -33,6 +34,10 @@ from .pywaterkotte_ha.error import Http404Exception, InvalidPasswordException, T
 from .naming import entry_title, str_or_none
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
+
+# the polling interval (in seconds) and the number of tags per request (the web interface accepts max. 75)
+_POLLING_INTERVAL = vol.All(vol.Coerce(int), vol.Range(min=MIN_POLLING_INTERVAL))
+_TAGS_PER_REQUEST = vol.All(vol.Coerce(int), vol.Range(min=1, max=75))
 
 
 def _tag_value(values: dict, tag: WKHPTag) -> str | None:
@@ -138,8 +143,8 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_HOST, default=user_input.get(CONF_HOST)): str,
                 vol.Optional(CONF_USERNAME, default=user_input.get(CONF_USERNAME)): str,
                 password_key(CONF_PASSWORD, default=user_input.get(CONF_PASSWORD)): str,
-                vol.Required(CONF_POLLING_INTERVAL, default=500 if is_easycon else 60): int,
-                vol.Required(CONF_TAGS_PER_REQUEST, default=25 if is_easycon else 75): int,
+                vol.Required(CONF_POLLING_INTERVAL, default=500 if is_easycon else 60): _POLLING_INTERVAL,
+                vol.Required(CONF_TAGS_PER_REQUEST, default=25 if is_easycon else 75): _TAGS_PER_REQUEST,
             }),
             description_placeholders={"repo": "https://github.com/marq24/ha-waterkotte"},
             last_step=False,
@@ -326,8 +331,8 @@ class WaterkotteHeatpumpOptionsFlowHandler(config_entries.OptionsFlow):
             data_schema=vol.Schema({
                 vol.Optional(CONF_USERNAME, default=current(CONF_USERNAME, def_user)): str,
                 vol.Optional(CONF_PASSWORD, default=current(CONF_PASSWORD, def_pass)): str,
-                vol.Required(CONF_POLLING_INTERVAL, default=current(CONF_POLLING_INTERVAL, 60)): int,
-                vol.Required(CONF_TAGS_PER_REQUEST, default=current(CONF_TAGS_PER_REQUEST, 75)): int
+                vol.Required(CONF_POLLING_INTERVAL, default=current(CONF_POLLING_INTERVAL, 60)): _POLLING_INTERVAL,
+                vol.Required(CONF_TAGS_PER_REQUEST, default=current(CONF_TAGS_PER_REQUEST, 75)): _TAGS_PER_REQUEST
             }),
             description_placeholders={"repo": "https://github.com/marq24/ha-waterkotte"},
         )
