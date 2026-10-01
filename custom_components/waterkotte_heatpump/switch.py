@@ -1,84 +1,135 @@
 import logging
-from typing import Literal
+from dataclasses import dataclass
+from typing import Final
 
-from homeassistant.components.switch import SwitchEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_ON, STATE_OFF
+from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from . import WKHPDataUpdateCoordinator, WKHPBaseEntity
-from .const import DOMAIN, SWITCH_SENSORS, ExtSwitchEntityDescription
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
+from .coordinator import WaterkotteConfigEntry
+from .const import FEATURE_DISINFECTION, FEATURE_VENT
+from .entity import WKHPBaseEntity, WKHPEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
+# one write at a time (the heat pump allows only a few sessions) - the entities are updated by the coordinator
+PARALLEL_UPDATES = 1
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, add_entity_cb: AddEntitiesCallback):
+
+@dataclass(frozen=True, kw_only=True)
+class ExtSwitchEntityDescription(WKHPEntityDescription, SwitchEntityDescription):
+    """The description of an entity of the platform (with the tag of the heat pump)."""
+
+
+SWITCH_SENSORS: Final = [
+    ExtSwitchEntityDescription(
+        key="HOLIDAY_ENABLED",
+        tag=WKHPTag.HOLIDAY_ENABLED,
+        entity_registry_enabled_default=True
+    ),
+    ExtSwitchEntityDescription(
+        key="SCHEDULE_WATER_DISINFECTION_1MO",
+        tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_1MO,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_DISINFECTION
+    ),
+    ExtSwitchEntityDescription(
+        key="SCHEDULE_WATER_DISINFECTION_2TU",
+        tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_2TU,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_DISINFECTION
+    ),
+    ExtSwitchEntityDescription(
+        key="SCHEDULE_WATER_DISINFECTION_3WE",
+        tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_3WE,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_DISINFECTION
+    ),
+    ExtSwitchEntityDescription(
+        key="SCHEDULE_WATER_DISINFECTION_4TH",
+        tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_4TH,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_DISINFECTION
+    ),
+    ExtSwitchEntityDescription(
+        key="SCHEDULE_WATER_DISINFECTION_5FR",
+        tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_5FR,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_DISINFECTION
+    ),
+    ExtSwitchEntityDescription(
+        key="SCHEDULE_WATER_DISINFECTION_6SA",
+        tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_6SA,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_DISINFECTION
+    ),
+    ExtSwitchEntityDescription(
+        key="SCHEDULE_WATER_DISINFECTION_7SU",
+        tag=WKHPTag.SCHEDULE_WATER_DISINFECTION_7SU,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_DISINFECTION
+    ),
+    ExtSwitchEntityDescription(
+        key="PERMANENT_HEATING_CIRCULATION_PUMP_WINTER_D1103",
+        tag=WKHPTag.PERMANENT_HEATING_CIRCULATION_PUMP_WINTER_D1103,
+        entity_registry_enabled_default=True
+    ),
+    ExtSwitchEntityDescription(
+        key="PERMANENT_HEATING_CIRCULATION_PUMP_SUMMER_D1104",
+        tag=WKHPTag.PERMANENT_HEATING_CIRCULATION_PUMP_SUMMER_D1104,
+        entity_registry_enabled_default=False
+    ),
+    ExtSwitchEntityDescription(
+        key="BASICVENT_FILTER_CHANGE_OPERATING_HOURS_RESET_D1544",
+        tag=WKHPTag.BASICVENT_FILTER_CHANGE_OPERATING_HOURS_RESET_D1544,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_VENT
+    ),
+    ExtSwitchEntityDescription(
+        key="BASICVENT_INCOMING_FAN_MANUAL_MODE",
+        tag=WKHPTag.BASICVENT_INCOMING_FAN_MANUAL_MODE,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_VENT
+    ),
+    ExtSwitchEntityDescription(
+        key="BASICVENT_OUTGOING_FAN_MANUAL_MODE",
+        tag=WKHPTag.BASICVENT_OUTGOING_FAN_MANUAL_MODE,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_VENT
+    ),
+    # Service-Sourcepump
+    ExtSwitchEntityDescription(
+        key="PUMPSERVICE_SOURCEPUMP_CABLE_BREAK_MONITORING_D881",
+        tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_CABLE_BREAK_MONITORING_D881,
+        entity_registry_enabled_default=False
+    ),
+    ExtSwitchEntityDescription(
+        key="PUMPSERVICE_SOURCEPUMP_REGENERATION_D1294",
+        tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_REGENERATION_D1294,
+        entity_registry_enabled_default=False
+    ),
+]
+
+
+
+async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigEntry,
+                            async_add_entities: AddConfigEntryEntitiesCallback):
     _LOGGER.debug("SWITCH async_setup_entry")
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]
-    entities = []
-    for description in SWITCH_SENSORS:
-        entity = WKHPSwitch(coordinator, description)
-        entities.append(entity)
-    add_entity_cb(entities)
+    coordinator = config_entry.runtime_data
+    async_add_entities(WKHPSwitch(coordinator, description) for description in SWITCH_SENSORS)
 
 
 class WKHPSwitch(WKHPBaseEntity, SwitchEntity):
-    def __init__(self, coordinator: WKHPDataUpdateCoordinator, description: ExtSwitchEntityDescription):
-        super().__init__(coordinator=coordinator, description=description)
-        self._attr_icon_off = self.entity_description.icon_off
 
     async def async_turn_on(self, **kwargs):
         """Turn on the switch."""
-        try:
-            await self.coordinator.async_write_tag(self.wkhp_tag, True, self)
-            return self.coordinator.data[self.wkhp_tag]["value"]
-        except ValueError:
-            return "unavailable"
+        await self.coordinator.async_write_tag(self.wkhp_tag, True)
 
     async def async_turn_off(self, **kwargs):
         """Turn off the switch."""
-        try:
-            await self.coordinator.async_write_tag(self.wkhp_tag, False, self)
-            return self.coordinator.data[self.wkhp_tag]["value"]
-        except ValueError:
-            return "unavailable"
+        await self.coordinator.async_write_tag(self.wkhp_tag, False)
 
     @property
     def is_on(self) -> bool | None:
-        try:
-            value = None
-            if self.wkhp_tag in self.coordinator.data:
-                value_and_state = self.coordinator.data[self.wkhp_tag]
-                # _LOGGER.error(f"{self.entity_description.key} -> {value_and_state}")
-                if "value" in value_and_state:
-                    value = value_and_state["value"]
-                else:
-                    _LOGGER.debug(
-                        f"is_on: for {self.entity_description.key} could not read value from data: {value_and_state}")
-            else:
-                if len(self.coordinator.data) > 0:
-                    _LOGGER.debug(
-                        f"is_on: for {self.entity_description.key} not found in data: {len(self.coordinator.data)}")
-            if value is None or value == "":
-                value = None
-        except KeyError:
-            _LOGGER.warning(f"is_on caused KeyError for: {self.entity_description.key}")
-            value = None
-        except TypeError:
-            return None
-        return value
-
-    @property
-    def state(self) -> Literal["on", "off"] | None:
-        """Return the state."""
-        if (is_on := self.is_on) is None:
-            return None
-        return STATE_ON if is_on else STATE_OFF
-
-    @property
-    def icon(self):
-        """Return the icon of the sensor."""
-        if self._attr_icon_off is not None and self.state == STATE_OFF:
-            return self._attr_icon_off
-        else:
-            return super().icon
+        return self._tag_value

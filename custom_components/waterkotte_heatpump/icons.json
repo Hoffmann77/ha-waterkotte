@@ -1,6 +1,774 @@
 {
+  "entity": {
+    "binary_sensor": {
+      "state_sourcepump": {
+        "default": "mdi:water-pump"
+      },
+      "state_heatingpump": {
+        "default": "mdi:heat-pump"
+      },
+      "state_evd": {
+        "default": "mdi:thermometer-high"
+      },
+      "state_compressor": {
+        "default": "mdi:gauge"
+      },
+      "state_compressor2": {
+        "default": "mdi:gauge"
+      },
+      "state_external_heater": {
+        "default": "mdi:heating-coil"
+      },
+      "state_alarm": {
+        "default": "mdi:alert"
+      },
+      "state_cooling": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "state_water": {
+        "default": "mdi:water-thermometer"
+      },
+      "state_pool": {
+        "default": "mdi:pool"
+      },
+      "state_solar": {
+        "default": "mdi:solar-power-variant"
+      },
+      "state_cooling4way": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "status_heating": {
+        "default": "mdi:radiator"
+      },
+      "status_water": {
+        "default": "mdi:water-thermometer"
+      },
+      "status_cooling": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "status_pool": {
+        "default": "mdi:pool-thermometer"
+      },
+      "state_blocking_time": {
+        "default": "mdi:electric-switch"
+      },
+      "state_test_run": {
+        "default": "mdi:heating-coil"
+      },
+      "state_heating_circulation_pump_d425": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "state_buffertank_circulation_pump_d377": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "state_pool_circulation_pump_d549": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "state_mix1_circulation_pump_d248": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "state_mix1_circulation_pump_d563": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "state_mix2_circulation_pump_d291": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "state_mix2_circulation_pump_d564": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "state_mix3_circulation_pump_d334": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "state_mix3_circulation_pump_d565": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "status_solar": {
+        "default": "mdi:solar-power-variant"
+      },
+      "basicvent_status_bypass_active_d1432": {
+        "default": "mdi:electric-switch"
+      },
+      "basicvent_status_humidifier_active_d1433": {
+        "default": "mdi:electric-switch"
+      },
+      "basicvent_status_comfort_bypass_active_d1465": {
+        "default": "mdi:electric-switch"
+      },
+      "basicvent_status_smart_bypass_active_d1466": {
+        "default": "mdi:electric-switch"
+      },
+      "basicvent_status_holiday_enabled_d1503": {
+        "default": "mdi:electric-switch"
+      },
+      "basicvent_filter_change_display_d1469": {
+        "default": "mdi:electric-switch"
+      }
+    },
+    "number": {
+      "temperature_return_setpoint": {
+        "default": "mdi:thermometer"
+      },
+      "temperature_cooling_setpoint": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "temperature_cooling_outdoor_limit": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "temperature_cooling_flow_limit": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "temperature_heating_setpoint": {
+        "default": "mdi:radiator"
+      },
+      "temperature_heating_adjust": {
+        "default": "mdi:radiator"
+      },
+      "temperature_heating_hysteresis": {
+        "default": "mdi:radiator"
+      },
+      "temperature_mix1_adjust": {
+        "default": "mdi:numeric-1-circle"
+      },
+      "temperature_mix2_adjust": {
+        "default": "mdi:numeric-2-circle"
+      },
+      "temperature_mix3_adjust": {
+        "default": "mdi:numeric-3-circle"
+      },
+      "temperature_pool_adjust": {
+        "default": "mdi:pool-thermometer"
+      },
+      "temperature_heating_hc_limit": {
+        "default": "mdi:radiator"
+      },
+      "temperature_heating_hc_target": {
+        "default": "mdi:radiator"
+      },
+      "temperature_heating_hc_outdoor_norm": {
+        "default": "mdi:radiator"
+      },
+      "temperature_heating_hc_norm": {
+        "default": "mdi:radiator"
+      },
+      "temperature_heating_setpointlimit_max": {
+        "default": "mdi:radiator"
+      },
+      "temperature_heating_setpointlimit_min": {
+        "default": "mdi:radiator"
+      },
+      "temperature_water_setpoint": {
+        "default": "mdi:water-thermometer"
+      },
+      "temperature_water_hysteresis": {
+        "default": "mdi:water-thermometer"
+      },
+      "temperature_mix1_hc_limit": {
+        "default": "mdi:numeric-1-circle"
+      },
+      "temperature_mix1_hc_target": {
+        "default": "mdi:numeric-1-circle"
+      },
+      "temperature_mix1_hc_outdoor_norm": {
+        "default": "mdi:numeric-1-circle"
+      },
+      "temperature_mix1_hc_heating_norm": {
+        "default": "mdi:numeric-1-circle"
+      },
+      "temperature_mix1_hc_max": {
+        "default": "mdi:numeric-1-circle"
+      },
+      "temperature_mix2_hc_limit": {
+        "default": "mdi:numeric-2-circle"
+      },
+      "temperature_mix2_hc_target": {
+        "default": "mdi:numeric-2-circle"
+      },
+      "temperature_mix2_hc_outdoor_norm": {
+        "default": "mdi:numeric-2-circle"
+      },
+      "temperature_mix2_hc_heating_norm": {
+        "default": "mdi:numeric-2-circle"
+      },
+      "temperature_mix2_hc_max": {
+        "default": "mdi:numeric-2-circle"
+      },
+      "temperature_mix3_hc_limit": {
+        "default": "mdi:numeric-3-circle"
+      },
+      "temperature_mix3_hc_target": {
+        "default": "mdi:numeric-3-circle"
+      },
+      "temperature_mix3_hc_outdoor_norm": {
+        "default": "mdi:numeric-3-circle"
+      },
+      "temperature_mix3_hc_heating_norm": {
+        "default": "mdi:numeric-3-circle"
+      },
+      "temperature_mix3_hc_max": {
+        "default": "mdi:numeric-3-circle"
+      },
+      "temperature_pool_setpoint": {
+        "default": "mdi:pool-thermometer"
+      },
+      "temperature_pool_hysteresis": {
+        "default": "mdi:pool-thermometer"
+      },
+      "temperature_pool_hc_limit": {
+        "default": "mdi:pool"
+      },
+      "temperature_pool_hc_target": {
+        "default": "mdi:pool"
+      },
+      "temperature_pool_hc_outdoor_norm": {
+        "default": "mdi:pool"
+      },
+      "temperature_pool_hc_norm": {
+        "default": "mdi:pool"
+      },
+      "temperature_water_disinfection": {
+        "default": "mdi:shield-bug"
+      },
+      "schedule_water_disinfection_duration": {
+        "default": "mdi:progress-clock"
+      },
+      "basicvent_incoming_fan_manual_speed_percent": {
+        "default": "mdi:gauge"
+      },
+      "basicvent_outgoing_fan_manual_speed_percent": {
+        "default": "mdi:gauge"
+      },
+      "temperature_heating_powlimit_min": {
+        "default": "mdi:gauge"
+      },
+      "temperature_heating_powlimit_max": {
+        "default": "mdi:gauge"
+      },
+      "temperature_water_powlimit_min": {
+        "default": "mdi:gauge"
+      },
+      "temperature_water_powlimit_max": {
+        "default": "mdi:gauge"
+      },
+      "temperature_pool_powlimit_min": {
+        "default": "mdi:gauge"
+      },
+      "temperature_pool_powlimit_max": {
+        "default": "mdi:gauge"
+      },
+      "temperature_pool_setpointlimit": {
+        "default": "mdi:pool-thermometer"
+      },
+      "temperature_pool_max_runtime": {
+        "default": "mdi:clock-outline"
+      },
+      "pumpservice_sourcepump_pre_runtime_i1278": {
+        "default": "mdi:clock-outline"
+      },
+      "pumpservice_sourcepump_post_runtime_i1279": {
+        "default": "mdi:clock-outline"
+      },
+      "pumpservice_sourcepump_anti_jamming_i1280": {
+        "default": "mdi:clock-outline"
+      },
+      "pumpservice_sourcepump_temp_on_lower_a1539": {
+        "default": "mdi:thermometer"
+      },
+      "pumpservice_sourcepump_heatmode_minspeed_a485": {
+        "default": "mdi:pump"
+      },
+      "pumpservice_sourcepump_heatmode_maxspeed_a486": {
+        "default": "mdi:pump"
+      },
+      "pumpservice_sourcepump_heatmode_source_temperature_a479": {
+        "default": "mdi:thermometer"
+      },
+      "pumpservice_sourcepump_coolingmode_minspeed_a1032": {
+        "default": "mdi:pump"
+      },
+      "pumpservice_sourcepump_coolingmode_maxspeed_a1033": {
+        "default": "mdi:pump"
+      },
+      "pumpservice_sourcepump_coolingmode_source_temperature_a1034": {
+        "default": "mdi:thermometer"
+      },
+      "temperature_room_target_a100": {
+        "default": "mdi:home-thermometer"
+      }
+    },
+    "select": {
+      "enable_cooling": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "enable_heating": {
+        "default": "mdi:radiator"
+      },
+      "enable_pv": {
+        "default": "mdi:solar-power"
+      },
+      "enable_warmwater": {
+        "default": "mdi:water-thermometer"
+      },
+      "enable_pool": {
+        "default": "mdi:pool-thermometer"
+      },
+      "enable_external_heater": {
+        "default": "mdi:heating-coil"
+      },
+      "enable_mixing1": {
+        "default": "mdi:numeric-1-circle"
+      },
+      "enable_mixing2": {
+        "default": "mdi:numeric-2-circle"
+      },
+      "enable_mixing3": {
+        "default": "mdi:numeric-3-circle"
+      },
+      "temperature_heating_mode": {
+        "default": "mdi:radiator"
+      },
+      "basicvent_operation_mode_i4582": {
+        "default": "mdi:hvac"
+      },
+      "basicvent_operation_mode_alt": {
+        "default": "mdi:hvac"
+      },
+      "room_influence_a101_or_i264": {
+        "default": "mdi:home-thermometer"
+      },
+      "temperature_pool_mode": {
+        "default": "mdi:pool"
+      }
+    },
+    "sensor": {
+      "temperature_outside": {
+        "default": "mdi:sun-snowflake-variant"
+      },
+      "temperature_outside_1h": {
+        "default": "mdi:sun-snowflake-variant"
+      },
+      "temperature_outside_24h": {
+        "default": "mdi:sun-snowflake-variant"
+      },
+      "temperature_source_entry": {
+        "default": "mdi:thermometer"
+      },
+      "temperature_source_exit": {
+        "default": "mdi:thermometer"
+      },
+      "temperature_evaporation": {
+        "default": "mdi:thermometer"
+      },
+      "temperature_suction_line": {
+        "default": "mdi:thermometer"
+      },
+      "temperature_return": {
+        "default": "mdi:thermometer"
+      },
+      "temperature_flow": {
+        "default": "mdi:thermometer"
+      },
+      "temperature_condensation": {
+        "default": "mdi:thermometer"
+      },
+      "temperature_buffertank": {
+        "default": "mdi:storage-tank"
+      },
+      "temperature_room": {
+        "default": "mdi:thermostat-box"
+      },
+      "temperature_room_1h": {
+        "default": "mdi:thermostat-box"
+      },
+      "temperature_heating": {
+        "default": "mdi:radiator"
+      },
+      "temperature_heating_demand": {
+        "default": "mdi:radiator"
+      },
+      "temperature_cooling": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "temperature_cooling_demand": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "temperature_water": {
+        "default": "mdi:water-thermometer"
+      },
+      "temperature_water_demand": {
+        "default": "mdi:water-thermometer"
+      },
+      "temperature_mix1": {
+        "default": "mdi:numeric-1-circle"
+      },
+      "temperature_mix1_percent": {
+        "default": "mdi:gauge"
+      },
+      "temperature_mix1_demand": {
+        "default": "mdi:numeric-1-circle"
+      },
+      "temperature_mix2": {
+        "default": "mdi:numeric-2-circle"
+      },
+      "temperature_mix2_percent": {
+        "default": "mdi:gauge"
+      },
+      "temperature_mix2_demand": {
+        "default": "mdi:numeric-2-circle"
+      },
+      "temperature_mix3": {
+        "default": "mdi:numeric-3-circle"
+      },
+      "temperature_mix3_percent": {
+        "default": "mdi:gauge"
+      },
+      "temperature_mix3_demand": {
+        "default": "mdi:numeric-3-circle"
+      },
+      "temperature_pool": {
+        "default": "mdi:pool-thermometer"
+      },
+      "temperature_pool_demand": {
+        "default": "mdi:pool-thermometer"
+      },
+      "temperature_solar": {
+        "default": "mdi:solar-power-variant"
+      },
+      "temperature_solar_exit": {
+        "default": "mdi:solar-power-variant"
+      },
+      "temperature_discharge": {
+        "default": "mdi:thermometer"
+      },
+      "pressure_evaporation": {
+        "default": "mdi:gauge"
+      },
+      "pressure_condensation": {
+        "default": "mdi:gauge"
+      },
+      "pressure_water": {
+        "default": "mdi:gauge"
+      },
+      "position_expansion_valve": {
+        "default": "mdi:gauge"
+      },
+      "suction_gas_overheating": {
+        "default": "mdi:gauge"
+      },
+      "power_electric": {
+        "default": "mdi:meter-electric"
+      },
+      "power_heating": {
+        "default": "mdi:radiator"
+      },
+      "power_cooling": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "cop_heating": {
+        "default": "mdi:gauge"
+      },
+      "cop_cooling": {
+        "default": "mdi:gauge"
+      },
+      "energy_consumption_total_year": {
+        "default": "mdi:lightning-bolt-outline"
+      },
+      "compressor_electric_consumption_year": {
+        "default": "mdi:gauge"
+      },
+      "sourcepump_electric_consumption_year": {
+        "default": "mdi:water-pump"
+      },
+      "electrical_heater_electric_consumption_year": {
+        "default": "mdi:heating-coil"
+      },
+      "energy_production_total_year": {
+        "default": "mdi:home-thermometer-outline"
+      },
+      "heating_energy_production_year": {
+        "default": "mdi:radiator"
+      },
+      "hot_water_energy_production_year": {
+        "default": "mdi:water-thermometer"
+      },
+      "pool_energy_production_year": {
+        "default": "mdi:pool-thermometer"
+      },
+      "cooling_energy_year": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "percent_heat_circ_pump": {
+        "default": "mdi:gauge"
+      },
+      "percent_source_pump": {
+        "default": "mdi:gauge"
+      },
+      "percent_compressor": {
+        "default": "mdi:gauge"
+      },
+      "waterkotte_bios_time": {
+        "default": "mdi:clock-digital"
+      },
+      "holiday_start_time": {
+        "default": "mdi:calendar-arrow-right"
+      },
+      "holiday_end_time": {
+        "default": "mdi:calendar-arrow-left"
+      },
+      "schedule_water_disinfection_start_time": {
+        "default": "mdi:clock-digital"
+      },
+      "state_service": {
+        "default": "mdi:wrench-clock"
+      },
+      "alarm_bits": {
+        "default": "mdi:alarm-light"
+      },
+      "interruption_bits": {
+        "default": "mdi:alert-circle"
+      },
+      "basicvent_temperature_outgoing_air_before_eth_a4998": {
+        "default": "mdi:thermometer"
+      },
+      "basicvent_temperature_outgoing_air_after_eeh_a4994": {
+        "default": "mdi:thermometer"
+      },
+      "basicvent_temperature_incoming_air_before_oda_a5000": {
+        "default": "mdi:thermometer"
+      },
+      "basicvent_temperature_incoming_air_after_sup_a4996": {
+        "default": "mdi:thermometer"
+      },
+      "basicvent_filter_change_operating_days_a4498": {
+        "default": "mdi:counter"
+      },
+      "basicvent_filter_change_remaining_operating_days_a4504": {
+        "default": "mdi:counter"
+      },
+      "basicvent_humidity_value_a4990": {
+        "default": "mdi:cloud-percent"
+      },
+      "basicvent_co2_value_a4992": {
+        "default": "mdi:molecule-co2"
+      },
+      "basicvent_voc_value_a4522": {
+        "default": "mdi:counter"
+      },
+      "basicvent_incoming_fan_rpm_a4551": {
+        "default": "mdi:wind-power"
+      },
+      "basicvent_incoming_fan_a4986": {
+        "default": "mdi:wind-power"
+      },
+      "basicvent_outgoing_fan_rpm_a4547": {
+        "default": "mdi:wind-power"
+      },
+      "basicvent_outgoing_fan_a4984": {
+        "default": "mdi:wind-power"
+      },
+      "basicvent_energy_save_total_a4387": {
+        "default": "mdi:home-lightning-bolt"
+      },
+      "basicvent_energy_save_current_a4389": {
+        "default": "mdi:home-lightning-bolt"
+      },
+      "basicvent_energy_recovery_rate_a4391": {
+        "default": "mdi:gauge"
+      },
+      "temperature_room_1h_a98": {
+        "default": "mdi:home-thermometer"
+      },
+      "operating_hours_solar": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_compressor_1": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_compressor_2": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_circulation_pump": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_source_pump": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_compressor_1_a516": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_compressor_2_a518": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_full_operating_hours_a520": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_heatingpump_a522": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_source_pump_a524": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_solar_circulation_pump_a526": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_externalheater_a528": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_heating_a530": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_cooling_a532": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_hot_water_a534": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_pool_heating_a536": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_solar_a538": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_functional_heating_a540": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_defroster_a542": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_bivalent_parallel_a544": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_bivalent_alternative_a546": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_pv_yield_alt_a576": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_pv_yield_a963": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_compressor_3_a706": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_compressor_4_a708": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_defroster_2_a710": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_defroster_3_a712": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_defroster_4_a714": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_heatingpump_2_a716": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_heatingpump_3_a718": {
+        "default": "mdi:gauge"
+      },
+      "operating_hours_v2_heatingpump_4_a720": {
+        "default": "mdi:gauge"
+      }
+    },
+    "switch": {
+      "holiday_enabled": {
+        "default": "mdi:calendar-check",
+        "state": {
+          "off": "mdi:calendar-blank"
+        }
+      },
+      "schedule_water_disinfection_1mo": {
+        "default": "mdi:calendar-today"
+      },
+      "schedule_water_disinfection_2tu": {
+        "default": "mdi:calendar-today"
+      },
+      "schedule_water_disinfection_3we": {
+        "default": "mdi:calendar-today"
+      },
+      "schedule_water_disinfection_4th": {
+        "default": "mdi:calendar-today"
+      },
+      "schedule_water_disinfection_5fr": {
+        "default": "mdi:calendar-today"
+      },
+      "schedule_water_disinfection_6sa": {
+        "default": "mdi:calendar-today"
+      },
+      "schedule_water_disinfection_7su": {
+        "default": "mdi:calendar-today"
+      },
+      "permanent_heating_circulation_pump_winter_d1103": {
+        "default": "mdi:pump",
+        "state": {
+          "off": "mdi:pump-off"
+        }
+      },
+      "permanent_heating_circulation_pump_summer_d1104": {
+        "default": "mdi:pump",
+        "state": {
+          "off": "mdi:pump-off"
+        }
+      },
+      "basicvent_filter_change_operating_hours_reset_d1544": {
+        "default": "mdi:restart"
+      },
+      "basicvent_incoming_fan_manual_mode": {
+        "default": "mdi:toggle-switch",
+        "state": {
+          "off": "mdi:toggle-switch-off"
+        }
+      },
+      "basicvent_outgoing_fan_manual_mode": {
+        "default": "mdi:toggle-switch",
+        "state": {
+          "off": "mdi:toggle-switch-off"
+        }
+      }
+    },
+    "datetime": {
+      "holiday_start_time": {
+        "default": "mdi:calendar-arrow-right"
+      },
+      "holiday_end_time": {
+        "default": "mdi:calendar-arrow-left"
+      }
+    },
+    "time": {
+      "schedule_water_disinfection_start_time": {
+        "default": "mdi:clock-digital"
+      }
+    }
+  },
   "services": {
-    "sync_time": "mdi:clock-outline",
     "set_holiday": "mdi:calendar",
     "set_disinfection_start_time": "mdi:calendar",
     "get_energy_balance": "mdi:home-lightning-bolt-outline",

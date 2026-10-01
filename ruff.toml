@@ -1,0 +1,8 @@
+# ruff (https://docs.astral.sh/ruff/) - checked in the CI ('ruff check .')
+target-version = "py313"
+line-length = 120
+
+[lint]
+# a focused set of rules, that find bugs: pyflakes, syntax errors, pylint errors (e.g. wrong logging
+# arguments), bugbear, async pitfalls and lazy logging - the style rules follow, when the code has been cleaned up
+select = ["F", "E9", "PLE", "B", "ASYNC", "G"]

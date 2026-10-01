@@ -42,9 +42,18 @@
         }
       },
       "reconfigure": {
-        "description": "Ändere die IP oder den Hostnamen deiner Waterkotte (z.B. wenn sie eine neue IP Adresse erhalten hat).",
+        "description": "Ändere die IP oder den Hostnamen (z.B. wenn deine Waterkotte eine neue IP Adresse erhalten hat) oder die Zugangsdaten deiner Waterkotte.",
         "data": {
-          "host": "IP oder Hostname deiner Waterkotte"
+          "host": "IP oder Hostname deiner Waterkotte",
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      },
+      "reauth_confirm": {
+        "description": "Die Anmeldung an der Waterkotte unter {host} ist fehlgeschlagen - bitte gib den aktuellen Benutzernamen und das Passwort ein.",
+        "data": {
+          "username": "Benutzername",
+          "password": "Passwort"
         }
       },
       "features": {
@@ -64,6 +73,7 @@
       "unknown": "Unerwarteter Fehler - bitte prüfe das Home Assistant Log."
     },
     "abort": {
+      "reauth_successful": "Die Zugangsdaten wurden aktualisiert.",
       "single_instance_allowed": "Only a single instance is allowed.",
       "already_configured": "Diese Waterkotte Wärmepumpe ist bereits eingerichtet.",
       "reconfigure_successful": "Die Konfiguration wurde aktualisiert.",
@@ -75,8 +85,6 @@
       "user": {
         "description": "Wenn Du Hilfe bei der Einichtung benötigst, findest du sie hier: {repo}.",
         "data": {
-          "username": "Benutzername (bei den meisten Modellen ist dieser 'waterkotte')",
-          "password": "Passwort",
           "polling_interval": "Aktualisierungsintervall in Sekunden",
           "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)"
         }
@@ -88,6 +96,7 @@
       "name": "Urlaubszeitraum setzen",
       "description": "Setzt den Start- & Endzeitpunkt des Urlaubsmodus",
       "fields": {
+        "config_entry_id": {"name": "Wärmepumpe", "description": "Die Wärmepumpe - nur erforderlich, wenn mehr als eine Wärmepumpe eingerichtet ist."},
         "start": {"name": "Start Zeit & Datum",  "description": "Urlaub beginnt am/um"},
         "end": {"name": "Ende Zeit & Datum", "description": "Urlaub ended am/um"}
       }
@@ -96,17 +105,33 @@
       "name": "Startzeit des Desinfektionslauf",
       "description": "Setze die Uhrzeit an dem der Desinfektionslauf an den ausgewählten Tagen startet",
       "fields": {
+        "config_entry_id": {"name": "Wärmepumpe", "description": "Die Wärmepumpe - nur erforderlich, wenn mehr als eine Wärmepumpe eingerichtet ist."},
         "starthhmm": {"name": "Startzeit", "description": "Startzeit des Desinfektionslauf"}
       }
     },
     "get_energy_balance": {
       "name": "Energiebilanz des laufenden Jahres ermitten",
-      "description": "Ermittele die Energiebilanz nach unterschiedlichen Verbrauchern für das laufende Jahr"
+      "description": "Ermittele die Energiebilanz nach unterschiedlichen Verbrauchern für das laufende Jahr",
+      "fields": {
+        "config_entry_id": {"name": "Wärmepumpe", "description": "Die Wärmepumpe - nur erforderlich, wenn mehr als eine Wärmepumpe eingerichtet ist."}
+      }
     },
     "get_energy_balance_monthly":{
       "name": "Energiebilanz der letzten 12 Monate im Detail ermitten",
-      "description": "Ermittele die Energiebilanz nach unterschiedlichen Verbrauchern in einem Fenster der letzten 12 Monate"
+      "description": "Ermittele die Energiebilanz nach unterschiedlichen Verbrauchern in einem Fenster der letzten 12 Monate",
+      "fields": {
+        "config_entry_id": {"name": "Wärmepumpe", "description": "Die Wärmepumpe - nur erforderlich, wenn mehr als eine Wärmepumpe eingerichtet ist."}
+      }
     }
+  },
+  "exceptions": {
+    "config_entry_required": {"message": "Es ist mehr als eine (oder keine) Waterkotte Wärmepumpe geladen - bitte wähle die Wärmepumpe aus."},
+    "config_entry_not_found": {"message": "Die Wärmepumpe {entry_id} wurde nicht gefunden."},
+    "config_entry_not_loaded": {"message": "Die Wärmepumpe {title} ist nicht geladen."},
+    "invalid_value": {"message": "Der Wert {value} ist für {tag} nicht gültig."},
+    "write_failed": {"message": "Der Wert {value} konnte nicht in {tag} geschrieben werden: {error}"},
+    "write_not_confirmed": {"message": "Die Wärmepumpe hat den Wert {value} für {tag} nicht bestätigt."},
+    "read_failed": {"message": "Die Werte konnten nicht von der Wärmepumpe gelesen werden: {error}"}
   },
   "entity": {
     "binary_sensor": {
@@ -127,10 +152,6 @@
       "status_cooling": {"name": "Kühlbetrieb"},
       "status_pool": {"name":  "Pool-Heizbetrieb"},
       "status_solar": {"name":  "Solarbetrieb"},
-      "status_heating_circulation_pump": {"name":  "Umwälzpumpenbetrieb Heizung"},
-      "status_solar_circulation_pump": {"name":  "Umwälzpumpenbetrieb Solar"},
-      "status_buffer_tank_circulation_pump": {"name":  "Umwälzpumpenbetrieb Pufferspeicher"},
-      "status_compressor": {"name":  "Verdichterbetrieb"},
       "state_blocking_time": {"name": "Sperrzeit"},
       "state_test_run": {"name": "Testlauf"},
       "state_heating_circulation_pump_d425": {"name": "Umwälzpumpe Heizung"},
@@ -148,6 +169,10 @@
       "basicvent_status_smart_bypass_active_d1466": {"name": "Lüfter Smart Bypass aktiv"},
       "basicvent_status_holiday_enabled_d1503": {"name": "Lüfter Ferienmodus aktiv"},
       "basicvent_filter_change_display_d1469": {"name": "Lüfter Filterwechsel notwendig"}
+    },
+    "datetime": {
+      "holiday_start_time": {"name": "Urlaub Start"},
+      "holiday_end_time": {"name": "Urlaub Ende"}
     },
     "number": {
       "temperature_return_setpoint": {"name": "T Sollwert"},
@@ -257,15 +282,15 @@
           "mode5": "Bypass"
         }
       },
-      "enable_cooling": {"name": "Betriebsmodus Kühlung"},
-      "enable_heating": {"name": "Betriebsmodus Heizung"},
-      "enable_pv": {"name": "Betriebsmodus PV"},
-      "enable_warmwater": {"name": "Betriebsmodus Warmwasser"},
-      "enable_pool": {"name": "Betriebsmodus Pool"},
-      "enable_external_heater": {"name": "Betriebsmodus Heizstab"},
-      "enable_mixing1": {"name": "Betriebsmodus Mischerkreis 1"},
-      "enable_mixing2": {"name": "Betriebsmodus Mischerkreis 2"},
-      "enable_mixing3": {"name": "Betriebsmodus Mischerkreis 3"},
+      "enable_cooling": {"name": "Betriebsmodus Kühlung", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_heating": {"name": "Betriebsmodus Heizung", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_pv": {"name": "Betriebsmodus PV", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_warmwater": {"name": "Betriebsmodus Warmwasser", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_pool": {"name": "Betriebsmodus Pool", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_external_heater": {"name": "Betriebsmodus Heizstab", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_mixing1": {"name": "Betriebsmodus Mischerkreis 1", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_mixing2": {"name": "Betriebsmodus Mischerkreis 2", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
+      "enable_mixing3": {"name": "Betriebsmodus Mischerkreis 3", "state": {"off": "Aus", "auto": "Automatisch", "manual": "Manuell"}},
       "pumpservice_sourcepump_i1281": {
         "name": "Service: Quellenpumpe",
         "state": {
@@ -465,6 +490,9 @@
       "basicvent_outgoing_fan_manual_mode": {"name": "Lüfter 2 (Innen) manuelle Drehzahl-Steuerung"},
       "pumpservice_sourcepump_cable_break_monitoring_d881": {"name": "Service: Quellenpumpe Kabelbruchüberwachung"},
       "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Quellenpumpe Regeneration"}
+    },
+    "time": {
+      "schedule_water_disinfection_start_time": {"name": "Startzeit Desinfektion"}
     }
   }
 }

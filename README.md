@@ -19,6 +19,8 @@ All data will be fetched (or send) to your Waterkotte via the build in webserver
 | `switch`        | Switch something `True` or `False`.                  |
 | `select`        | Select a value from options.                         |
 | `number`        | adjustable Temperatures (demanded or heating curves) |
+| `datetime`      | Start and end of the holiday                         |
+| `time`          | Start time of the water disinfection                 |
 | `service`       | Provides services to interact with heatpump          |
 
 ## Disclaimer
@@ -74,7 +76,7 @@ Use the following steps for a manual configuration by adding the custom integrat
 
 After the integration was added you can use the 'config' button to adjust your settings and you can additionally modify the update intervall
 
-If the IP address (or hostname) of your Waterkotte has changed, use the 'Reconfigure' option of the integration entry - there is no need to remove and add the integration again.
+If the IP address (or hostname) or the login credentials of your Waterkotte have changed, use the 'Reconfigure' option of the integration entry - there is no need to remove and add the integration again.
 
 Please note, that most of the available sensors are __not__ enabled by default.
 
@@ -99,9 +101,11 @@ __Don't get confused!__ The EcoTouch web login for newer Waterkotte models shows
 
 ## Services
 
-The Integration provides currently 4 services:
+The Integration provides currently 4 services. When more than one heat pump is configured, select the heat pump with the `config_entry_id` parameter (optional for a single heat pump).
 
 ### Setting dates & times
+
+The start and the end of the holiday (`datetime` entities) and the start time of the water disinfection (`time` entity) can be changed directly on the device page, in dashboards and with the standard actions (`datetime.set_value` / `time.set_value`). The following services are still available (e.g. for existing automations).
 
 #### SET_HOLIDAY
 To set the times for the holiday mode use the provided service `waterkotte_heatpump.set_holiday` and set `start` and `end` parameter.
@@ -132,6 +136,20 @@ Please note: After the update, older versions of the integration can't be used a
 ### Removed schedule entities & service
 
 The optional schedule entities (650+) and the 'Set a Schedule' service have been removed. When you update, the schedule entities are removed automatically from your Home Assistant installation (incl. the disabled ones). The schedules can still be adjusted via the web interface of your Waterkotte. The water disinfection schedule is not affected.
+
+### Holiday & BIOS time sensors
+
+The holiday start/end time can be changed with the new `datetime` entities - the holiday sensors are not enabled anymore for new installations (existing installations keep them). The sensors for the holiday start/end time and the BIOS time are timestamp sensors now: their state is an ISO 8601 timestamp (e.g. `2026-12-20T07:00:00+00:00`) instead of the former local text format `2026-12-20 08:00`. Templates or automations that parse the old format need to be adjusted.
+
+### Unavailable entities
+
+An entity is unavailable, when its value could not be read from the heat pump in the last update (before, the entity kept showing the last value it had read).
+
+### Wrong credentials
+
+When the login to the heat pump fails because of wrong credentials, Home Assistant asks you to re-enter the username and password (`Settings -> Devices & services`) instead of retrying forever.
+
+The username and password are changed via 'Reconfigure' now (the options contain only the polling interval and the number of tags per request) - credentials that have been changed via the options of an older version are taken over automatically.
 
 ### Migrate from the previous 'ha-waterkotte' repository
 

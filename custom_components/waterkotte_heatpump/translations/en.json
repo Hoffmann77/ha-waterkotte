@@ -42,9 +42,18 @@
         }
       },
       "reconfigure": {
-        "description": "Change the Host or IP of your Waterkotte (e.g. when it got a new IP address).",
+        "description": "Change the Host or IP (e.g. when your Waterkotte got a new IP address) or the login credentials of your Waterkotte.",
         "data": {
-          "host": "Host or IP"
+          "host": "Host or IP",
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "description": "The login to the Waterkotte at {host} failed - please enter the current username and password.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
         }
       },
       "features": {
@@ -64,6 +73,7 @@
       "unknown": "Unexpected error - please check the Home Assistant log."
     },
     "abort": {
+      "reauth_successful": "The credentials have been updated.",
       "single_instance_allowed": "Only a single instance is allowed.",
       "already_configured": "This Waterkotte heat pump is already configured.",
       "reconfigure_successful": "The configuration has been updated.",
@@ -75,13 +85,53 @@
       "user": {
         "description": "If you need help with the configuration have a look here: {repo}.",
         "data": {
-          "username": "Username",
-          "password": "Password",
           "polling_interval": "Polling Interval in seconds",
           "tags_per_request": "Number of tags to fetch in a single request (max. 75)"
         }
       }
     }
+  },
+  "services": {
+    "set_holiday": {
+      "name": "Set Holiday",
+      "description": "Sets start and end times for holiday mode.",
+      "fields": {
+        "config_entry_id": {"name": "Heat pump", "description": "The heat pump - only required, when more than one heat pump is configured."},
+        "start": {"name": "Start Time & Date", "description": "Set the beginning of the holiday"},
+        "end": {"name": "End Time & Date", "description": "Set the end of the holiday"}
+      }
+    },
+    "set_disinfection_start_time": {
+      "name": "Set disinfection start time",
+      "description": "Set the start time for disinfection",
+      "fields": {
+        "config_entry_id": {"name": "Heat pump", "description": "The heat pump - only required, when more than one heat pump is configured."},
+        "starthhmm": {"name": "Disinfection Start Time", "description": "Set the disinfection start time"}
+      }
+    },
+    "get_energy_balance": {
+      "name": "Get Current Year Energy Balance",
+      "description": "Get the energy balance by different usage for the current year",
+      "fields": {
+        "config_entry_id": {"name": "Heat pump", "description": "The heat pump - only required, when more than one heat pump is configured."}
+      }
+    },
+    "get_energy_balance_monthly": {
+      "name": "Get rolling 12 Month breakdown",
+      "description": "Gets the energy balance breakdown per month in a rolling 12 month window",
+      "fields": {
+        "config_entry_id": {"name": "Heat pump", "description": "The heat pump - only required, when more than one heat pump is configured."}
+      }
+    }
+  },
+  "exceptions": {
+    "config_entry_required": {"message": "More than one (or no) Waterkotte heat pump is loaded - please select the heat pump."},
+    "config_entry_not_found": {"message": "The heat pump {entry_id} was not found."},
+    "config_entry_not_loaded": {"message": "The heat pump {title} is not loaded."},
+    "invalid_value": {"message": "The value {value} is not valid for {tag}."},
+    "write_failed": {"message": "The value {value} could not be written to {tag}: {error}"},
+    "write_not_confirmed": {"message": "The heat pump did not confirm the value {value} for {tag}."},
+    "read_failed": {"message": "The values could not be read from the heat pump: {error}"}
   },
   "entity": {
     "binary_sensor": {
@@ -102,10 +152,6 @@
       "status_cooling": {"name": "Cooling mode"},
       "status_pool": {"name":  "Pool mode"},
       "status_solar": {"name":  "Solar mode"},
-      "status_heating_circulation_pump": {"name":  "Circulation pump heating mode"},
-      "status_solar_circulation_pump": {"name":  "Circulation pump solar mode"},
-      "status_buffer_tank_circulation_pump": {"name":  "Circulation pump buffer tank mode"},
-      "status_compressor": {"name":  "Compressor mode"},
       "state_blocking_time": {"name": "Blocking time"},
       "state_test_run": {"name": "Test run"},
       "state_heating_circulation_pump_d425": {"name": "Circulation pump heating"},
@@ -123,6 +169,10 @@
       "basicvent_status_smart_bypass_active_d1466": {"name": "Vent Smart Bypass Active"},
       "basicvent_status_holiday_enabled_d1503": {"name": "Vent Holiday Enabled"},
       "basicvent_filter_change_display_d1469": {"name": "Vent Filter change required"}
+    },
+    "datetime": {
+      "holiday_start_time": {"name": "Holiday start"},
+      "holiday_end_time": {"name": "Holiday end"}
     },
     "number": {
       "temperature_return_setpoint": {"name": "T setpoint"},
@@ -232,15 +282,15 @@
           "mode5": "Bypass"
         }
       },
-      "enable_cooling": {"name": "Operation mode cooling"},
-      "enable_heating": {"name": "Operation mode heating"},
-      "enable_pv": {"name": "Operation mode PV"},
-      "enable_warmwater": {"name": "Operation mode hot water"},
-      "enable_pool": {"name": "Operation mode pool"},
-      "enable_external_heater": {"name": "Operation mode external heater"},
-      "enable_mixing1": {"name": "Operation mode Mixer 1"},
-      "enable_mixing2": {"name": "Operation mode Mixer 2"},
-      "enable_mixing3": {"name": "Operation mode Mixer 3"},
+      "enable_cooling": {"name": "Operation mode cooling", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_heating": {"name": "Operation mode heating", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_pv": {"name": "Operation mode PV", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_warmwater": {"name": "Operation mode hot water", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_pool": {"name": "Operation mode pool", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_external_heater": {"name": "Operation mode external heater", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_mixing1": {"name": "Operation mode Mixer 1", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_mixing2": {"name": "Operation mode Mixer 2", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
+      "enable_mixing3": {"name": "Operation mode Mixer 3", "state": {"off": "Off", "auto": "Auto", "manual": "Manual"}},
       "pumpservice_sourcepump_i1281": {
         "name": "Service: Sourcepump",
         "state": {
@@ -440,6 +490,9 @@
       "basicvent_outgoing_fan_manual_mode": {"name": "Vent 2 (inner) Manual-Mode"},
       "pumpservice_sourcepump_cable_break_monitoring_d881": {"name": "Service: Sourcepump cable-break Monitor"},
       "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Sourcepump regeneration"}
+    },
+    "time": {
+      "schedule_water_disinfection_start_time": {"name": "Start time disinfection"}
     }
   }
 }

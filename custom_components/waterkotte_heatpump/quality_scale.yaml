@@ -1,0 +1,106 @@
+rules:
+  # Bronze
+  action-setup: done
+  appropriate-polling:
+    status: done
+    comment: Every 60 seconds by default (configurable, min. 10 seconds) - only the tags of the enabled entities.
+  brands:
+    status: todo
+    comment: The logo is only part of the repository, it is not in the home-assistant/brands repository.
+  common-modules: done
+  config-flow:
+    status: todo
+    comment: The fields of the EcoTouch, reconfigure and reauth steps have no data_description.
+  config-flow-test-coverage: done
+  dependency-transparency:
+    status: todo
+    comment: The library for the communication (pywaterkotte_ha) is part of the integration, not a package on PyPI.
+  docs-actions: done
+  docs-conditions:
+    status: exempt
+    comment: The integration provides no conditions.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions:
+    status: todo
+    comment: The README does not describe the removal.
+  docs-triggers:
+    status: exempt
+    comment: The integration provides no triggers.
+  entity-event-setup:
+    status: exempt
+    comment: The entities don't subscribe to events - they are updated by the coordinator.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+
+  # Silver
+  action-exceptions: done
+  config-entry-unloading: done
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable:
+    status: done
+    comment: Logged once by the coordinator.
+  parallel-updates: done
+  reauthentication-flow: done
+  test-coverage:
+    status: todo
+    comment: The coverage is 86% (required are 95%) - mostly the bundled library.
+
+  # Gold
+  devices: done
+  diagnostics: done
+  discovery:
+    status: todo
+    comment: Check if the web interface of the heat pump can be discovered (e.g. via DHCP).
+  discovery-update-info:
+    status: todo
+    comment: See discovery.
+  docs-data-update:
+    status: todo
+    comment: The README does not describe the polling.
+  docs-examples:
+    status: todo
+    comment: The README has a sample dashboard, but no automation examples.
+  docs-known-limitations:
+    status: todo
+  docs-supported-devices:
+    status: todo
+    comment: The README describes the interface types (EcoTouch / EasyCon), but not the supported models.
+  docs-supported-functions:
+    status: todo
+  docs-troubleshooting:
+    status: todo
+  docs-use-cases:
+    status: todo
+  dynamic-devices:
+    status: exempt
+    comment: A config entry is a single heat pump (one device).
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default: done
+  entity-translations: done
+  exception-translations:
+    status: todo
+    comment: The errors of the actions and services are translated - the setup errors (UpdateFailed) are not.
+  icon-translations: done
+  reconfiguration-flow: done
+  repair-issues:
+    status: exempt
+    comment: There are no issues, that the user has to repair.
+  stale-devices:
+    status: exempt
+    comment: A config entry is a single heat pump (one device).
+
+  # Platinum
+  async-dependency: done
+  inject-websession: done
+  strict-typing:
+    status: todo
+    comment: The integration (and the bundled library) is not completely typed.

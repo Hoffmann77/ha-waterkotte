@@ -20,12 +20,26 @@ from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import (
     InvalidValueException,
 )
 
-# from aenum import Enum, extend_enum
-
 _LOGGER: logging.Logger = logging.getLogger(__package__)
+
+# the raw values of the 'enable' states and of the status values
+_STATES = {0: "off", 1: "auto", 2: "manual"}
+_STATUS = {0: "off", 1: "on", 2: "disabled"}
+# the adjustments of a temperature (in K): the raw value is the index of the adjustment
+_ADJUSTMENTS = {index: -2 + index * 0.5 for index in range(9)}
 
 
 class DataTag(NamedTuple):
+
+    @staticmethod
+    def _first_value(str_vals: List[str] | None) -> str | None:
+        """The first raw value - or None, when the heat pump did not provide a value"""
+        if not str_vals or str_vals[0] is None or str(str_vals[0]).strip() == "":
+            return None
+        return str_vals[0]
+
+    def _invalid(self, value) -> InvalidValueException:
+        return InvalidValueException(f"{value!r} is not a valid value for {self.tags}")
 
     def _decode_value_default(self, str_vals: List[str]):
         return self.__decode_value_default(str_vals, factor=10.0)
@@ -33,10 +47,7 @@ class DataTag(NamedTuple):
     def _decode_value_analog(self, str_vals: List[str]):
         return self.__decode_value_default(str_vals, factor=-1.0)
 
-    # def _decode_value_analog_op_hours(self, str_vals: List[str]):
-    #     return self.__decode_value_default(str_vals, factor=-1.0, hex_decode_single_value=True)
-
-    def __decode_value_default(self, str_vals: List[str], factor: float, hex_decode_single_value:bool=False):
+    def __decode_value_default(self, str_vals: List[str], factor: float):
         if str_vals is None:
             return None
 
@@ -61,15 +72,10 @@ class DataTag(NamedTuple):
                 #    return float('180.000000')
                 # if self.tags[0] == "A4504":
                 #    return float('19')
-                if hex_decode_single_value:
-                    i_val = int(str_vals[0]) & 0xFFFF
-                    hex_string = f"{i_val:04x}0000"
-                    return struct.unpack("!f", bytes.fromhex(hex_string))[0]
+                if factor > -1.0:
+                    return float(first_val) / factor
                 else:
-                    if factor > -1.0:
-                        return float(first_val) / factor
-                    else:
-                        return float(first_val)
+                    return float(first_val)
             # elif len(self.tags) == 2:
             #     high_word = (int(str_vals[0]) << 16) & 0xFFFFFFFF
             #     low_word = (int(str_vals[1])) & 0xFFFF
@@ -93,7 +99,6 @@ class DataTag(NamedTuple):
                     ret = [False] * len(self.bits)
                     for idx in range(len(self.bits)):
                         ret[idx] = (int(first_val) & (1 << self.bits[idx])) > 0
-                    # _LOGGER.debug(f"BITS: {first_tag} ({first_val}) -> {ret}")
                     return ret
 
                 # default implementation
@@ -123,9 +128,6 @@ class DataTag(NamedTuple):
     def _encode_value_default(self, value, encoded_values):
         self.__encode_value_default(value, encoded_values, factor=10)
 
-    def _encode_value_analog(self, value, encoded_values):
-        self.__encode_value_default(value, encoded_values, factor=-1)
-
     def __encode_value_default(self, value, encoded_values, factor: int):
         assert len(self.tags) == 1
         ecotouch_tag = self.tags[0]
@@ -138,13 +140,19 @@ class DataTag(NamedTuple):
                 value_as_int = int(value)
                 if str(value_as_int) == value:
                     value = value_as_int
-            assert isinstance(value, int)
+            elif isinstance(value, float) and value.is_integer():
+                # e.g. the value of a number entity
+                value = int(value)
+            if not isinstance(value, int) or isinstance(value, bool):
+                raise self._invalid(value)
             encoded_values[ecotouch_tag] = str(value)
         elif ecotouch_tag[0] == "D":
-            assert isinstance(value, bool)
+            if not isinstance(value, bool):
+                raise self._invalid(value)
             encoded_values[ecotouch_tag] = "1" if value else "0"
         elif ecotouch_tag[0] == "A":
-            assert isinstance(value, float)
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                raise self._invalid(value)
             if factor > -1:
                 encoded_values[ecotouch_tag] = str(int(value * factor))
             else:
@@ -157,32 +165,26 @@ class DataTag(NamedTuple):
         if str_vals is None:
             return None
 
-        error_tag_index = 0
-        final_value = ""
-        for a_val in str_vals:
-            if a_val is not None and isinstance(a_val, int):
-                if self.tags[error_tag_index] in lang_map:
-                    if error_tag_index+1 == len(str_vals):
-                        # the last error field [I2614] only contain 13 bits
-                        bits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-                    elif error_tag_index == 0:
-                        # the bit13 (= "-") & bit14(= "Kommunikationstrigger") of I52 are NO alarms
-                        bits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15]
-                    else:
-                        bits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        alarms = []
+        for error_tag_index, a_val in enumerate(str_vals):
+            # the values of the heat pump are strings (e.g. '8' or '8.0')
+            if a_val is None or str(a_val).strip() == "" or self.tags[error_tag_index] not in lang_map:
+                continue
+            if error_tag_index + 1 == len(str_vals):
+                # the last error field [I2614] only contain 13 bits
+                bits = range(13)
+            elif error_tag_index == 0:
+                # the bit13 (= "-") & bit14(= "Kommunikationstrigger") of I52 are NO alarms
+                bits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15]
+            else:
+                bits = range(16)
 
-                    for idx in range(len(bits)):
-                        if (int(a_val) & (1 << bits[idx])) > 0:
-                            final_value = final_value + ", " + str(lang_map[self.tags[error_tag_index]][idx])
+            int_val = int(float(a_val))
+            labels = lang_map[self.tags[error_tag_index]]
+            # the labels are mapped by the bit number
+            alarms.extend(str(labels[bit]) for bit in bits if int_val & (1 << bit))
 
-                    #_LOGGER.error(f"{self.tags[error_tag_index]} {a_val} -> '{final_value}'")
-                error_tag_index = error_tag_index + 1
-
-        # we need to trim the firsts initial added ', '
-        if len(final_value) > 0:
-            return final_value[2:]
-        else:
-            return final_value
+        return ", ".join(alarms)
 
     def _decode_datetime(self, str_vals: List[str]):
         try:
@@ -200,11 +202,12 @@ class DataTag(NamedTuple):
             dt_val = datetime(*int_vals)
             return dt_val + timedelta(days=1) if next_day else dt_val
         except BaseException as ex:
-            _LOGGER.info(f"_decode_datetime(): values: '{str_vals}' caused {type(ex)}.__name__ {ex}")
+            _LOGGER.debug("_decode_datetime(): values: '%s' caused %s %s", str_vals, type(ex).__name__, ex)
             return None
 
     def _encode_datetime(self, value, encoded_values):
-        assert isinstance(value, datetime)
+        if not isinstance(value, datetime):
+            raise self._invalid(value)
         vals = [
             str(val)
             for val in [
@@ -235,7 +238,8 @@ class DataTag(NamedTuple):
         return dt
 
     def _encode_time_hhmm(self, value, encoded_values):
-        assert isinstance(value, time)
+        if not isinstance(value, time):
+            raise self._invalid(value)
         if value == time.max:
             vals = ["24", "0"]
         else:
@@ -244,182 +248,127 @@ class DataTag(NamedTuple):
         for i, tags in enumerate(self.tags):
             encoded_values[tags] = vals[i]
 
-    def _decode_state(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
+    def _decode_mapped(self, str_vals: List[str], value_map: dict[int, str]):
+        """The name of the value (from the map of the raw values) - 'Error' for an unknown value"""
+        first_val = self._first_value(str_vals)
+        if first_val is None:
             return None
-
-        assert len(self.tags) == 1
-        if str_vals[0] == "0":
-            return "off"
-        elif str_vals[0] == "1":
-            return "auto"
-        elif str_vals[0] == "2":
-            return "manual"
-        else:
+        try:
+            return value_map.get(int(float(first_val)), "Error")
+        except ValueError:
             return "Error"
 
-    def _encode_state(self, value, encoded_values):
-        assert len(self.tags) == 1
-        ecotouch_tag = self.tags[0]
-        assert ecotouch_tag[0] in ["I"]
-        if value == "off":
-            encoded_values[ecotouch_tag] = "0"
-        elif value == "auto":
-            encoded_values[ecotouch_tag] = "1"
-        elif value == "manual":
-            encoded_values[ecotouch_tag] = "2"
-
-    def _decode_four_steps_mode(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
-            return None
-
-        assert len(self.tags) == 1
-        if str_vals[0] is not None:
-            int_val = int(str_vals[0])
-            if 0 <= int_val <= len(FOUR_STEPS_MODES):
-                return FOUR_STEPS_MODES[int_val]
-        return "Error"
-
-    def _encode_four_steps_mode(self, value, encoded_values):
-        assert len(self.tags) == 1
-        ecotouch_tag = self.tags[0]
+    def _encode_mapped(self, value, encoded_values, value_map: dict[int, str]):
+        """The raw value of the name of a value - an unknown name is raised as InvalidValueException"""
+        index = next((key for key, name in value_map.items() if name == value), None)
+        if index is None:
+            raise self._invalid(value)
         # there is an alternative tag for the four/six steps mode with '3:HREG' notation
         # see https://github.com/marq24/ha-waterkotte/issues/49
-        assert ecotouch_tag[0] in ["I", "3"]
-        index = self._get_key_from_value(FOUR_STEPS_MODES, value)
-        if index is not None:
-            encoded_values[ecotouch_tag] = str(index)
+        encoded_values[self.tags[0]] = str(index)
+
+    def _decode_adjust(self, str_vals: List[str]):
+        """The adjustment of a temperature (in K) - the raw value is the index of the adjustment"""
+        first_val = self._first_value(str_vals)
+        if first_val is None:
+            return None
+        try:
+            return _ADJUSTMENTS.get(int(float(first_val)))
+        except ValueError:
+            return None
+
+    def _encode_adjust(self, value, encoded_values):
+        index = next((key for key, adjustment in _ADJUSTMENTS.items()
+                      if isinstance(value, (int, float)) and adjustment == value), None)
+        if index is None:
+            raise self._invalid(value)
+        encoded_values[self.tags[0]] = str(index)
+
+    def _decode_state(self, str_vals: List[str]):
+        return self._decode_mapped(str_vals, _STATES)
+
+    def _encode_state(self, value, encoded_values):
+        self._encode_mapped(value, encoded_values, _STATES)
+
+    def _decode_four_steps_mode(self, str_vals: List[str]):
+        return self._decode_mapped(str_vals, FOUR_STEPS_MODES)
+
+    def _encode_four_steps_mode(self, value, encoded_values):
+        self._encode_mapped(value, encoded_values, FOUR_STEPS_MODES)
 
     def _decode_six_steps_mode(self, str_vals: List[str]):
-        if str_vals is None is None and str_vals[0] is not None:
-            return None
-
-        assert len(self.tags) == 1
-        if str_vals[0] is not None:
-            int_val = int(str_vals[0])
-            if 0 <= int_val <= len(SIX_STEPS_MODES):
-                return SIX_STEPS_MODES[int_val]
-        return "Error"
+        return self._decode_mapped(str_vals, SIX_STEPS_MODES)
 
     def _encode_six_steps_mode(self, value, encoded_values):
-        assert len(self.tags) == 1
-        ecotouch_tag = self.tags[0]
-        # there is an alternative tag for the six steps mode with '3:HREG' notation
-        # see https://github.com/marq24/ha-waterkotte/issues/49
-        assert ecotouch_tag[0] in ["I", "3"]
-        index = self._get_key_from_value(SIX_STEPS_MODES, value)
-        if index is not None:
-            encoded_values[ecotouch_tag] = str(index)
-
-    @staticmethod
-    def _get_key_from_value(a_dict: dict, value_to_find):
-        # a very simple "find first key" of dict method...
-        keys = [k for k, v in a_dict.items() if v == value_to_find]
-        if keys:
-            return keys[0]
-        return None
+        self._encode_mapped(value, encoded_values, SIX_STEPS_MODES)
 
     def _decode_status(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
+        return self._decode_mapped(str_vals, _STATUS)
+
+    def _decode_indexed(self, str_vals: List[str], names: list[str], unknown: str):
+        """The name of the value (the raw value is the index in the list of the names) - or None, when the heat
+        pump did not provide a value"""
+        first_val = self._first_value(str_vals)
+        if first_val is None:
             return None
-
-        assert len(self.tags) == 1
-        if str_vals[0] == "0":
-            return "off"
-        elif str_vals[0] == "1":
-            return "on"
-        elif str_vals[0] == "2":
-            return "disabled"
-        else:
-            return "Error"
-
-    def _encode_status(self, value, encoded_values):
-        assert len(self.tags) == 1
-        ecotouch_tag = self.tags[0]
-        assert ecotouch_tag[0] in ["I"]
-        if value == "off":
-            encoded_values[ecotouch_tag] = "0"
-        elif value == "on":
-            encoded_values[ecotouch_tag] = "1"
-        elif value == "disabled":
-            encoded_values[ecotouch_tag] = "2"
+        try:
+            idx = int(float(first_val))
+        except ValueError:
+            return None
+        return names[idx] if 0 <= idx < len(names) else f"{unknown}_{idx}"
 
     def _decode_ro_series(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
-            return None
-
-        if str_vals[0]:
-            if isinstance(str_vals[0], int):
-                idx = int(str_vals[0])
-                if len(SERIES) > idx:
-                    return SERIES[idx]
-                else:
-                    return f"UNKNOWN_SERIES_{idx}"
-        else:
-            return "UNKNOWN_SERIES"
+        return self._decode_indexed(str_vals, SERIES, "UNKNOWN_SERIES")
 
     def _decode_ro_id(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
-            return None
-
-        assert len(self.tags) == 1
-        if str_vals[0]:
-            if isinstance(str_vals[0], int):
-                idx = int(str_vals[0])
-                if len(SYSTEM_IDS) > idx:
-                    return SYSTEM_IDS[idx]
-                else:
-                    return f"UNKNOWN_SYSTEM_{idx}"
-        else:
-            return "UNKNOWN_SYSTEM"
+        return self._decode_indexed(str_vals, SYSTEM_IDS, "UNKNOWN_SYSTEM")
 
     def _decode_ro_bios(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
+        str_val = self._first_value(str_vals)
+        if str_val is None:
             return None
-
-        assert len(self.tags) == 1
-        str_val = str_vals[0]
         if len(str_val) > 2:
             return f"{str_val[:-2]}.{str_val[-2:]}"
         else:
             return str_val
 
     def _decode_ro_fw(self, str_vals: List[str]):
-        if str_vals is None:
+        if not str_vals or len(str_vals) != 2 or None in str_vals:
             return None
 
-        assert len(self.tags) == 2
         str_val1 = str_vals[0]
         str_val2 = str_vals[1]
         try:
             # str fw2 = f"{str_val1[:-4]:0>2}.{str_val1[-4:-2]}.{str_val1[-2:]}"
             return f"0{str_val1[0]}.{str_val1[1:3]}.{str_val1[3:]}-{str_val2}"
         except Exception as ex:
-            _LOGGER.warning("could not decode FW",ex)
+            _LOGGER.warning("could not decode FW: %s", ex)
             return f"FW_{str_val1}-{str_val2}"
 
     def _decode_ro_sn(self, str_vals: List[str]):
-        if str_vals is None:
+        if not str_vals or len(str_vals) != 2 or None in str_vals:
             return None
 
-        assert len(self.tags) == 2
-        sn1 = int(str_vals[0])
-        sn2 = int(str_vals[1])
+        try:
+            sn1 = int(float(str_vals[0]))
+            sn2 = int(float(str_vals[1]))
+        except ValueError:
+            _LOGGER.warning("could not decode Serial: %s", str_vals)
+            return None
         try:
             s1 = "WE" if math.floor(sn1 / 1000) > 0 else "00"  # pylint: disable=invalid-name
             s2 = (sn1 - 1000 if math.floor(sn1 / 1000) > 0 else sn1)  # pylint: disable=invalid-name
             s2 = "0" + str(s2) if s2 < 10 else s2  # pylint: disable=invalid-name
             return str(s1) + str(s2) + str(sn2)
         except Exception as ex:
-            _LOGGER.warning("could not decode Serial",ex)
+            _LOGGER.warning("could not decode Serial: %s", ex)
             return f"Serial_{sn1}-{sn2}"
 
     def _decode_year(self, str_vals: List[str]):
-        if str_vals is None and str_vals[0] is not None:
+        first_val = self._first_value(str_vals)
+        if first_val is None:
             return None
-
-        assert len(self.tags) == 1
-        return int(str_vals[0]) + 2000
+        return int(float(first_val)) + 2000
 
     tags: Collection[str]
     unit: str = None
@@ -682,16 +631,16 @@ class WKHPTag(DataTag, Enum):
     ENG_HEATPUMP_COP_MONTH05 = DataTag(["A928"])
     ENG_HEATPUMP_COP_MONTH06 = DataTag(["A929"])
     ENG_HEATPUMP_COP_MONTH07 = DataTag(["A930"])
-    ENG_HEATPUMP_COP_MONTH08 = DataTag(["A930"])
-    ENG_HEATPUMP_COP_MONTH09 = DataTag(["A931"])
-    ENG_HEATPUMP_COP_MONTH10 = DataTag(["A932"])
-    ENG_HEATPUMP_COP_MONTH11 = DataTag(["A933"])
-    ENG_HEATPUMP_COP_MONTH12 = DataTag(["A934"])
+    ENG_HEATPUMP_COP_MONTH08 = DataTag(["A931"])
+    ENG_HEATPUMP_COP_MONTH09 = DataTag(["A932"])
+    ENG_HEATPUMP_COP_MONTH10 = DataTag(["A933"])
+    ENG_HEATPUMP_COP_MONTH11 = DataTag(["A934"])
+    ENG_HEATPUMP_COP_MONTH12 = DataTag(["A935"])
 
     # Temperature stuff
     TEMPERATURE_HEATING = DataTag(["A30"], "°C")
     TEMPERATURE_HEATING_DEMAND = DataTag(["A31"], "°C")
-    TEMPERATURE_HEATING_ADJUST = DataTag(["I263"], "K", writeable=True)
+    TEMPERATURE_HEATING_ADJUST = DataTag(["I263"], "K", writeable=True, decode_f=DataTag._decode_adjust, encode_f=DataTag._encode_adjust)
     TEMPERATURE_HEATING_HYSTERESIS = DataTag(["A61"], "K", writeable=True)
     TEMPERATURE_HEATING_PV_CHANGE = DataTag(["A682"], "K", writeable=True)
     TEMPERATURE_HEATING_HC_OUTDOOR_1H = DataTag(["A90"], "°C")
@@ -758,7 +707,7 @@ class WKHPTag(DataTag, Enum):
 
     TEMPERATURE_POOL = DataTag(["A20"], "°C")
     TEMPERATURE_POOL_DEMAND = DataTag(["A40"], "°C")
-    TEMPERATURE_POOL_ADJUST = DataTag(["I1740"], "K", writeable=True)
+    TEMPERATURE_POOL_ADJUST = DataTag(["I1740"], "K", writeable=True, decode_f=DataTag._decode_adjust, encode_f=DataTag._encode_adjust)
     TEMPERATURE_POOL_SETPOINT = DataTag(["A41"], "°C", writeable=True)
     TEMPERATURE_POOL_HYSTERESIS = DataTag(["A174"], "K", writeable=True)
     TEMPERATURE_POOL_PV_CHANGE = DataTag(["A685"], "K", writeable=True)
@@ -777,7 +726,7 @@ class WKHPTag(DataTag, Enum):
 
     TEMPERATURE_MIX1 = DataTag(["A44"], "°C")  # TEMPERATURE_MIXING1_CURRENT
     TEMPERATURE_MIX1_DEMAND = DataTag(["A45"], "°C")  # TEMPERATURE_MIXING1_SET
-    TEMPERATURE_MIX1_ADJUST = DataTag(["I776"], "K", writeable=True)  # ADAPT_MIXING1
+    TEMPERATURE_MIX1_ADJUST = DataTag(["I776"], "K", writeable=True, decode_f=DataTag._decode_adjust, encode_f=DataTag._encode_adjust)  # ADAPT_MIXING1
     TEMPERATURE_MIX1_PV_CHANGE = DataTag(["A1094"], "K", writeable=True)
     TEMPERATURE_MIX1_PERCENT = DataTag(["A510"], "%")
     TEMPERATURE_MIX1_HC_LIMIT = DataTag(["A276"], "°C", writeable=True)  # T_HEATING_LIMIT_MIXING1
@@ -788,7 +737,7 @@ class WKHPTag(DataTag, Enum):
 
     TEMPERATURE_MIX2 = DataTag(["A46"], "°C")  # TEMPERATURE_MIXING2_CURRENT
     TEMPERATURE_MIX2_DEMAND = DataTag(["A47"], "°C")  # TEMPERATURE_MIXING2_SET
-    TEMPERATURE_MIX2_ADJUST = DataTag(["I896"], "K", writeable=True)  # ADAPT_MIXING2
+    TEMPERATURE_MIX2_ADJUST = DataTag(["I896"], "K", writeable=True, decode_f=DataTag._decode_adjust, encode_f=DataTag._encode_adjust)  # ADAPT_MIXING2
     TEMPERATURE_MIX2_PV_CHANGE = DataTag(["A1095"], "K", writeable=True)
     TEMPERATURE_MIX2_PERCENT = DataTag(["A512"], "%")
     TEMPERATURE_MIX2_HC_LIMIT = DataTag(["A322"], "°C", writeable=True)
@@ -799,7 +748,7 @@ class WKHPTag(DataTag, Enum):
 
     TEMPERATURE_MIX3 = DataTag(["A48"], "°C")  # TEMPERATURE_MIXING3_CURRENT
     TEMPERATURE_MIX3_DEMAND = DataTag(["A49"], "°C")  # TEMPERATURE_MIXING3_SET
-    TEMPERATURE_MIX3_ADJUST = DataTag(["I1017"], "K", writeable=True)  # ADAPT_MIXING3
+    TEMPERATURE_MIX3_ADJUST = DataTag(["I1017"], "K", writeable=True, decode_f=DataTag._decode_adjust, encode_f=DataTag._encode_adjust)  # ADAPT_MIXING3
     TEMPERATURE_MIX3_PV_CHANGE = DataTag(["A1096"], "K", writeable=True)
     TEMPERATURE_MIX3_PERCENT = DataTag(["A514"], "%")
     TEMPERATURE_MIX3_HC_LIMIT = DataTag(["A368"], "°C", writeable=True)

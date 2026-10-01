@@ -1,392 +1,191 @@
+"""Service actions of the Waterkotte Heatpump integration."""
 import datetime
 import logging
-import asyncio
-from typing import Tuple
-from dateutil.relativedelta import relativedelta
-from homeassistant.core import ServiceCall, ServiceResponse
+
+import voluptuous as vol
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import ATTR_CONFIG_ENTRY_ID
+from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse, callback
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import config_validation as cv
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
+from .const import (
+    DOMAIN,
+    SERVICE_SET_HOLIDAY,
+    SERVICE_SET_DISINFECTION_START_TIME,
+    SERVICE_GET_ENERGY_BALANCE,
+    SERVICE_GET_ENERGY_BALANCE_MONTHLY,
+)
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
+# the monthly values: key in the service response -> prefix of the 12 tags (one tag per month: '<prefix>01'...'<prefix>12')
+_MONTHLY_TAG_PREFIXES = {
+    "cop": "ENG_HEATPUMP_COP_MONTH",
+    "compressor": "ENG_CONSUMPTION_COMPRESSOR",
+    "sourcepump": "ENG_CONSUMPTION_SOURCEPUMP",
+    "externalheater": "ENG_CONSUMPTION_EXTERNALHEATER",
+    "heating": "ENG_PRODUCTION_HEATING",
+    "warmwater": "ENG_PRODUCTION_WARMWATER",
+    "pool": "ENG_PRODUCTION_POOL",
+}
+_MONTHS = range(1, 13)
 
-class WaterkotteHeatpumpService():
-    """waterkotte_heatpump switch class."""
 
-    def __init__(self, hass, config, coordinator):  # pylint: disable=unused-argument
-        """Initialize the sensor."""
-        self._hass = hass
-        self._config = config
+def _time_hhmm(value) -> datetime.time:
+    """A time of the day - '24:00' is the end of the day"""
+    value = str(value)
+    if value.startswith("24:"):
+        return datetime.time.max
+    try:
+        return datetime.time.fromisoformat(value)
+    except ValueError as err:
+        raise vol.Invalid(f"invalid time: {value}") from err
+
+
+# the config entry is optional - it's only required, when more than one heat pump is configured
+_BASE_SCHEMA = {vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string}
+
+_SERVICES = {
+    SERVICE_SET_HOLIDAY: (
+        vol.Schema({**_BASE_SCHEMA, vol.Required("start"): cv.datetime, vol.Required("end"): cv.datetime}),
+        SupportsResponse.OPTIONAL,
+    ),
+    SERVICE_SET_DISINFECTION_START_TIME: (
+        vol.Schema({**_BASE_SCHEMA, vol.Required("starthhmm"): _time_hhmm}),
+        SupportsResponse.OPTIONAL,
+    ),
+    SERVICE_GET_ENERGY_BALANCE: (vol.Schema(_BASE_SCHEMA), SupportsResponse.ONLY),
+    SERVICE_GET_ENERGY_BALANCE_MONTHLY: (vol.Schema(_BASE_SCHEMA), SupportsResponse.ONLY),
+}
+
+
+@callback
+def async_setup_services(hass: HomeAssistant) -> None:
+    """Register the service actions of the integration."""
+
+    async def handle(call: ServiceCall) -> ServiceResponse:
+        service = WaterkotteHeatpumpService(_get_coordinator(hass, call))
+        return await getattr(service, call.service)(call)
+
+    for name, (schema, supports_response) in _SERVICES.items():
+        hass.services.async_register(DOMAIN, name, handle, schema=schema, supports_response=supports_response)
+
+
+def _get_coordinator(hass: HomeAssistant, call: ServiceCall):
+    """The coordinator of the heat pump, the service action is called for."""
+    entry_id = call.data.get(ATTR_CONFIG_ENTRY_ID)
+    if entry_id is None:
+        entries = hass.config_entries.async_loaded_entries(DOMAIN)
+        if len(entries) != 1:
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="config_entry_required")
+        return entries[0].runtime_data
+
+    entry = hass.config_entries.async_get_entry(entry_id)
+    if entry is None or entry.domain != DOMAIN:
+        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="config_entry_not_found",
+                                     translation_placeholders={"entry_id": entry_id})
+    if entry.state is not ConfigEntryState.LOADED:
+        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="config_entry_not_loaded",
+                                     translation_placeholders={"title": entry.title})
+    return entry.runtime_data
+
+
+def _value(res: dict, tag: WKHPTag):
+    """The value of a tag from a read result - or 'unknown', if the tag could not be read"""
+    return res.get(tag, {"value": "unknown"})["value"]
+
+
+def _now() -> str:
+    return str(datetime.datetime.now().time())
+
+
+class WaterkotteHeatpumpService:
+    """The service actions for one heat pump (the methods have the names of the service actions)."""
+
+    def __init__(self, coordinator):
         self._coordinator = coordinator
-
-    async def sync_time(self, call: ServiceCall):
-        now = datetime.datetime.now()
-        next_full_minute = now.replace(second=0, microsecond=0) + relativedelta(minutes=1)
-        if now.second < 58:
-            await asyncio.sleep(58 - now.second)
-        # await self._coordinator.async_write_tag(WKHPTag.WATERKOTTE_TIME_SET, next_full_minute)
-        if call.return_response:
-            return {"success": "yes", "date": str(next_full_minute)}
 
     async def set_holiday(self, call: ServiceCall):
         """Handle the service call."""
-        start = call.data.get('start', None)
-        end = call.data.get('end', None)
-        if start is not None and end is not None:
-            start = datetime.datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
-            end = datetime.datetime.strptime(end, '%Y-%m-%d %H:%M:%S')
-            _LOGGER.debug(f"set_holiday start: {start} end: {end}")
-            try:
-                await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_START_TIME, start)
-                await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_END_TIME, end)
-                await self._coordinator.async_refresh()
-            except ValueError as exc:
-                if call.return_response:
-                    return {"error": str(exc), "date": str(datetime.datetime.now().time())}
-
+        start = call.data["start"]
+        end = call.data["end"]
+        _LOGGER.debug("set_holiday start: %s end: %s", start, end)
+        try:
+            await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_START_TIME, start)
+            await self._coordinator.async_write_tag(WKHPTag.HOLIDAY_END_TIME, end)
+        except HomeAssistantError as exc:
             if call.return_response:
-                return {"success": "yes", "date": str(datetime.datetime.now().time())}
+                return {"error": str(exc), "date": _now()}
+            raise
 
         if call.return_response:
-            return {"error": "No Start and/or End Time", "date": str(datetime.datetime.now().time())}
-
-    async def set_disinfection_start_time(self, call: ServiceCall):
-        start_time = self._get_time("starthhmm", call)
-        if start_time is not None:
-            _LOGGER.debug(f"set_disinfection_start_time: {start_time}")
-            try:
-                await self._coordinator.async_write_tag(WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME, start_time)
-                await self._coordinator.async_refresh()
-                if call.return_response:
-                    return {
-                        "success": "yes",
-                        "date": str(datetime.datetime.now().time())
-                    }
-            except ValueError as exe:
-                if call.return_response:
-                    return {"error": str(exe), "date": str(datetime.datetime.now().time())}
-        else:
-            if call.return_response:
-                return {"error": "no start_time provided", "date": str(datetime.datetime.now().time())}
-
-    def _get_time(self, key: str, call: ServiceCall):
-        a_time = call.data.get(key, None)
-        if a_time is not None:
-            temp = str(a_time)
-            if temp.startswith("24:"):
-                #temp = "00" + temp[2:]
-                #return datetime.time.fromisoformat(temp).max
-                return datetime.time.max
-            else:
-                return datetime.time.fromisoformat(temp)
+            return {"success": "yes", "date": _now()}
         return None
 
-    async def get_energy_balance(self, call: ServiceCall) -> ServiceResponse:
+    async def set_disinfection_start_time(self, call: ServiceCall):
+        start_time = call.data["starthhmm"]
+        _LOGGER.debug("set_disinfection_start_time: %s", start_time)
         try:
-            tags = [WKHPTag.COMPRESSOR_ELECTRIC_CONSUMPTION_YEAR,
-                    WKHPTag.SOURCEPUMP_ELECTRIC_CONSUMPTION_YEAR,
-                    WKHPTag.ELECTRICAL_HEATER_ELECTRIC_CONSUMPTION_YEAR,
-                    WKHPTag.HEATING_ENERGY_PRODUCTION_YEAR,
-                    WKHPTag.HOT_WATER_ENERGY_PRODUCTION_YEAR,
-                    WKHPTag.POOL_ENERGY_PRODUCTION_YEAR,
-                    WKHPTag.COP_HEATPUMP_YEAR,
-                    WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]
-            res = await self._coordinator.async_read_values(tags)
+            await self._coordinator.async_write_tag(WKHPTag.SCHEDULE_WATER_DISINFECTION_START_TIME, start_time)
+        except HomeAssistantError as exc:
+            if call.return_response:
+                return {"error": str(exc), "date": _now()}
+            raise
 
-        except ValueError:
-            return "unavailable"
-        ret = {
-            "year": res.get(WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO, {"value": "unknown"})["value"],
-            "cop": res.get(WKHPTag.COP_HEATPUMP_YEAR, {"value": "unknown"})["value"],
-            "compressor": res.get(WKHPTag.COMPRESSOR_ELECTRIC_CONSUMPTION_YEAR, {"value": "unknown"})["value"],
-            "sourcepump": res.get(WKHPTag.SOURCEPUMP_ELECTRIC_CONSUMPTION_YEAR, {"value": "unknown"})["value"],
-            "externalheater": res.get(WKHPTag.ELECTRICAL_HEATER_ELECTRIC_CONSUMPTION_YEAR, {"value": "unknown"})[
-                "value"],
-            "heating": res.get(WKHPTag.HEATING_ENERGY_PRODUCTION_YEAR, {"value": "unknown"})["value"],
-            "warmwater": res.get(WKHPTag.HOT_WATER_ENERGY_PRODUCTION_YEAR, {"value": "unknown"})["value"],
-            "pool": res.get(WKHPTag.POOL_ENERGY_PRODUCTION_YEAR, {"value": "unknown"})["value"]}
-        return ret
+        if call.return_response:
+            return {"success": "yes", "date": _now()}
+        return None
+
+    async def _read_with_retry(self, tags: list[WKHPTag]) -> dict:
+        """Read the tags - and retry once, when not all tags could be read"""
+        for _ in range(2):
+            res = await self._coordinator.async_read_values(tags)
+            if len(res) == len(tags) and all(_value(res, tag) != "unknown" for tag in tags):
+                break
+        return res
+
+    async def get_energy_balance(self, call: ServiceCall) -> ServiceResponse:
+        tags = [WKHPTag.COMPRESSOR_ELECTRIC_CONSUMPTION_YEAR,
+                WKHPTag.SOURCEPUMP_ELECTRIC_CONSUMPTION_YEAR,
+                WKHPTag.ELECTRICAL_HEATER_ELECTRIC_CONSUMPTION_YEAR,
+                WKHPTag.HEATING_ENERGY_PRODUCTION_YEAR,
+                WKHPTag.HOT_WATER_ENERGY_PRODUCTION_YEAR,
+                WKHPTag.POOL_ENERGY_PRODUCTION_YEAR,
+                WKHPTag.COP_HEATPUMP_YEAR,
+                WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]
+        # the read errors are raised as HomeAssistantError
+        res = await self._coordinator.async_read_values(tags)
+        return {
+            "year": _value(res, WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO),
+            "cop": _value(res, WKHPTag.COP_HEATPUMP_YEAR),
+            "compressor": _value(res, WKHPTag.COMPRESSOR_ELECTRIC_CONSUMPTION_YEAR),
+            "sourcepump": _value(res, WKHPTag.SOURCEPUMP_ELECTRIC_CONSUMPTION_YEAR),
+            "externalheater": _value(res, WKHPTag.ELECTRICAL_HEATER_ELECTRIC_CONSUMPTION_YEAR),
+            "heating": _value(res, WKHPTag.HEATING_ENERGY_PRODUCTION_YEAR),
+            "warmwater": _value(res, WKHPTag.HOT_WATER_ENERGY_PRODUCTION_YEAR),
+            "pool": _value(res, WKHPTag.POOL_ENERGY_PRODUCTION_YEAR),
+        }
 
     async def get_energy_balance_monthly(self, call: ServiceCall) -> ServiceResponse:
-        try:
-            for x in range(2):
-                tags = [WKHPTag.ENG_CONSUMPTION_COMPRESSOR01,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR02,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR03,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR04,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR05,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR06,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR07,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR08,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR09,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR10,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR11,
-                        WKHPTag.ENG_CONSUMPTION_COMPRESSOR12]
-                resCompressor = await self._coordinator.async_read_values(tags)
-                found = False
-                for value in resCompressor:
-                    if resCompressor.get(value, {"value": "unknown"})["value"] == "unknown":
-                        found = True
-                if len(resCompressor) == 12 and not found:
-                    break
-            for x in range(2):
-                tags = [WKHPTag.ENG_CONSUMPTION_SOURCEPUMP01,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP02,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP03,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP04,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP05,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP06,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP07,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP08,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP09,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP10,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP11,
-                        WKHPTag.ENG_CONSUMPTION_SOURCEPUMP12]
-                resSourcePump = await self._coordinator.async_read_values(tags)
-                found = False
-                for value in resSourcePump:
-                    if resSourcePump.get(value, {"value": "unknown"})["value"] == "unknown":
-                        found = True
-                if len(resSourcePump) == 12 and not found:
-                    break
-            for x in range(2):
-                tags = [WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER01,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER02,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER03,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER04,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER05,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER06,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER07,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER08,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER09,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER10,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER11,
-                        WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER12]
-                resExternalHeater = await self._coordinator.async_read_values(tags)
-                found = False
-                for value in resExternalHeater:
-                    if resExternalHeater.get(value, {"value": "unknown"})["value"] == "unknown":
-                        found = True
-                if len(resExternalHeater) == 12 and not found:
-                    break
-            for x in range(2):
-                tags = [WKHPTag.ENG_PRODUCTION_HEATING01,
-                        WKHPTag.ENG_PRODUCTION_HEATING02,
-                        WKHPTag.ENG_PRODUCTION_HEATING03,
-                        WKHPTag.ENG_PRODUCTION_HEATING04,
-                        WKHPTag.ENG_PRODUCTION_HEATING05,
-                        WKHPTag.ENG_PRODUCTION_HEATING06,
-                        WKHPTag.ENG_PRODUCTION_HEATING07,
-                        WKHPTag.ENG_PRODUCTION_HEATING08,
-                        WKHPTag.ENG_PRODUCTION_HEATING09,
-                        WKHPTag.ENG_PRODUCTION_HEATING10,
-                        WKHPTag.ENG_PRODUCTION_HEATING11,
-                        WKHPTag.ENG_PRODUCTION_HEATING12]
-                resHeater = await self._coordinator.async_read_values(tags)
-                found = False
-                for value in resHeater:
-                    if resHeater.get(value, {"value": "unknown"})["value"] == "unknown":
-                        found = True
-                if len(resHeater) == 12 and not found:
-                    break
-            for x in range(2):
-                tags = [WKHPTag.ENG_PRODUCTION_WARMWATER01,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER02,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER03,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER04,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER05,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER06,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER07,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER08,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER09,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER10,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER11,
-                        WKHPTag.ENG_PRODUCTION_WARMWATER12]
-                resWarmWater = await self._coordinator.async_read_values(tags)
-                found = False
-                for value in resWarmWater:
-                    if resWarmWater.get(value, {"value": "unknown"})["value"] == "unknown":
-                        found = True
-                if len(resWarmWater) == 12 and not found:
-                    break
-            for x in range(2):
-                tags = [WKHPTag.ENG_PRODUCTION_POOL01,
-                        WKHPTag.ENG_PRODUCTION_POOL02,
-                        WKHPTag.ENG_PRODUCTION_POOL03,
-                        WKHPTag.ENG_PRODUCTION_POOL04,
-                        WKHPTag.ENG_PRODUCTION_POOL05,
-                        WKHPTag.ENG_PRODUCTION_POOL06,
-                        WKHPTag.ENG_PRODUCTION_POOL07,
-                        WKHPTag.ENG_PRODUCTION_POOL08,
-                        WKHPTag.ENG_PRODUCTION_POOL09,
-                        WKHPTag.ENG_PRODUCTION_POOL10,
-                        WKHPTag.ENG_PRODUCTION_POOL11,
-                        WKHPTag.ENG_PRODUCTION_POOL12]
-                resPool = await self._coordinator.async_read_values(tags)
-                found = False
-                for value in resPool:
-                    if resPool.get(value, {"value": "unknown"})["value"] == "unknown":
-                        found = True
-                if len(resPool) == 12 and not found:
-                    break
-            for x in range(2):
-                tags = [WKHPTag.ENG_HEATPUMP_COP_MONTH01,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH02,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH03,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH04,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH05,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH06,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH07,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH08,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH09,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH10,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH11,
-                        WKHPTag.ENG_HEATPUMP_COP_MONTH12]
-                resHeatpumpCopMonth = await self._coordinator.async_read_values(tags)
-                found = False
-                for value in resHeatpumpCopMonth:
-                    if resHeatpumpCopMonth.get(value, {"value": "unknown"})["value"] == "unknown":
-                        found = True
-                if len(resHeatpumpCopMonth) == 12 and not found:
-                    break
-            for x in range(2):
-                tags = [WKHPTag.DATE_MONTH,
-                        WKHPTag.DATE_YEAR,
-                        WKHPTag.COP_HEATPUMP_YEAR,
-                        WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]
-                resDate = await self._coordinator.async_read_values(tags)
-                found = False
-                for value in resDate:
-                    if resDate.get(value, {"value": "unknown"})["value"] == "unknown":
-                        found = True
-                if len(resDate) == 4 and not found:
-                    break
-        except ValueError:
-            return "unavailable"
+        # the read errors are raised as HomeAssistantError
+        monthly = {}
+        for key, prefix in _MONTHLY_TAG_PREFIXES.items():
+            tags = [WKHPTag[f"{prefix}{month:02d}"] for month in _MONTHS]
+            monthly[key] = (tags, await self._read_with_retry(tags))
+
+        res_date = await self._read_with_retry([WKHPTag.DATE_MONTH,
+                                                WKHPTag.DATE_YEAR,
+                                                WKHPTag.COP_HEATPUMP_YEAR,
+                                                WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO])
+
         ret = {
-            "cop_year": resDate.get(WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO, {"value": "unknown"})["value"],
-            "cop": resDate.get(WKHPTag.COP_HEATPUMP_YEAR, {"value": "unknown"})["value"],
-            "heatpump_month": resDate.get(WKHPTag.DATE_MONTH, {"value": "unknown"})["value"],
-            "heatpump_year": resDate.get(WKHPTag.DATE_YEAR, {"value": "unknown"})["value"],
-            "month_01": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH01, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR01, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP01, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER01, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING01, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER01, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL01, {"value": "unknown"})["value"]
-            },
-            "month_02": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH02, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR02, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP02, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER02, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING02, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER02, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL02, {"value": "unknown"})["value"]
-            },
-            "month_03": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH03, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR03, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP03, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER03, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING03, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER03, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL03, {"value": "unknown"})["value"]
-            },
-            "month_04": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH04, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR04, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP04, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER04, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING04, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER04, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL04, {"value": "unknown"})["value"]
-            },
-            "month_05": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH05, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR05, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP05, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER05, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING05, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER05, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL05, {"value": "unknown"})["value"]
-            },
-            "month_06": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH06, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR06, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP06, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER06, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING06, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER06, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL06, {"value": "unknown"})["value"]
-            },
-            "month_07": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH07, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR07, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP07, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER07, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING07, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER07, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL07, {"value": "unknown"})["value"]
-            },
-            "month_08": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH08, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR08, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP08, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER08, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING08, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER08, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL08, {"value": "unknown"})["value"]
-            },
-            "month_09": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH09, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR09, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP09, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER09, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING09, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER09, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL09, {"value": "unknown"})["value"]
-            },
-            "month_10": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH10, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR10, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP10, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER10, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING10, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER10, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL10, {"value": "unknown"})["value"]
-            },
-            "month_11": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH11, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR11, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP11, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER11, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING11, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER11, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL11, {"value": "unknown"})["value"]
-            },
-            "month_12": {
-                "cop": resHeatpumpCopMonth.get(WKHPTag.ENG_HEATPUMP_COP_MONTH12, {"value": "unknown"})["value"],
-                "compressor": resCompressor.get(WKHPTag.ENG_CONSUMPTION_COMPRESSOR12, {"value": "unknown"})["value"],
-                "sourcepump": resSourcePump.get(WKHPTag.ENG_CONSUMPTION_SOURCEPUMP12, {"value": "unknown"})["value"],
-                "externalheater": resExternalHeater.get(WKHPTag.ENG_CONSUMPTION_EXTERNALHEATER12, {"value": "unknown"})[
-                    "value"],
-                "heating": resHeater.get(WKHPTag.ENG_PRODUCTION_HEATING12, {"value": "unknown"})["value"],
-                "warmwater": resWarmWater.get(WKHPTag.ENG_PRODUCTION_WARMWATER12, {"value": "unknown"})["value"],
-                "pool": resPool.get(WKHPTag.ENG_PRODUCTION_POOL12, {"value": "unknown"})["value"]
-            }
+            "cop_year": _value(res_date, WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO),
+            "cop": _value(res_date, WKHPTag.COP_HEATPUMP_YEAR),
+            "heatpump_month": _value(res_date, WKHPTag.DATE_MONTH),
+            "heatpump_year": _value(res_date, WKHPTag.DATE_YEAR),
         }
+        for idx, month in enumerate(_MONTHS):
+            ret[f"month_{month:02d}"] = {key: _value(res, tags[idx]) for key, (tags, res) in monthly.items()}
         return ret
