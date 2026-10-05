@@ -414,7 +414,7 @@
       "temperature_heating_hc_result": {"name": "Heating curve: result"},
       "temperature_cooling": {"name": "Actual temperature cooling"},
       "temperature_cooling_demand": {"name": "Demanded temperature cooling"},
-      "temperature_water": {"name": "Hot water temperature"},
+      "temperature_water": {"name": "Actual temperature hot water"},
       "temperature_water_demand": {"name": "Demanded temperature hot water"},
       "temperature_mix1": {"name": "Actual temperature mixer 1"},
       "temperature_mix1_percent": {"name": "Y mixer 1"},

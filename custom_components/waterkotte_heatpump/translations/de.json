@@ -414,7 +414,7 @@
       "temperature_heating_hc_result": {"name": "Heizkurve: Ergebnis"},
       "temperature_cooling": {"name": "aktuelle Temperatur Kühlung"},
       "temperature_cooling_demand": {"name": "geforderte Temperatur Kühlung"},
-      "temperature_water": {"name": "Temperatur Warmwasser"},
+      "temperature_water": {"name": "aktuelle Temperatur Warmwasser"},
       "temperature_water_demand": {"name": "geforderte Temperatur Warmwasser"},
       "temperature_mix1": {"name": "aktuelle Temperatur Mischerkreis 1"},
       "temperature_mix1_percent": {"name": "Y Mischerkreis 1"},
