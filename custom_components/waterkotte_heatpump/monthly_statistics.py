@@ -21,6 +21,7 @@ from homeassistant.util import dt as dt_util
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .const import DOMAIN
+from .coordinator import is_other_year
 
 if TYPE_CHECKING:
     from .coordinator import WKHPDataUpdateCoordinator
@@ -94,8 +95,13 @@ async def async_update_monthly_statistics(coordinator: WKHPDataUpdateCoordinator
     """Read the monthly values of the heat pump and add them to the statistics - the read errors are raised as
     HomeAssistantError"""
     hass = coordinator.hass
-    tags = [WKHPTag.DATE_MONTH, WKHPTag.DATE_YEAR] + [tag for stat in MONTHLY_STATISTICS for tag in stat.tags()]
+    tags = [WKHPTag.DATE_MONTH, WKHPTag.DATE_YEAR, WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO] + [
+        tag for stat in MONTHLY_STATISTICS for tag in stat.tags()]
     values = await coordinator.async_read_values(tags)
+    if is_other_year(values):
+        # the monthly values could belong to the year, that is selected in the web interface of the heat pump
+        _LOGGER.debug("monthly statistics: another year is selected in the web interface of the heat pump")
+        return
 
     month = _number(values, WKHPTag.DATE_MONTH)
     year = _number(values, WKHPTag.DATE_YEAR)

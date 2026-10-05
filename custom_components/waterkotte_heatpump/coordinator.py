@@ -57,6 +57,40 @@ _FEATURE_FLAGS = {
     CONF_USE_POOL: FEATURE_POOL,
 }
 
+# the values of the energy balance of a year: the heat pump provides them for the year, that is selected in its
+# web interface (COP_HEATPUMP_ACTUAL_YEAR_INFO) - while someone looks at the balance of an older year, they don't
+# belong to the current year
+YEAR_BALANCE_TAGS: frozenset[WKHPTag] = frozenset({
+    WKHPTag.COP_HEATPUMP_YEAR,
+    WKHPTag.COP_TOTAL_SYSTEM_YEAR,
+    WKHPTag.COP_HEATING_YEAR,
+    WKHPTag.COP_HOT_WATER_YEAR,
+    WKHPTag.ENERGY_CONSUMPTION_TOTAL_YEAR,
+    WKHPTag.COMPRESSOR_ELECTRIC_CONSUMPTION_YEAR,
+    WKHPTag.SOURCEPUMP_ELECTRIC_CONSUMPTION_YEAR,
+    WKHPTag.ELECTRICAL_HEATER_ELECTRIC_CONSUMPTION_YEAR,
+    WKHPTag.ENERGY_PRODUCTION_TOTAL_YEAR,
+    WKHPTag.HEATING_ENERGY_PRODUCTION_YEAR,
+    WKHPTag.HOT_WATER_ENERGY_PRODUCTION_YEAR,
+    WKHPTag.POOL_ENERGY_PRODUCTION_YEAR,
+    WKHPTag.COOLING_ENERGY_YEAR,
+})
+_YEAR_CHECK_TAGS = (WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO, WKHPTag.DATE_YEAR)
+
+
+def is_other_year(values: dict) -> bool:
+    """True, when the energy balance of another year than the current year of the heat pump is selected (when the
+    year can't be read, the values are not discarded)"""
+    try:
+        balance_year = int(values[WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]["value"])
+        year = int(float(values[WKHPTag.DATE_YEAR]["value"]))
+    except (KeyError, TypeError, ValueError):
+        return False
+    if year < 100:
+        year += 2000
+    return balance_year != year
+
+
 # the coordinator of a loaded config entry is stored as its runtime_data
 type WaterkotteConfigEntry = ConfigEntry[WKHPDataUpdateCoordinator]
 
@@ -178,7 +212,11 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
         """Update data via library."""
         # each entity registers its tag as coordinator context - so we only
         # request the tags of the entities that are currently enabled
-        self.bridge.tags = list(set(self.async_contexts()))
+        tags = set(self.async_contexts())
+        check_year = not tags.isdisjoint(YEAR_BALANCE_TAGS)
+        if check_year:
+            tags.update(_YEAR_CHECK_TAGS)
+        self.bridge.tags = list(tags)
         _LOGGER.debug("number of entities to query: %s (1 entity can consist of n-tags)", len(self.bridge.tags))
         async with self._map_errors():
             result = await self.bridge.async_get_data()
@@ -186,7 +224,13 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
 
         # only the values that have been read in this update - the entities of the other tags are unavailable
         # (and don't show an outdated value)
-        return {tag: value for tag, value in result.items() if value is not None and value["status"] == "S_OK"}
+        data = {tag: value for tag, value in result.items() if value is not None and value["status"] == "S_OK"}
+        if check_year and is_other_year(data):
+            # the values of another year would look like a reset of the yearly counters (in the statistics)
+            _LOGGER.info("the energy balance of %s is selected in the web interface of the heat pump - the yearly "
+                         "values are not updated", data[WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]["value"])
+            data = {tag: value for tag, value in data.items() if tag not in YEAR_BALANCE_TAGS}
+        return data
 
     @asynccontextmanager
     async def _map_errors(self):

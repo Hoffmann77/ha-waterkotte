@@ -30,7 +30,7 @@ CONSUMPTION_ID = f"{DOMAIN}:{SERIAL.lower()}_consumption_monthly"
 PRODUCTION_ID = f"{DOMAIN}:{SERIAL.lower()}_production_monthly"
 
 
-def _heat_pump_values(month: int, year: int, april: float = 104.0) -> dict:
+def _heat_pump_values(month: int, year: int, april: float = 104.0, balance_year: int | None = None) -> dict:
     """The values of the heat pump: the COP of month m is 3 + m/10, the compressor consumption 100 + m, the source
     pump consumption 10 and the external heater consumption 0 (kWh) - without the production of the pool"""
     values = {WKHPTag.DATE_MONTH: month, WKHPTag.DATE_YEAR: year}
@@ -41,6 +41,9 @@ def _heat_pump_values(month: int, year: int, april: float = 104.0) -> dict:
         values[WKHPTag[f"ENG_CONSUMPTION_EXTERNALHEATER{m:02d}"]] = 0.0
     # the heat pump did not run in December - no COP
     values[WKHPTag.ENG_HEATPUMP_COP_MONTH12] = 0.0
+    if balance_year is not None:
+        # the year of the energy balance, that is selected in the web interface
+        values[WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO] = balance_year
 
     def read_values(tags):
         known = {**device_info_values(), **{tag: {"value": value, "status": "S_OK"} for tag, value in values.items()}}
@@ -107,6 +110,20 @@ async def test_no_monthly_statistics_by_default(hass: HomeAssistant, mock_bridge
     entry = MockConfigEntry(
         domain=DOMAIN, version=2, minor_version=3, unique_id=SERIAL,
         data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH"},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert await _statistics(hass, COP_ID) == []
+
+
+async def test_no_monthly_statistics_of_other_year(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    """Test that nothing is added, while the balance of another year is selected in the web interface."""
+    mock_bridge.async_read_values.side_effect = _heat_pump_values(month=3, year=2026, balance_year=2024)
+    entry = MockConfigEntry(
+        domain=DOMAIN, version=2, minor_version=3, unique_id=SERIAL,
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH"},
+        options={CONF_MONTHLY_STATISTICS: True},
     )
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
