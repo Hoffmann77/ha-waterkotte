@@ -168,7 +168,11 @@
       "basicvent_status_comfort_bypass_active_d1465": {"name": "Vent Comfort Bypass Active"},
       "basicvent_status_smart_bypass_active_d1466": {"name": "Vent Smart Bypass Active"},
       "basicvent_status_holiday_enabled_d1503": {"name": "Vent Holiday Enabled"},
-      "basicvent_filter_change_display_d1469": {"name": "Vent Filter change required"}
+      "basicvent_filter_change_display_d1469": {"name": "Vent Filter change required"},
+      "sgready_sg1_extern_off_switch_d796": {"name": "SG Ready SG1: External switch off"},
+      "sgready_sg2_normal_d797": {"name": "SG Ready SG2: Normal operation"},
+      "sgready_sg3_setpoint_change_d798": {"name": "SG Ready SG3: Setpoint change"},
+      "sgready_sg4_force_run_d799": {"name": "SG Ready SG4: Forced run"}
     },
     "datetime": {
       "holiday_start_time": {"name": "Holiday start"},
@@ -489,7 +493,8 @@
       "basicvent_incoming_fan_manual_mode": {"name": "Vent 1 (outer) Manual-Mode"},
       "basicvent_outgoing_fan_manual_mode": {"name": "Vent 2 (inner) Manual-Mode"},
       "pumpservice_sourcepump_cable_break_monitoring_d881": {"name": "Service: Sourcepump cable-break Monitor"},
-      "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Sourcepump regeneration"}
+      "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Sourcepump regeneration"},
+      "sgready_switch_d795": {"name": "SG Ready"}
     },
     "time": {
       "schedule_water_disinfection_start_time": {"name": "Start time disinfection"}
