@@ -99,11 +99,11 @@ The heat pump provides the COP and the energy of the last 12 months. With the op
 | `waterkotte_heatpump:<serial>_compressor_consumption_monthly` | Electrical consumption compressor (kWh) |
 | `waterkotte_heatpump:<serial>_source_pump_consumption_monthly` | Electrical consumption source pump (kWh) |
 | `waterkotte_heatpump:<serial>_external_heater_consumption_monthly` | Electrical consumption external heater (kWh) |
-| `waterkotte_heatpump:<serial>_consumption_monthly` | Electrical consumption total (kWh) - compressor + source pump + external heater |
+| `waterkotte_heatpump:<serial>_consumption_monthly` | Electrical consumption total (kWh) |
 | `waterkotte_heatpump:<serial>_heating_production_monthly` | Thermal production heating (kWh) |
 | `waterkotte_heatpump:<serial>_hot_water_production_monthly` | Thermal production hot water (kWh) |
 | `waterkotte_heatpump:<serial>_pool_production_monthly` | Thermal production pool (kWh) |
-| `waterkotte_heatpump:<serial>_production_monthly` | Thermal production total (kWh) - heating + hot water + pool |
+| `waterkotte_heatpump:<serial>_production_monthly` | Thermal production total (kWh) |
 
 They are no entities - show them with a __Statistics graph card__ (period: month, chart type: bar; stat type: mean for the COP, change for the energy).
 

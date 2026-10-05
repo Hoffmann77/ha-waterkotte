@@ -30,6 +30,7 @@ _MONTHLY_TAG_PREFIXES = {
     "heating": "ENG_PRODUCTION_HEATING",
     "warmwater": "ENG_PRODUCTION_WARMWATER",
     "pool": "ENG_PRODUCTION_POOL",
+    "production": "ENG_PRODUCTION_TOTAL",
 }
 _MONTHS = range(1, 13)
 

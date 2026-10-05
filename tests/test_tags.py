@@ -31,7 +31,8 @@ def test_decode_no_alarms() -> None:
 def test_monthly_tags_are_unique() -> None:
     """Test that each month has its own tag (an alias would report the value of another month)."""
     for prefix in ("ENG_HEATPUMP_COP_MONTH", "ENG_CONSUMPTION_COMPRESSOR", "ENG_CONSUMPTION_SOURCEPUMP",
-                   "ENG_CONSUMPTION_EXTERNALHEATER", "ENG_CONSUMPTION_TOTAL", "ENG_PRODUCTION_HEATING", "ENG_PRODUCTION_WARMWATER",
+                   "ENG_CONSUMPTION_EXTERNALHEATER", "ENG_CONSUMPTION_TOTAL", "ENG_PRODUCTION_HEATING",
+                   "ENG_PRODUCTION_TOTAL", "ENG_PRODUCTION_WARMWATER",
                    "ENG_PRODUCTION_POOL"):
         tags = [WKHPTag[f"{prefix}{month:02d}"] for month in range(1, 13)]
         assert len({tag.tags[0] for tag in tags}) == 12, prefix
@@ -114,13 +115,13 @@ def test_encode_invalid_value(tag: WKHPTag, value) -> None:
 @pytest.mark.parametrize(
     ("tag", "raw", "expected"),
     [
-        # the monthly values of a heat pump (the web interface shows the same values)
-        (WKHPTag.ENG_PRODUCTION_HEATING01, ["17821", "-448"], 5055.8),
-        (WKHPTag.ENG_PRODUCTION_HEATING02, ["17784", "-9776"], 3981.6),
-        (WKHPTag.ENG_CONSUMPTION_COMPRESSOR12, ["17538", "11216"], 1041.4),
-        (WKHPTag.ENG_PRODUCTION_WARMWATER01, ["17271", "13824"], 247.2),
+        # the monthly values of a heat pump: the low word and the high word (the web interface shows the same values)
+        (WKHPTag.ENG_PRODUCTION_HEATING01, ["11216", "17821"], 5029.5),
+        (WKHPTag.ENG_PRODUCTION_HEATING04, ["19472", "17697"], 2580.8),
+        (WKHPTag.ENG_PRODUCTION_WARMWATER01, ["18368", "17271"], 247.3),
+        (WKHPTag.ENG_CONSUMPTION_TOTAL04, ["23136", "17451"], 685.4),
         (WKHPTag.ENG_PRODUCTION_POOL01, ["0", "0"], 0.0),
-        (WKHPTag.ENG_PRODUCTION_HEATING01, ["17821", None], None),
+        (WKHPTag.ENG_PRODUCTION_HEATING01, ["11216", None], None),
     ],
 )
 def test_decode_monthly_float_words(tag: WKHPTag, raw: list, expected) -> None:

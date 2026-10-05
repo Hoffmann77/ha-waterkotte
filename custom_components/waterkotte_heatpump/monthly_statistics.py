@@ -32,19 +32,15 @@ _MONTHS = range(1, 13)
 
 @dataclass(frozen=True)
 class MonthlyStatistic:
-    """A monthly value of the heat pump: the COP (mean) or an energy (sum) - or the total of other statistics."""
+    """A monthly value of the heat pump: the COP (mean) or an energy (sum)."""
 
     key: str
-    # the 12 tags of the months: '<prefix>01' (January) ... '<prefix>12' (December) - None for a total
-    tag_prefix: str | None
+    # the 12 tags of the months: '<prefix>01' (January) ... '<prefix>12' (December)
+    tag_prefix: str
     name: str
     is_energy: bool
-    # the keys of the statistics, whose sum is this statistic (the heat pump provides no monthly total)
-    parts: tuple[str, ...] = ()
 
     def tags(self) -> list[WKHPTag]:
-        if self.tag_prefix is None:
-            return []
         return [WKHPTag[f"{self.tag_prefix}{month:02d}"] for month in _MONTHS]
 
 
@@ -63,8 +59,7 @@ MONTHLY_STATISTICS = [
                      "Thermal production hot water", is_energy=True),
     MonthlyStatistic("pool_production_monthly", "ENG_PRODUCTION_POOL",
                      "Thermal production pool", is_energy=True),
-    MonthlyStatistic("production_monthly", None, "Thermal production", is_energy=True,
-                     parts=("heating_production_monthly", "hot_water_production_monthly", "pool_production_monthly")),
+    MonthlyStatistic("production_monthly", "ENG_PRODUCTION_TOTAL", "Thermal production", is_energy=True),
 ]
 
 
@@ -102,24 +97,12 @@ async def async_update_monthly_statistics(coordinator: WKHPDataUpdateCoordinator
         _LOGGER.debug("monthly statistics: the date of the heat pump could not be read (%s/%s)", month, year)
         return
     starts = month_starts(int(month), int(year))
-    # the months of the window (from the oldest to the current month) -> the value of the month of each statistic
+    # the months of the window - from the oldest to the current month
     ordered = sorted(_MONTHS, key=lambda m: starts[m])
-    monthly: dict[str, list[float | None]] = {}
 
     for stat in MONTHLY_STATISTICS:
-        if stat.parts:
-            # a total is only known, when all of its parts are known
-            month_values = [
-                None if any(monthly[part][idx] is None for part in stat.parts)
-                else sum(monthly[part][idx] for part in stat.parts)
-                for idx in range(len(ordered))
-            ]
-        else:
-            month_tags = dict(zip(_MONTHS, stat.tags(), strict=True))
-            month_values = [_number(values, month_tags[m]) for m in ordered]
-        monthly[stat.key] = month_values
-
-        months = [(starts[m], value) for m, value in zip(ordered, month_values, strict=True)]
+        month_tags = dict(zip(_MONTHS, stat.tags(), strict=True))
+        months = [(starts[m], _number(values, month_tags[m])) for m in ordered]
         if stat.is_energy:
             await _async_add_energy(hass, coordinator, stat, months)
         else:

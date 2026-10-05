@@ -84,8 +84,7 @@ async def test_monthly_statistics(hass: HomeAssistant, mock_bridge: MagicMock) -
     assert len(compressor) == 12
     assert compressor[0]["state"] == 104.0
     assert compressor[-1]["sum"] == sum(100.0 + m for m in range(1, 13))
-    # the total consumption of the heat pump - the total production is calculated (heating + hot water + pool) and
-    # unknown, because the heat pump did not provide the production of the pool
+    # the total consumption of the heat pump - the heat pump did not provide the total production
     consumption = await _statistics(hass, CONSUMPTION_ID)
     assert [row["state"] for row in consumption] == [
         110.0 + m for m in range(4, 13)] + [110.0 + m for m in range(1, 4)]
