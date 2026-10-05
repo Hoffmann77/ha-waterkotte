@@ -133,18 +133,6 @@
       "basicvent_filter_change_display_d1469": {
         "default": "mdi:electric-switch"
       },
-      "sgready_sg1_extern_off_switch_d796": {
-        "default": "mdi:transmission-tower-off"
-      },
-      "sgready_sg2_normal_d797": {
-        "default": "mdi:transmission-tower"
-      },
-      "sgready_sg3_setpoint_change_d798": {
-        "default": "mdi:transmission-tower-import"
-      },
-      "sgready_sg4_force_run_d799": {
-        "default": "mdi:lightning-bolt"
-      },
       "sgready_input_a_d817": {
         "default": "mdi:electric-switch"
       },
@@ -551,6 +539,21 @@
         "default": "mdi:gauge"
       },
       "cop_cooling": {
+        "default": "mdi:gauge"
+      },
+      "cop_heatpump_year": {
+        "default": "mdi:gauge"
+      },
+      "cop_heating_year": {
+        "default": "mdi:gauge"
+      },
+      "cop_hot_water_year": {
+        "default": "mdi:gauge"
+      },
+      "cop_total_system_year": {
+        "default": "mdi:gauge"
+      },
+      "cop_total_system_last12m": {
         "default": "mdi:gauge"
       },
       "energy_consumption_total_year": {

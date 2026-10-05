@@ -428,6 +428,47 @@ SENSOR_SENSORS: Final = [
         native_unit_of_measurement=None,
         entity_registry_enabled_default=True
     ),
+    # the COP's of the current year (and of the last 12 months)
+    ExtSensorEntityDescription(
+        key="COP_HEATPUMP_YEAR",
+        tag=WKHPTag.COP_HEATPUMP_YEAR,
+        device_class=None,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=None,
+        entity_registry_enabled_default=False
+    ),
+    ExtSensorEntityDescription(
+        key="COP_HEATING_YEAR",
+        tag=WKHPTag.COP_HEATING_YEAR,
+        device_class=None,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=None,
+        entity_registry_enabled_default=False
+    ),
+    ExtSensorEntityDescription(
+        key="COP_HOT_WATER_YEAR",
+        tag=WKHPTag.COP_HOT_WATER_YEAR,
+        device_class=None,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=None,
+        entity_registry_enabled_default=False
+    ),
+    ExtSensorEntityDescription(
+        key="COP_TOTAL_SYSTEM_YEAR",
+        tag=WKHPTag.COP_TOTAL_SYSTEM_YEAR,
+        device_class=None,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=None,
+        entity_registry_enabled_default=False
+    ),
+    ExtSensorEntityDescription(
+        key="COP_TOTAL_SYSTEM_LAST12M",
+        tag=WKHPTag.COP_TOTAL_SYSTEM_LAST12M,
+        device_class=None,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=None,
+        entity_registry_enabled_default=False
+    ),
     ExtSensorEntityDescription(
         key="ENERGY_CONSUMPTION_TOTAL_YEAR",
         tag=WKHPTag.ENERGY_CONSUMPTION_TOTAL_YEAR,

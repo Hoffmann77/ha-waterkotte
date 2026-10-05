@@ -88,11 +88,13 @@
           "polling_interval": "Aktualisierungsintervall in Sekunden",
           "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)",
           "add_readonly_copies": "Schreibgeschützte Kopien der Schalter, Zahlen und Auswahlen hinzufügen",
-          "read_only": "Schreibschutz"
+          "read_only": "Schreibschutz",
+          "monthly_statistics": "Monatsstatistiken hinzufügen (JAZ und Energie)"
         },
         "data_description": {
           "add_readonly_copies": "Fügt für jede Einstellung der Wärmepumpe einen Sensor hinzu - z. B. um sie auf einem Dashboard anzuzeigen, ohne dass sie geändert werden kann.",
-          "read_only": "Es wird nichts in die Wärmepumpe geschrieben: Änderungen an Schaltern, Zahlen, Auswahlen, Datum oder Uhrzeit (und die Aktionen, die Einstellungen ändern) schlagen fehl."
+          "read_only": "Es wird nichts in die Wärmepumpe geschrieben: Änderungen an Schaltern, Zahlen, Auswahlen, Datum oder Uhrzeit (und die Aktionen, die Einstellungen ändern) schlagen fehl.",
+          "monthly_statistics": "Fügt die JAZ und die Energie der letzten 12 Monate (und ab dann jedes Monats) zu den Langzeitstatistiken von Home Assistant hinzu - anzeigbar mit einer Statistik-Diagrammkarte (Zeitraum: Monat)."
         }
       }
     }
@@ -178,10 +180,6 @@
       "basicvent_status_smart_bypass_active_d1466": {"name": "Lüfter Smart Bypass aktiv"},
       "basicvent_status_holiday_enabled_d1503": {"name": "Lüfter Ferienmodus aktiv"},
       "basicvent_filter_change_display_d1469": {"name": "Lüfter Filterwechsel notwendig"},
-      "sgready_sg1_extern_off_switch_d796": {"name": "SG Ready SG1: EVU-Sperre"},
-      "sgready_sg2_normal_d797": {"name": "SG Ready SG2: Normalbetrieb"},
-      "sgready_sg3_setpoint_change_d798": {"name": "SG Ready SG3: Sollwerterhöhung"},
-      "sgready_sg4_force_run_d799": {"name": "SG Ready SG4: Zwangslauf"},
       "sgready_input_a_d817": {"name": "SG Ready Eingang A (EVU)"},
       "sgready_input_b_d818": {"name": "SG Ready Eingang B (Sollwert)"}
     },
@@ -442,6 +440,11 @@
       "power_cooling": {"name": "Kälteleistung"},
       "cop_heating": {"name": "COP"},
       "cop_cooling": {"name": "COP Kälteleistung"},
+      "cop_heatpump_year": {"name": "JAZ Wärmepumpe"},
+      "cop_heating_year": {"name": "JAZ Heizung"},
+      "cop_hot_water_year": {"name": "JAZ Warmwasser"},
+      "cop_total_system_year": {"name": "JAZ Gesamtsystem"},
+      "cop_total_system_last12m": {"name": "JAZ Gesamtsystem 12 Monate"},
       "percent_heat_circ_pump": {"name": "Drehzahl Heizungspumpe"},
       "percent_source_pump": {"name": "Drehzahl Quellenpumpe"},
       "percent_compressor": {"name": "Leistung Verdichter"},

@@ -56,10 +56,13 @@ CONF_USE_POOL: Final = "use_pool"
 CONF_ADD_READONLY_COPIES: Final = "add_readonly_copies"
 # nothing is written to the heat pump (all entities and service actions, that would change a setting, fail)
 CONF_READ_ONLY: Final = "read_only"
+# the monthly values (COP and energy) of the heat pump are added to the long-term statistics
+CONF_MONTHLY_STATISTICS: Final = "monthly_statistics"
 
 # the settings that can be changed via the options flow - everything else (like the host and the credentials)
 # is only stored in the data of the config entry
-OPTIONS_KEYS: Final = (CONF_POLLING_INTERVAL, CONF_TAGS_PER_REQUEST, CONF_ADD_READONLY_COPIES, CONF_READ_ONLY)
+OPTIONS_KEYS: Final = (CONF_POLLING_INTERVAL, CONF_TAGS_PER_REQUEST, CONF_ADD_READONLY_COPIES, CONF_READ_ONLY,
+                            CONF_MONTHLY_STATISTICS)
 
 STARTUP_MESSAGE: Final = f"""
 -------------------------------------------------------------------
