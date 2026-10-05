@@ -11,6 +11,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.waterkotte_heatpump.const import (
     CONF_POLLING_INTERVAL,
+    CONF_READ_ONLY,
     CONF_SERIAL,
     CONF_SYSTEMTYPE,
     CONF_TAGS_PER_REQUEST,
@@ -165,7 +166,8 @@ async def test_options_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) ->
         {CONF_POLLING_INTERVAL: 30, CONF_TAGS_PER_REQUEST: 50},
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert entry.options == {CONF_POLLING_INTERVAL: 30, CONF_TAGS_PER_REQUEST: 50}
+    # the read-only mode is off by default
+    assert entry.options == {CONF_POLLING_INTERVAL: 30, CONF_TAGS_PER_REQUEST: 50, CONF_READ_ONLY: False}
     assert entry.data[CONF_HOST] == HOST
 
 

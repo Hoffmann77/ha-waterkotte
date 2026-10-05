@@ -86,7 +86,11 @@
         "description": "If you need help with the configuration have a look here: {repo}.",
         "data": {
           "polling_interval": "Polling Interval in seconds",
-          "tags_per_request": "Number of tags to fetch in a single request (max. 75)"
+          "tags_per_request": "Number of tags to fetch in a single request (max. 75)",
+          "read_only": "Read-only mode"
+        },
+        "data_description": {
+          "read_only": "Nothing is written to the heat pump: changing a switch, number, select, date or time (and the service actions, that change settings) fails."
         }
       }
     }
@@ -131,7 +135,8 @@
     "invalid_value": {"message": "The value {value} is not valid for {tag}."},
     "write_failed": {"message": "The value {value} could not be written to {tag}: {error}"},
     "write_not_confirmed": {"message": "The heat pump did not confirm the value {value} for {tag}."},
-    "read_failed": {"message": "The values could not be read from the heat pump: {error}"}
+    "read_failed": {"message": "The values could not be read from the heat pump: {error}"},
+    "read_only": {"message": "The integration is in read-only mode - {value} was not written to {tag}."}
   },
   "entity": {
     "binary_sensor": {

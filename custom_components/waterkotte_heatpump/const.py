@@ -52,10 +52,12 @@ CONF_USE_DISINFECTION: Final = "use_disinfection"
 CONF_USE_HEATING_CURVE: Final = "use_heating_curve"
 CONF_USE_VENT: Final = "use_vent"
 CONF_USE_POOL: Final = "use_pool"
+# nothing is written to the heat pump (all entities and service actions, that would change a setting, fail)
+CONF_READ_ONLY: Final = "read_only"
 
 # the settings that can be changed via the options flow - everything else (like the host and the credentials)
 # is only stored in the data of the config entry
-OPTIONS_KEYS: Final = (CONF_POLLING_INTERVAL, CONF_TAGS_PER_REQUEST)
+OPTIONS_KEYS: Final = (CONF_POLLING_INTERVAL, CONF_TAGS_PER_REQUEST, CONF_READ_ONLY)
 
 STARTUP_MESSAGE: Final = f"""
 -------------------------------------------------------------------
