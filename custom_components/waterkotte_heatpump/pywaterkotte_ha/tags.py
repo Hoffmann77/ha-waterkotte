@@ -984,6 +984,8 @@ class WKHPTag(DataTag, Enum):
     # SOURCE_PUMP_CAPTURE_TEMPERATURE_A479 = DataTag(["A479"], writeable=True)
 
     SGREADY_SWITCH_D795 = DataTag(["D795"], writeable=True)
+    # D796-D799 do not follow the external SG Ready relays (most likely the settings of the SG Ready states) - the
+    # current state is provided by the inputs D817/D818 and the status STATUS_SGREADY_I143
     # lngD796 = ["SG1: EVU-Sperre", "SG1: Extern switch off", "SG1: Coupure externe"],
     SGREADY_SG1_EXTERN_OFF_SWITCH_D796 = DataTag(["D796"])
     # lngD797 = ["SG2: Normalbetrieb", "SG2: Normal operation", "SG2: Fonction normal"],

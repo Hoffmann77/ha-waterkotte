@@ -178,10 +178,6 @@
       "basicvent_status_smart_bypass_active_d1466": {"name": "Vent Smart Bypass Active"},
       "basicvent_status_holiday_enabled_d1503": {"name": "Vent Holiday Enabled"},
       "basicvent_filter_change_display_d1469": {"name": "Vent Filter change required"},
-      "sgready_sg1_extern_off_switch_d796": {"name": "SG Ready SG1: External switch off"},
-      "sgready_sg2_normal_d797": {"name": "SG Ready SG2: Normal operation"},
-      "sgready_sg3_setpoint_change_d798": {"name": "SG Ready SG3: Setpoint change"},
-      "sgready_sg4_force_run_d799": {"name": "SG Ready SG4: Forced run"},
       "sgready_input_a_d817": {"name": "SG Ready input A (utility lock)"},
       "sgready_input_b_d818": {"name": "SG Ready input B (setpoint)"}
     },

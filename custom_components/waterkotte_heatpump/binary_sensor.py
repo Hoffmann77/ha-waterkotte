@@ -245,27 +245,7 @@ BINARY_SENSORS: Final = [
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
     ),
-    # SG Ready states
-    ExtBinarySensorEntityDescription(
-        key="SGREADY_SG1_EXTERN_OFF_SWITCH_D796",
-        tag=WKHPTag.SGREADY_SG1_EXTERN_OFF_SWITCH_D796,
-        entity_registry_enabled_default=False
-    ),
-    ExtBinarySensorEntityDescription(
-        key="SGREADY_SG2_NORMAL_D797",
-        tag=WKHPTag.SGREADY_SG2_NORMAL_D797,
-        entity_registry_enabled_default=False
-    ),
-    ExtBinarySensorEntityDescription(
-        key="SGREADY_SG3_SETPOINT_CHANGE_D798",
-        tag=WKHPTag.SGREADY_SG3_SETPOINT_CHANGE_D798,
-        entity_registry_enabled_default=False
-    ),
-    ExtBinarySensorEntityDescription(
-        key="SGREADY_SG4_FORCE_RUN_D799",
-        tag=WKHPTag.SGREADY_SG4_FORCE_RUN_D799,
-        entity_registry_enabled_default=False
-    ),
+    # SG Ready
     ExtBinarySensorEntityDescription(
         key="SGREADY_INPUT_A_D817",
         tag=WKHPTag.SGREADY_INPUT_A_D817,
