@@ -86,7 +86,13 @@
         "description": "Wenn Du Hilfe bei der Einichtung benötigst, findest du sie hier: {repo}.",
         "data": {
           "polling_interval": "Aktualisierungsintervall in Sekunden",
-          "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)"
+          "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)",
+          "add_readonly_copies": "Schreibgeschützte Kopien der Schalter, Zahlen und Auswahlen hinzufügen",
+          "read_only": "Schreibschutz"
+        },
+        "data_description": {
+          "add_readonly_copies": "Fügt für jede Einstellung der Wärmepumpe einen Sensor hinzu - z. B. um sie auf einem Dashboard anzuzeigen, ohne dass sie geändert werden kann.",
+          "read_only": "Es wird nichts in die Wärmepumpe geschrieben: Änderungen an Schaltern, Zahlen, Auswahlen, Datum oder Uhrzeit (und die Aktionen, die Einstellungen ändern) schlagen fehl."
         }
       }
     }
@@ -131,15 +137,17 @@
     "invalid_value": {"message": "Der Wert {value} ist für {tag} nicht gültig."},
     "write_failed": {"message": "Der Wert {value} konnte nicht in {tag} geschrieben werden: {error}"},
     "write_not_confirmed": {"message": "Die Wärmepumpe hat den Wert {value} für {tag} nicht bestätigt."},
-    "read_failed": {"message": "Die Werte konnten nicht von der Wärmepumpe gelesen werden: {error}"}
+    "read_failed": {"message": "Die Werte konnten nicht von der Wärmepumpe gelesen werden: {error}"},
+    "read_only": {"message": "Die Integration ist schreibgeschützt - {value} wurde nicht in {tag} geschrieben."}
   },
   "entity": {
     "binary_sensor": {
+      "readonly_copy": {"name": "{name} (schreibgeschützt)"},
       "state_sourcepump": {"name": "Quellenpumpe"},
       "state_heatingpump": {"name": "Wärmepumpe"},
       "state_evd": {"name": "EVD (Überhitzungsregler)"},
       "state_compressor": {"name": "Verdichter"},
-      "state_compressor2": {"name": "Verdichter II"},
+      "state_compressor2": {"name": "Verdichter 2"},
       "state_external_heater": {"name": "Heizstab"},
       "state_alarm": {"name": "Meldungen"},
       "state_cooling": {"name": "Kühlen"},
@@ -168,7 +176,11 @@
       "basicvent_status_comfort_bypass_active_d1465": {"name": "Lüfter Komfort Bypass aktiv"},
       "basicvent_status_smart_bypass_active_d1466": {"name": "Lüfter Smart Bypass aktiv"},
       "basicvent_status_holiday_enabled_d1503": {"name": "Lüfter Ferienmodus aktiv"},
-      "basicvent_filter_change_display_d1469": {"name": "Lüfter Filterwechsel notwendig"}
+      "basicvent_filter_change_display_d1469": {"name": "Lüfter Filterwechsel notwendig"},
+      "sgready_sg1_extern_off_switch_d796": {"name": "SG Ready SG1: EVU-Sperre"},
+      "sgready_sg2_normal_d797": {"name": "SG Ready SG2: Normalbetrieb"},
+      "sgready_sg3_setpoint_change_d798": {"name": "SG Ready SG3: Sollwerterhöhung"},
+      "sgready_sg4_force_run_d799": {"name": "SG Ready SG4: Zwangslauf"}
     },
     "datetime": {
       "holiday_start_time": {"name": "Urlaub Start"},
@@ -237,7 +249,15 @@
       "pumpservice_sourcepump_coolingmode_minspeed_a1032": {"name": "Service: Quellenpumpe Kühlbetrieb Min. Drehzahl"},
       "pumpservice_sourcepump_coolingmode_maxspeed_a1033": {"name": "Service: Quellenpumpe Kühlbetrieb Max. Drehzahl"},
       "pumpservice_sourcepump_coolingmode_source_temperature_a1034": {"name": "Service: Quellenpumpe Kühlbetrieb Temp. Wärmequelle"},
-      "temperature_room_target_a100": {"name": "T Raum-Sollwert"}
+      "temperature_room_target_a100": {"name": "T Raum-Sollwert"},
+      "temperature_heating_pv_change": {"name": "PV-Anhebung Heizung"},
+      "temperature_cooling_pv_change": {"name": "PV-Absenkung Kühlung"},
+      "temperature_water_pv_change": {"name": "PV-Anhebung Warmwasser"},
+      "temperature_pool_pv_change": {"name": "PV-Anhebung Pool"},
+      "temperature_mix1_pv_change": {"name": "PV-Anhebung Mischerkreis 1"},
+      "temperature_mix2_pv_change": {"name": "PV-Anhebung Mischerkreis 2"},
+      "temperature_mix3_pv_change": {"name": "PV-Anhebung Mischerkreis 3"},
+      "temperature_heating_sgready_status4": {"name": "SG Ready SG4: Heiztemperatur"}
     },
     "select": {
       "temperature_heating_mode": {
@@ -362,6 +382,7 @@
       }
     },
     "sensor": {
+      "readonly_copy": {"name": "{name} (schreibgeschützt)"},
       "energy_consumption_total_year": {"name": "Elektrische Arbeit Jahresverbrauch"},
       "compressor_electric_consumption_year": {"name": "Verdichter Jahresverbrauch"},
       "sourcepump_electric_consumption_year": {"name": "Quellenpumpe Jahresverbrauch"},
@@ -386,6 +407,8 @@
       "temperature_room_1h": {"name": "Temperatur Raum 1h"},
       "temperature_heating": {"name": "aktuelle Temperatur Heizung"},
       "temperature_heating_demand": {"name": "geforderte Temperatur Heizung"},
+      "temperature_heating_hc_outdoor_1h": {"name": "Heizkurve: Außentemperatur (1h)"},
+      "temperature_heating_hc_result": {"name": "Heizkurve: Ergebnis"},
       "temperature_cooling": {"name": "aktuelle Temperatur Kühlung"},
       "temperature_cooling_demand": {"name": "geforderte Temperatur Kühlung"},
       "temperature_water": {"name": "Temperatur Warmwasser"},
@@ -401,6 +424,8 @@
       "temperature_mix3_demand": {"name": "geforderte Temperatur Mischerkreis 3"},
       "temperature_pool": {"name": "aktuelle Temperatur Pool"},
       "temperature_pool_demand": {"name": "geforderte Temperatur Pool"},
+      "temperature_pool_hc_outdoor_1h": {"name": "Heizkurve Pool: Außentemperatur (1h)"},
+      "temperature_pool_hc_result": {"name": "Heizkurve Pool: Ergebnis"},
       "temperature_solar": {"name": "T Solar"},
       "temperature_solar_exit": {"name": "Austrittstemperatur Solarkollektor"},
       "temperature_discharge": {"name": "Druckgastemperatur"},
@@ -441,14 +466,14 @@
       "basicvent_energy_save_current_a4389": {"name": "Lüfter Energieersparnis aktuell"},
       "basicvent_energy_recovery_rate_a4391": {"name": "Lüfter Wärmerückgewinnungsgrad"},
       "operating_hours_compressor_1": {"name": "Betriebsstunden [old] Verdichter"},
-      "operating_hours_compressor_2": {"name": "Betriebsstunden [old] Verdichter II / Außeneinheit"},
+      "operating_hours_compressor_2": {"name": "Betriebsstunden [old] Verdichter 2 / Außeneinheit"},
       "operating_hours_circulation_pump": {"name": "Betriebsstunden [old] Umwälzpumpe"},
       "operating_hours_source_pump": {"name": "Betriebsstunden [old] Quellenpumpe"},
       "operating_hours_solar": {"name": "Betriebsstunden [old] Solar"},
       "temperature_room_1h_a98": {"name": "Temperatur Raum 1h (alt)"},
 
       "operating_hours_v2_compressor_1_a516": {"name": "Betriebsstunden Verdichter"},
-      "operating_hours_v2_compressor_2_a518": {"name": "Betriebsstunden Verdichter II / Außeneinheit"},
+      "operating_hours_v2_compressor_2_a518": {"name": "Betriebsstunden Verdichter 2 / Außeneinheit"},
       "operating_hours_v2_full_operating_hours_a520": {"name": "Betriebsstunden Vollbetrieb"},
       "operating_hours_v2_heatingpump_a522": {"name": "Betriebsstunden Heizungspumpe"},
       "operating_hours_v2_source_pump_a524": {"name": "Betriebsstunden Wärmequellenpumpe"},
@@ -465,14 +490,14 @@
       "operating_hours_v2_bivalent_alternative_a546": {"name": "Betriebsstunden Bivalent alternativ"},
       "operating_hours_v2_pv_yield_alt_a576": {"name": "Betriebsstunden PV-Ertrag (alt)"},
       "operating_hours_v2_pv_yield_a963": {"name": "Betriebsstunden PV-Ertrag"},
-      "operating_hours_v2_compressor_3_a706": {"name": "Betriebsstunden Außeneinheit III"},
-      "operating_hours_v2_compressor_4_a708": {"name": "Betriebsstunden Außeneinheit IV"},
-      "operating_hours_v2_defroster_2_a710": {"name": "Betriebsstunden Abtauvorgang II"},
-      "operating_hours_v2_defroster_3_a712": {"name": "Betriebsstunden Abtauvorgang III"},
-      "operating_hours_v2_defroster_4_a714": {"name": "Betriebsstunden Abtauvorgang IV"},
-      "operating_hours_v2_heatingpump_2_a716": {"name": "Betriebsstunden Heizungspumpe II"},
-      "operating_hours_v2_heatingpump_3_a718": {"name": "Betriebsstunden Heizungspumpe III"},
-      "operating_hours_v2_heatingpump_4_a720": {"name": "Betriebsstunden Heizungspumpe IV"}
+      "operating_hours_v2_compressor_3_a706": {"name": "Betriebsstunden Außeneinheit 3"},
+      "operating_hours_v2_compressor_4_a708": {"name": "Betriebsstunden Außeneinheit 4"},
+      "operating_hours_v2_defroster_2_a710": {"name": "Betriebsstunden Abtauvorgang 2"},
+      "operating_hours_v2_defroster_3_a712": {"name": "Betriebsstunden Abtauvorgang 3"},
+      "operating_hours_v2_defroster_4_a714": {"name": "Betriebsstunden Abtauvorgang 4"},
+      "operating_hours_v2_heatingpump_2_a716": {"name": "Betriebsstunden Heizungspumpe 2"},
+      "operating_hours_v2_heatingpump_3_a718": {"name": "Betriebsstunden Heizungspumpe 3"},
+      "operating_hours_v2_heatingpump_4_a720": {"name": "Betriebsstunden Heizungspumpe 4"}
     },
     "switch": {
       "holiday_enabled": {"name": "Urlaubsfunktion"},
@@ -489,7 +514,8 @@
       "basicvent_incoming_fan_manual_mode": {"name": "Lüfter 1 (Außen) manuelle Drehzahl-Steuerung"},
       "basicvent_outgoing_fan_manual_mode": {"name": "Lüfter 2 (Innen) manuelle Drehzahl-Steuerung"},
       "pumpservice_sourcepump_cable_break_monitoring_d881": {"name": "Service: Quellenpumpe Kabelbruchüberwachung"},
-      "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Quellenpumpe Regeneration"}
+      "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Quellenpumpe Regeneration"},
+      "sgready_switch_d795": {"name": "SG Ready"}
     },
     "time": {
       "schedule_water_disinfection_start_time": {"name": "Startzeit Desinfektion"}

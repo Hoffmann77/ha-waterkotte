@@ -23,7 +23,9 @@ from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import (
 )
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .const import (
+    CONF_ADD_READONLY_COPIES,
     CONF_POLLING_INTERVAL,
+    CONF_READ_ONLY,
     MIN_POLLING_INTERVAL,
     CONF_TAGS_PER_REQUEST,
     CONF_BIOS,
@@ -79,6 +81,9 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             # settings that have not been changed via the options yet, are taken from the initial configuration
             return config_entry.options.get(key, config_entry.data.get(key, default))
 
+        self.add_readonly_copies = setting(CONF_ADD_READONLY_COPIES, False)
+        self.read_only = setting(CONF_READ_ONLY, False)
+
         # the connection data (incl. the credentials) is only stored in the config entry data (not in the options)
         _system_type = config_entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH)
         _host = config_entry.data.get(CONF_HOST)
@@ -124,7 +129,9 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
         await self._async_complete_device_information()
 
         # we check if the operation hours will be returned as TOTAL's (and if this is
-        # not the case, we enable it!
+        # not the case, we enable it! - but not in read-only mode)
+        if self.read_only:
+            return
         try:
             res = await self.bridge.async_read_value(WKHPTag.OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634)
             if res.get('status', None) == "S_OK" and not res.get('value', True):
@@ -205,6 +212,9 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
     async def async_write_tag(self, tag: WKHPTag, value):
         """Write the value of a tag to the heat pump - the errors are raised as HomeAssistantError"""
         placeholders = {"tag": tag.name, "value": str(value)}
+        if self.read_only:
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="read_only",
+                                         translation_placeholders=placeholders)
         try:
             result = await self.bridge.async_write_value(tag, value)
         except (ValueError, InvalidValueException) as err:

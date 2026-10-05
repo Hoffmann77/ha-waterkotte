@@ -17,7 +17,9 @@ from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from .const import (
     DOMAIN,
+    CONF_ADD_READONLY_COPIES,
     CONF_POLLING_INTERVAL,
+    CONF_READ_ONLY,
     MIN_POLLING_INTERVAL,
     CONF_TAGS_PER_REQUEST,
     CONF_BIOS,
@@ -339,7 +341,9 @@ class WaterkotteHeatpumpOptionsFlowHandler(config_entries.OptionsFlowWithReload)
             step_id="user",
             data_schema=vol.Schema({
                 vol.Required(CONF_POLLING_INTERVAL, default=current(CONF_POLLING_INTERVAL, 60)): _POLLING_INTERVAL,
-                vol.Required(CONF_TAGS_PER_REQUEST, default=current(CONF_TAGS_PER_REQUEST, 75)): _TAGS_PER_REQUEST
+                vol.Required(CONF_TAGS_PER_REQUEST, default=current(CONF_TAGS_PER_REQUEST, 75)): _TAGS_PER_REQUEST,
+                vol.Required(CONF_ADD_READONLY_COPIES, default=current(CONF_ADD_READONLY_COPIES, False)): bool,
+                vol.Required(CONF_READ_ONLY, default=current(CONF_READ_ONLY, False)): bool,
             }),
             description_placeholders={"repo": "https://github.com/marq24/ha-waterkotte"},
         )

@@ -24,6 +24,9 @@ from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .coordinator import WaterkotteConfigEntry
 from .const import FEATURE_DISINFECTION, FEATURE_POOL, FEATURE_VENT
 from .entity import WKHPBaseEntity, WKHPEntityDescription
+from .number import NUMBER_SENSORS
+from .readonly import READONLY_SUFFIX, ReadOnlyTexts, WKHPReadOnlyEntity
+from .select import SELECT_SENSORS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -161,6 +164,23 @@ SENSOR_SENSORS: Final = [
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         entity_registry_enabled_default=True
     ),
+    # the heating curve: the outdoor temperature (1h average) and the resulting temperature
+    ExtSensorEntityDescription(
+        key="TEMPERATURE_HEATING_HC_OUTDOOR_1H",
+        tag=WKHPTag.TEMPERATURE_HEATING_HC_OUTDOOR_1H,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_registry_enabled_default=False
+    ),
+    ExtSensorEntityDescription(
+        key="TEMPERATURE_HEATING_HC_RESULT",
+        tag=WKHPTag.TEMPERATURE_HEATING_HC_RESULT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_registry_enabled_default=False
+    ),
     ExtSensorEntityDescription(
         key="TEMPERATURE_COOLING",
         tag=WKHPTag.TEMPERATURE_COOLING,
@@ -277,6 +297,25 @@ SENSOR_SENSORS: Final = [
     ExtSensorEntityDescription(
         key="TEMPERATURE_POOL_DEMAND",
         tag=WKHPTag.TEMPERATURE_POOL_DEMAND,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_POOL
+    ),
+    # the heating curve of the pool
+    ExtSensorEntityDescription(
+        key="TEMPERATURE_POOL_HC_OUTDOOR_1H",
+        tag=WKHPTag.TEMPERATURE_POOL_HC_OUTDOOR_1H,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_POOL
+    ),
+    ExtSensorEntityDescription(
+        key="TEMPERATURE_POOL_HC_RESULT",
+        tag=WKHPTag.TEMPERATURE_POOL_HC_RESULT,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -1047,6 +1086,15 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigE
     coordinator = config_entry.runtime_data
     async_add_entities(WKHPSensor(coordinator, description) for description in SENSOR_SENSORS)
 
+    if coordinator.add_readonly_copies:
+        texts = await ReadOnlyTexts.async_load(hass)
+        async_add_entities(
+            [WKHPReadOnlyNumberSensor(coordinator, _readonly_description(description), "number", texts)
+             for description in NUMBER_SENSORS]
+            + [WKHPReadOnlySelectSensor(coordinator, _readonly_description(description), "select", texts)
+               for description in SELECT_SENSORS]
+        )
+
 
 class WKHPSensor(WKHPBaseEntity, SensorEntity):
 
@@ -1064,3 +1112,58 @@ class WKHPSensor(WKHPBaseEntity, SensorEntity):
         if isinstance(value, bool):
             return "on" if value else "off"
         return value
+
+
+def _readonly_description(description: WKHPEntityDescription) -> ExtSensorEntityDescription:
+    """The description of the read-only copy of a number or a select (with the unit of the number)."""
+    device_class = getattr(description, "device_class", None)
+    step = getattr(description, "native_step", None)
+    return ExtSensorEntityDescription(
+        key=f"{description.key}{READONLY_SUFFIX}",
+        tag=description.tag,
+        feature=description.feature,
+        entity_registry_enabled_default=description.entity_registry_enabled_default,
+        device_class=SensorDeviceClass(device_class) if device_class is not None else None,
+        native_unit_of_measurement=getattr(description, "native_unit_of_measurement", None),
+        # show the value with the precision, that can be set (e.g. 0.5 °C -> 1 decimal)
+        suggested_display_precision=_decimals(step) if step is not None else None,
+    )
+
+
+def _decimals(step: float) -> int:
+    return len(f"{step:g}".partition(".")[2])
+
+
+class WKHPReadOnlyNumberSensor(WKHPReadOnlyEntity, SensorEntity):
+    """The read-only copy of a number."""
+
+    @property
+    def native_value(self) -> float | None:
+        value = self._tag_value
+        try:
+            return None if value is None else float(value)
+        except (TypeError, ValueError):
+            return None
+
+
+class WKHPReadOnlySelectSensor(WKHPReadOnlyEntity, SensorEntity):
+    """The read-only copy of a select - its state is the (translated) name of the selected option."""
+
+    @property
+    def _option(self) -> str | None:
+        value = self._tag_value
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            # the digital tags ("switches" that are shown as selects)
+            return "1" if value else "0"
+        return str(value)
+
+    @property
+    def native_value(self) -> str | None:
+        option = self._option
+        return None if option is None else self._texts.option("select", self._original_key, option)
+
+    @property
+    def _icon_state(self) -> str:
+        return str(self._option)

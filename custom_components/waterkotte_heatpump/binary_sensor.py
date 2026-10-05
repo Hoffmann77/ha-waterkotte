@@ -14,6 +14,8 @@ from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .coordinator import WaterkotteConfigEntry
 from .const import FEATURE_POOL, FEATURE_VENT
 from .entity import WKHPBaseEntity, WKHPEntityDescription
+from .readonly import READONLY_SUFFIX, ReadOnlyTexts, WKHPReadOnlyEntity
+from .switch import SWITCH_SENSORS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -236,7 +238,28 @@ BINARY_SENSORS: Final = [
         device_class=BinarySensorDeviceClass.RUNNING,
         entity_registry_enabled_default=False,
         feature=FEATURE_VENT
-    )
+    ),
+    # SG Ready states
+    ExtBinarySensorEntityDescription(
+        key="SGREADY_SG1_EXTERN_OFF_SWITCH_D796",
+        tag=WKHPTag.SGREADY_SG1_EXTERN_OFF_SWITCH_D796,
+        entity_registry_enabled_default=False
+    ),
+    ExtBinarySensorEntityDescription(
+        key="SGREADY_SG2_NORMAL_D797",
+        tag=WKHPTag.SGREADY_SG2_NORMAL_D797,
+        entity_registry_enabled_default=False
+    ),
+    ExtBinarySensorEntityDescription(
+        key="SGREADY_SG3_SETPOINT_CHANGE_D798",
+        tag=WKHPTag.SGREADY_SG3_SETPOINT_CHANGE_D798,
+        entity_registry_enabled_default=False
+    ),
+    ExtBinarySensorEntityDescription(
+        key="SGREADY_SG4_FORCE_RUN_D799",
+        tag=WKHPTag.SGREADY_SG4_FORCE_RUN_D799,
+        entity_registry_enabled_default=False
+    ),
 
     # "STATUS_HEATING_CIRCULATION_PUMP",
     #     "Status circulation pump heating",
@@ -280,6 +303,13 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigE
     coordinator = config_entry.runtime_data
     async_add_entities(WKHPBinarySensor(coordinator, description) for description in BINARY_SENSORS)
 
+    if coordinator.add_readonly_copies:
+        texts = await ReadOnlyTexts.async_load(hass)
+        async_add_entities(
+            WKHPReadOnlyBinarySensor(coordinator, _readonly_description(description), "switch", texts)
+            for description in SWITCH_SENSORS
+        )
+
 
 class WKHPBinarySensor(WKHPBaseEntity, BinarySensorEntity):
 
@@ -290,3 +320,17 @@ class WKHPBinarySensor(WKHPBaseEntity, BinarySensorEntity):
             return value
         # parse anything else then 'on' to False!
         return isinstance(value, str) and value.lower() == "on"
+
+
+def _readonly_description(description: WKHPEntityDescription) -> ExtBinarySensorEntityDescription:
+    """The description of the read-only copy of a switch."""
+    return ExtBinarySensorEntityDescription(
+        key=f"{description.key}{READONLY_SUFFIX}",
+        tag=description.tag,
+        feature=description.feature,
+        entity_registry_enabled_default=description.entity_registry_enabled_default,
+    )
+
+
+class WKHPReadOnlyBinarySensor(WKHPReadOnlyEntity, WKHPBinarySensor):
+    """The read-only copy of a switch."""

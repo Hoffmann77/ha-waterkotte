@@ -109,6 +109,11 @@ SWITCH_SENSORS: Final = [
         tag=WKHPTag.PUMPSERVICE_SOURCEPUMP_REGENERATION_D1294,
         entity_registry_enabled_default=False
     ),
+    ExtSwitchEntityDescription(
+        key="SGREADY_SWITCH_D795",
+        tag=WKHPTag.SGREADY_SWITCH_D795,
+        entity_registry_enabled_default=False
+    ),
 ]
 
 

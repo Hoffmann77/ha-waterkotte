@@ -86,7 +86,13 @@
         "description": "If you need help with the configuration have a look here: {repo}.",
         "data": {
           "polling_interval": "Polling Interval in seconds",
-          "tags_per_request": "Number of tags to fetch in a single request (max. 75)"
+          "tags_per_request": "Number of tags to fetch in a single request (max. 75)",
+          "add_readonly_copies": "Add read-only copies of the switches, numbers and selects",
+          "read_only": "Read-only mode"
+        },
+        "data_description": {
+          "add_readonly_copies": "Adds a sensor for every setting of the heat pump - e.g. to show it on a dashboard without the risk of changing it.",
+          "read_only": "Nothing is written to the heat pump: changing a switch, number, select, date or time (and the service actions, that change settings) fails."
         }
       }
     }
@@ -131,15 +137,17 @@
     "invalid_value": {"message": "The value {value} is not valid for {tag}."},
     "write_failed": {"message": "The value {value} could not be written to {tag}: {error}"},
     "write_not_confirmed": {"message": "The heat pump did not confirm the value {value} for {tag}."},
-    "read_failed": {"message": "The values could not be read from the heat pump: {error}"}
+    "read_failed": {"message": "The values could not be read from the heat pump: {error}"},
+    "read_only": {"message": "The integration is in read-only mode - {value} was not written to {tag}."}
   },
   "entity": {
     "binary_sensor": {
+      "readonly_copy": {"name": "{name} (read-only)"},
       "state_sourcepump": {"name": "Source pump"},
       "state_heatingpump": {"name": "Heat pump"},
       "state_evd": {"name": "EVD"},
       "state_compressor": {"name": "Compressor"},
-      "state_compressor2": {"name": "Compressor II"},
+      "state_compressor2": {"name": "Compressor 2"},
       "state_external_heater": {"name": "Electrical heater"},
       "state_alarm": {"name": "Notifications"},
       "state_cooling": {"name": "Cooling"},
@@ -168,7 +176,11 @@
       "basicvent_status_comfort_bypass_active_d1465": {"name": "Vent Comfort Bypass Active"},
       "basicvent_status_smart_bypass_active_d1466": {"name": "Vent Smart Bypass Active"},
       "basicvent_status_holiday_enabled_d1503": {"name": "Vent Holiday Enabled"},
-      "basicvent_filter_change_display_d1469": {"name": "Vent Filter change required"}
+      "basicvent_filter_change_display_d1469": {"name": "Vent Filter change required"},
+      "sgready_sg1_extern_off_switch_d796": {"name": "SG Ready SG1: External switch off"},
+      "sgready_sg2_normal_d797": {"name": "SG Ready SG2: Normal operation"},
+      "sgready_sg3_setpoint_change_d798": {"name": "SG Ready SG3: Setpoint change"},
+      "sgready_sg4_force_run_d799": {"name": "SG Ready SG4: Forced run"}
     },
     "datetime": {
       "holiday_start_time": {"name": "Holiday start"},
@@ -237,7 +249,15 @@
       "pumpservice_sourcepump_coolingmode_minspeed_a1032": {"name": "Service: Sourcepump Cooling min speed"},
       "pumpservice_sourcepump_coolingmode_maxspeed_a1033": {"name": "Service: Sourcepump Cooling max speed"},
       "pumpservice_sourcepump_coolingmode_source_temperature_a1034": {"name": "Service: Sourcepump Cooling Source Temperature"},
-      "temperature_room_target_a100": {"name": "T Room target"}
+      "temperature_room_target_a100": {"name": "T Room target"},
+      "temperature_heating_pv_change": {"name": "PV change heating"},
+      "temperature_cooling_pv_change": {"name": "PV change cooling"},
+      "temperature_water_pv_change": {"name": "PV change hot water"},
+      "temperature_pool_pv_change": {"name": "PV change pool"},
+      "temperature_mix1_pv_change": {"name": "PV change mixer 1"},
+      "temperature_mix2_pv_change": {"name": "PV change mixer 2"},
+      "temperature_mix3_pv_change": {"name": "PV change mixer 3"},
+      "temperature_heating_sgready_status4": {"name": "SG Ready SG4: Heating temperature"}
     },
     "select": {
       "temperature_heating_mode": {
@@ -362,6 +382,7 @@
       }
     },
     "sensor": {
+      "readonly_copy": {"name": "{name} (read-only)"},
       "energy_consumption_total_year": {"name": "Electrical year performance"},
       "compressor_electric_consumption_year": {"name": "Compressor year performance"},
       "sourcepump_electric_consumption_year": {"name": "Heat source pump year performance"},
@@ -386,6 +407,8 @@
       "temperature_room_1h": {"name": "Room temperature 1h"},
       "temperature_heating": {"name": "Actual temperature heating"},
       "temperature_heating_demand": {"name": "Demanded temperature heating"},
+      "temperature_heating_hc_outdoor_1h": {"name": "Heating curve: outdoor temperature (1h)"},
+      "temperature_heating_hc_result": {"name": "Heating curve: result"},
       "temperature_cooling": {"name": "Actual temperature cooling"},
       "temperature_cooling_demand": {"name": "Demanded temperature cooling"},
       "temperature_water": {"name": "Hot water temperature"},
@@ -401,6 +424,8 @@
       "temperature_mix3_demand": {"name": "Demanded temperature mixer 3"},
       "temperature_pool": {"name": "Actual temperature pool"},
       "temperature_pool_demand": {"name": "Demanded temperature pool"},
+      "temperature_pool_hc_outdoor_1h": {"name": "Pool heating curve: outdoor temperature (1h)"},
+      "temperature_pool_hc_result": {"name": "Pool heating curve: result"},
       "temperature_solar": {"name": "T Solar"},
       "temperature_solar_exit": {"name": "Exit temperature solar collector"},
       "temperature_discharge": {"name": "Discharge temperature"},
@@ -441,14 +466,14 @@
       "basicvent_energy_save_current_a4389": {"name": "Vent energy saving now"},
       "basicvent_energy_recovery_rate_a4391": {"name": "Vent Heat recovery rate"},
       "operating_hours_compressor_1": {"name": "Operating hours [old] Compressor"},
-      "operating_hours_compressor_2": {"name": "Operating hours [old] Compressor II / Outdoor Unit"},
+      "operating_hours_compressor_2": {"name": "Operating hours [old] Compressor 2 / Outdoor Unit"},
       "operating_hours_circulation_pump": {"name": "Operating hours [old] Circulation pump"},
       "operating_hours_source_pump": {"name": "Operating hours [old] Source pump"},
       "operating_hours_solar": {"name": "Operating hours [old] Solar"},
       "temperature_room_1h_a98": {"name": "Room temperature 1h (alt)"},
 
       "operating_hours_v2_compressor_1_a516": {"name": "Operating hours Compressor"},
-      "operating_hours_v2_compressor_2_a518": {"name": "Operating hours Compressor II / Outdoor Unit"},
+      "operating_hours_v2_compressor_2_a518": {"name": "Operating hours Compressor 2 / Outdoor Unit"},
       "operating_hours_v2_full_operating_hours_a520": {"name": "Operating hours Full operation"},
       "operating_hours_v2_heatingpump_a522": {"name": "Operating hours Heating pump"},
       "operating_hours_v2_source_pump_a524": {"name": "Operating hours Source pump"},
@@ -465,14 +490,14 @@
       "operating_hours_v2_bivalent_alternative_a546": {"name": "Operating hours Bivalent alternative"},
       "operating_hours_v2_pv_yield_alt_a576": {"name": "Operating hours PV-Yield (alt)"},
       "operating_hours_v2_pv_yield_a963": {"name": "Operating hours PV-Yield"},
-      "operating_hours_v2_compressor_3_a706": {"name": "Operating hours Outdoor Unit III"},
-      "operating_hours_v2_compressor_4_a708": {"name": "Operating hours Outdoor Unit IV"},
-      "operating_hours_v2_defroster_2_a710": {"name": "Operating hours Defroster II"},
-      "operating_hours_v2_defroster_3_a712": {"name": "Operating hours Defroster III"},
-      "operating_hours_v2_defroster_4_a714": {"name": "Operating hours Defroster IV"},
-      "operating_hours_v2_heatingpump_2_a716": {"name": "Operating hours Heating pump II"},
-      "operating_hours_v2_heatingpump_3_a718": {"name": "Operating hours Heating pump III"},
-      "operating_hours_v2_heatingpump_4_a720": {"name": "Operating hours Heating pump IV"}
+      "operating_hours_v2_compressor_3_a706": {"name": "Operating hours Outdoor Unit 3"},
+      "operating_hours_v2_compressor_4_a708": {"name": "Operating hours Outdoor Unit 4"},
+      "operating_hours_v2_defroster_2_a710": {"name": "Operating hours Defroster 2"},
+      "operating_hours_v2_defroster_3_a712": {"name": "Operating hours Defroster 3"},
+      "operating_hours_v2_defroster_4_a714": {"name": "Operating hours Defroster 4"},
+      "operating_hours_v2_heatingpump_2_a716": {"name": "Operating hours Heating pump 2"},
+      "operating_hours_v2_heatingpump_3_a718": {"name": "Operating hours Heating pump 3"},
+      "operating_hours_v2_heatingpump_4_a720": {"name": "Operating hours Heating pump 4"}
     },
     "switch": {
       "holiday_enabled": {"name": "Holiday"},
@@ -489,7 +514,8 @@
       "basicvent_incoming_fan_manual_mode": {"name": "Vent 1 (outer) Manual-Mode"},
       "basicvent_outgoing_fan_manual_mode": {"name": "Vent 2 (inner) Manual-Mode"},
       "pumpservice_sourcepump_cable_break_monitoring_d881": {"name": "Service: Sourcepump cable-break Monitor"},
-      "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Sourcepump regeneration"}
+      "pumpservice_sourcepump_regeneration_d1294": {"name": "Service: Sourcepump regeneration"},
+      "sgready_switch_d795": {"name": "SG Ready"}
     },
     "time": {
       "schedule_water_disinfection_start_time": {"name": "Start time disinfection"}
