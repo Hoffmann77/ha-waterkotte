@@ -553,6 +553,21 @@
       "cop_cooling": {
         "default": "mdi:gauge"
       },
+      "cop_heatpump_year": {
+        "default": "mdi:gauge"
+      },
+      "cop_heating_year": {
+        "default": "mdi:gauge"
+      },
+      "cop_hot_water_year": {
+        "default": "mdi:gauge"
+      },
+      "cop_total_system_year": {
+        "default": "mdi:gauge"
+      },
+      "cop_total_system_last12m": {
+        "default": "mdi:gauge"
+      },
       "energy_consumption_total_year": {
         "default": "mdi:lightning-bolt-outline"
       },
