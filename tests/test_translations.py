@@ -7,6 +7,7 @@ import pytest
 import yaml
 
 from custom_components.waterkotte_heatpump import binary_sensor, datetime, number, select, sensor, switch, time
+from custom_components.waterkotte_heatpump.readonly import READONLY_TRANSLATION_KEY
 
 INTEGRATION = Path(__file__).parent.parent / "custom_components" / "waterkotte_heatpump"
 TRANSLATIONS = {lang: json.loads((INTEGRATION / "translations" / f"{lang}.json").read_text(encoding="utf-8"))
@@ -41,6 +42,9 @@ def test_languages_complete() -> None:
 def test_entity_names(platform: str) -> None:
     """Test that every entity has a name - and that there are no names of removed entities."""
     keys = {description.key.lower() for description in DESCRIPTIONS[platform]}
+    if platform in ("binary_sensor", "sensor"):
+        # the name of all read-only copies (of the switches, numbers and selects)
+        keys.add(READONLY_TRANSLATION_KEY)
     names = TRANSLATIONS["en"]["entity"][platform]
     assert keys - set(names) == set(), "entities without name"
     assert set(names) - keys == set(), "names of removed entities"

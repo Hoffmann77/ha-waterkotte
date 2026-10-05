@@ -1,14 +1,15 @@
-"""Tests for the read-only mode."""
+"""Tests for the read-only copies of the entities and for the read-only mode."""
 from unittest.mock import MagicMock
 
 import pytest
-from homeassistant.const import CONF_HOST
+from homeassistant.const import ATTR_ICON, ATTR_UNIT_OF_MEASUREMENT, CONF_HOST, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.waterkotte_heatpump.const import (
+    CONF_ADD_READONLY_COPIES,
     CONF_READ_ONLY,
     CONF_SERIAL,
     CONF_SYSTEMTYPE,
@@ -39,6 +40,48 @@ async def _setup(hass: HomeAssistant, mock_bridge: MagicMock, options: dict) -> 
 
 def _entity_id(hass: HomeAssistant, platform: str, key: str) -> str | None:
     return er.async_get(hass).async_get_entity_id(platform, DOMAIN, f"{SERIAL}_{key}".lower())
+
+
+async def test_readonly_copies(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    """Test that the switches, numbers and selects have read-only copies (with the name and icon of the original)."""
+    await _setup(hass, mock_bridge, {CONF_ADD_READONLY_COPIES: True})
+
+    switch = hass.states.get(_entity_id(hass, "binary_sensor", "HOLIDAY_ENABLED_READONLY"))
+    assert switch.entity_id.endswith("_holiday_read_only")
+    assert switch.state == "off"
+    assert switch.attributes[ATTR_ICON] == "mdi:calendar-blank"
+
+    number = hass.states.get(_entity_id(hass, "sensor", "TEMPERATURE_HEATING_ADJUST_READONLY"))
+    assert number.entity_id.endswith("_temperature_adjustment_heating_read_only")
+    assert number.state == "1.5"
+    assert number.attributes[ATTR_UNIT_OF_MEASUREMENT] == UnitOfTemperature.KELVIN
+
+    select = hass.states.get(_entity_id(hass, "sensor", "ENABLE_HEATING_READONLY"))
+    # the translated name of the option
+    assert select.state == "Auto"
+    assert select.attributes[ATTR_ICON] == "mdi:radiator"
+
+    # the copies use the tags of the original entities - and can't change them
+    assert _entity_id(hass, "switch", "HOLIDAY_ENABLED_READONLY") is None
+
+
+async def test_readonly_copies_removed(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    """Test that the read-only copies are removed, when the option is disabled."""
+    entry = await _setup(hass, mock_bridge, {CONF_ADD_READONLY_COPIES: True})
+    assert _entity_id(hass, "sensor", "ENABLE_HEATING_READONLY") is not None
+
+    hass.config_entries.async_update_entry(entry, options={CONF_ADD_READONLY_COPIES: False})
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert _entity_id(hass, "sensor", "ENABLE_HEATING_READONLY") is None
+    assert _entity_id(hass, "binary_sensor", "HOLIDAY_ENABLED_READONLY") is None
+    assert _entity_id(hass, "select", "ENABLE_HEATING") is not None
+
+
+async def test_no_readonly_copies_by_default(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    await _setup(hass, mock_bridge, {})
+    assert _entity_id(hass, "sensor", "ENABLE_HEATING_READONLY") is None
 
 
 async def test_read_only_mode(hass: HomeAssistant, mock_bridge: MagicMock) -> None:

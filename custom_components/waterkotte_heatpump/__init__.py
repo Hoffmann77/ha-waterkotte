@@ -22,6 +22,7 @@ from .const import (
 )
 from .coordinator import WaterkotteConfigEntry, WKHPDataUpdateCoordinator
 from .naming import entry_title, is_real_serial
+from .readonly import READONLY_SUFFIX
 from .service import async_setup_services
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -176,6 +177,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigEntry) -> bool:
     coordinator = WKHPDataUpdateCoordinator(hass, config_entry)
+    if not coordinator.add_readonly_copies:
+        _async_remove_readonly_copies(hass, config_entry)
     # connects to the heat pump (see WKHPDataUpdateCoordinator._async_setup) - raises ConfigEntryNotReady (or
     # ConfigEntryAuthFailed), when this is not possible
     await coordinator.async_config_entry_first_refresh()
@@ -188,6 +191,14 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigE
     await coordinator.async_refresh()
 
     return True
+
+
+def _async_remove_readonly_copies(hass: HomeAssistant, config_entry: WaterkotteConfigEntry) -> None:
+    """Remove the read-only copies from the entity registry (when the option has been disabled)."""
+    registry = entity_reg.async_get(hass)
+    for entity in entity_reg.async_entries_for_config_entry(registry, config_entry.entry_id):
+        if entity.unique_id.endswith(READONLY_SUFFIX.lower()):
+            registry.async_remove(entity.entity_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: WaterkotteConfigEntry) -> bool:

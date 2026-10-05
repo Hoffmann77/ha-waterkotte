@@ -80,10 +80,11 @@ If the IP address (or hostname) or the login credentials of your Waterkotte have
 
 Please note, that most of the available sensors are __not__ enabled by default.
 
-#### Read-only mode
+#### Read-only entities & read-only mode
 
-The options of the integration ('config' button) offer a setting to protect the settings of your heat pump:
+The options of the integration ('config' button) offer two settings to protect the settings of your heat pump:
 
+- __Add read-only copies of the switches, numbers and selects__: every switch gets a binary sensor and every number and select gets a sensor with the same value - named like the original with the suffix `(read-only)`, e.g. `sensor.waterkotte_operation_mode_heating_read_only`. Add them to a dashboard, when its users should see a setting without being able to change it. The copies are enabled and disabled like their originals by default - and are removed again, when the option is turned off.
 - __Read-only mode__: nothing is written to the heat pump. Changing a switch, number, select, date or time - and the service actions, that change settings - fail with an error. The integration does also not turn on the total operating hours counters of the heat pump during the setup in this mode.
 
 #### Entity IDs & multiple Waterkotte heat pumps

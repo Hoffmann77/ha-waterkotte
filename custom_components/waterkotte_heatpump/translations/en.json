@@ -87,9 +87,11 @@
         "data": {
           "polling_interval": "Polling Interval in seconds",
           "tags_per_request": "Number of tags to fetch in a single request (max. 75)",
+          "add_readonly_copies": "Add read-only copies of the switches, numbers and selects",
           "read_only": "Read-only mode"
         },
         "data_description": {
+          "add_readonly_copies": "Adds a sensor for every setting of the heat pump - e.g. to show it on a dashboard without the risk of changing it.",
           "read_only": "Nothing is written to the heat pump: changing a switch, number, select, date or time (and the service actions, that change settings) fails."
         }
       }
@@ -140,6 +142,7 @@
   },
   "entity": {
     "binary_sensor": {
+      "readonly_copy": {"name": "{name} (read-only)"},
       "state_sourcepump": {"name": "Source pump"},
       "state_heatingpump": {"name": "Heat pump"},
       "state_evd": {"name": "EVD"},
@@ -371,6 +374,7 @@
       }
     },
     "sensor": {
+      "readonly_copy": {"name": "{name} (read-only)"},
       "energy_consumption_total_year": {"name": "Electrical year performance"},
       "compressor_electric_consumption_year": {"name": "Compressor year performance"},
       "sourcepump_electric_consumption_year": {"name": "Heat source pump year performance"},

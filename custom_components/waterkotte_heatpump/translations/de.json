@@ -87,9 +87,11 @@
         "data": {
           "polling_interval": "Aktualisierungsintervall in Sekunden",
           "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)",
+          "add_readonly_copies": "Schreibgeschützte Kopien der Schalter, Zahlen und Auswahlen hinzufügen",
           "read_only": "Schreibschutz"
         },
         "data_description": {
+          "add_readonly_copies": "Fügt für jede Einstellung der Wärmepumpe einen Sensor hinzu - z. B. um sie auf einem Dashboard anzuzeigen, ohne dass sie geändert werden kann.",
           "read_only": "Es wird nichts in die Wärmepumpe geschrieben: Änderungen an Schaltern, Zahlen, Auswahlen, Datum oder Uhrzeit (und die Aktionen, die Einstellungen ändern) schlagen fehl."
         }
       }
@@ -140,6 +142,7 @@
   },
   "entity": {
     "binary_sensor": {
+      "readonly_copy": {"name": "{name} (schreibgeschützt)"},
       "state_sourcepump": {"name": "Quellenpumpe"},
       "state_heatingpump": {"name": "Wärmepumpe"},
       "state_evd": {"name": "EVD (Überhitzungsregler)"},
@@ -371,6 +374,7 @@
       }
     },
     "sensor": {
+      "readonly_copy": {"name": "{name} (schreibgeschützt)"},
       "energy_consumption_total_year": {"name": "Elektrische Arbeit Jahresverbrauch"},
       "compressor_electric_consumption_year": {"name": "Verdichter Jahresverbrauch"},
       "sourcepump_electric_consumption_year": {"name": "Quellenpumpe Jahresverbrauch"},
