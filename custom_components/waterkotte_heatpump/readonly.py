@@ -10,6 +10,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.icon import async_get_icons
 from homeassistant.helpers.translation import async_get_translations
 
@@ -60,6 +61,15 @@ class WKHPReadOnlyEntity(WKHPBaseEntity):
         self._texts = texts
         self._attr_translation_key = READONLY_TRANSLATION_KEY
         self._attr_translation_placeholders = {"name": texts.name(original_platform, self._original_key)}
+
+        # the copy is enabled by default, when the original entity is enabled (e.g. a setting, that the user has
+        # enabled, is also shown as copy) - only used, when the copy is added to the entity registry
+        registry = er.async_get(coordinator.hass)
+        original_entity_id = registry.async_get_entity_id(
+            original_platform, DOMAIN, f"{coordinator.unique_id_base}_{self._original_key}".lower()
+        )
+        if original_entity_id is not None:
+            self._attr_entity_registry_enabled_default = not registry.entities[original_entity_id].disabled
 
     @property
     def _icon_state(self) -> str:
