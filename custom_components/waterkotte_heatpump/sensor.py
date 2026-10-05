@@ -164,6 +164,23 @@ SENSOR_SENSORS: Final = [
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         entity_registry_enabled_default=True
     ),
+    # the heating curve: the outdoor temperature (1h average) and the resulting temperature
+    ExtSensorEntityDescription(
+        key="TEMPERATURE_HEATING_HC_OUTDOOR_1H",
+        tag=WKHPTag.TEMPERATURE_HEATING_HC_OUTDOOR_1H,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_registry_enabled_default=False
+    ),
+    ExtSensorEntityDescription(
+        key="TEMPERATURE_HEATING_HC_RESULT",
+        tag=WKHPTag.TEMPERATURE_HEATING_HC_RESULT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_registry_enabled_default=False
+    ),
     ExtSensorEntityDescription(
         key="TEMPERATURE_COOLING",
         tag=WKHPTag.TEMPERATURE_COOLING,
@@ -280,6 +297,25 @@ SENSOR_SENSORS: Final = [
     ExtSensorEntityDescription(
         key="TEMPERATURE_POOL_DEMAND",
         tag=WKHPTag.TEMPERATURE_POOL_DEMAND,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_POOL
+    ),
+    # the heating curve of the pool
+    ExtSensorEntityDescription(
+        key="TEMPERATURE_POOL_HC_OUTDOOR_1H",
+        tag=WKHPTag.TEMPERATURE_POOL_HC_OUTDOOR_1H,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_registry_enabled_default=False,
+        feature=FEATURE_POOL
+    ),
+    ExtSensorEntityDescription(
+        key="TEMPERATURE_POOL_HC_RESULT",
+        tag=WKHPTag.TEMPERATURE_POOL_HC_RESULT,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,

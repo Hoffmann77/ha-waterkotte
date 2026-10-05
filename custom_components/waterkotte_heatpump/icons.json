@@ -448,6 +448,12 @@
       "temperature_heating_demand": {
         "default": "mdi:radiator"
       },
+      "temperature_heating_hc_outdoor_1h": {
+        "default": "mdi:sun-snowflake-variant"
+      },
+      "temperature_heating_hc_result": {
+        "default": "mdi:radiator"
+      },
       "temperature_cooling": {
         "default": "mdi:snowflake-thermometer"
       },
@@ -491,6 +497,12 @@
         "default": "mdi:pool-thermometer"
       },
       "temperature_pool_demand": {
+        "default": "mdi:pool-thermometer"
+      },
+      "temperature_pool_hc_outdoor_1h": {
+        "default": "mdi:sun-snowflake-variant"
+      },
+      "temperature_pool_hc_result": {
         "default": "mdi:pool-thermometer"
       },
       "temperature_solar": {
