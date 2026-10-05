@@ -21,7 +21,6 @@ from homeassistant.util import dt as dt_util
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .const import DOMAIN
-from .coordinator import is_other_year
 
 if TYPE_CHECKING:
     from .coordinator import WKHPDataUpdateCoordinator
@@ -57,9 +56,7 @@ MONTHLY_STATISTICS = [
                      "Electrical consumption source pump", is_energy=True),
     MonthlyStatistic("external_heater_consumption_monthly", "ENG_CONSUMPTION_EXTERNALHEATER",
                      "Electrical consumption external heater", is_energy=True),
-    MonthlyStatistic("consumption_monthly", None, "Electrical consumption", is_energy=True,
-                     parts=("compressor_consumption_monthly", "source_pump_consumption_monthly",
-                            "external_heater_consumption_monthly")),
+    MonthlyStatistic("consumption_monthly", "ENG_CONSUMPTION_TOTAL", "Electrical consumption", is_energy=True),
     MonthlyStatistic("heating_production_monthly", "ENG_PRODUCTION_HEATING",
                      "Thermal production heating", is_energy=True),
     MonthlyStatistic("hot_water_production_monthly", "ENG_PRODUCTION_WARMWATER",
@@ -95,13 +92,9 @@ async def async_update_monthly_statistics(coordinator: WKHPDataUpdateCoordinator
     """Read the monthly values of the heat pump and add them to the statistics - the read errors are raised as
     HomeAssistantError"""
     hass = coordinator.hass
-    tags = [WKHPTag.DATE_MONTH, WKHPTag.DATE_YEAR, WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO] + [
-        tag for stat in MONTHLY_STATISTICS for tag in stat.tags()]
+    # the monthly values are the last 12 months - independent of the year, that is selected in the web interface
+    tags = [WKHPTag.DATE_MONTH, WKHPTag.DATE_YEAR] + [tag for stat in MONTHLY_STATISTICS for tag in stat.tags()]
     values = await coordinator.async_read_values(tags)
-    if is_other_year(values):
-        # the monthly values could belong to the year, that is selected in the web interface of the heat pump
-        _LOGGER.debug("monthly statistics: another year is selected in the web interface of the heat pump")
-        return
 
     month = _number(values, WKHPTag.DATE_MONTH)
     year = _number(values, WKHPTag.DATE_YEAR)
