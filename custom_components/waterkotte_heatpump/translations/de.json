@@ -160,6 +160,7 @@
       "status_cooling": {"name": "Kühlbetrieb"},
       "status_pool": {"name":  "Pool-Heizbetrieb"},
       "status_solar": {"name":  "Solarbetrieb"},
+      "status_sgready_i143": {"name": "SG Ready Betrieb"},
       "state_blocking_time": {"name": "Sperrzeit"},
       "state_test_run": {"name": "Testlauf"},
       "state_heating_circulation_pump_d425": {"name": "Umwälzpumpe Heizung"},
@@ -180,7 +181,9 @@
       "sgready_sg1_extern_off_switch_d796": {"name": "SG Ready SG1: EVU-Sperre"},
       "sgready_sg2_normal_d797": {"name": "SG Ready SG2: Normalbetrieb"},
       "sgready_sg3_setpoint_change_d798": {"name": "SG Ready SG3: Sollwerterhöhung"},
-      "sgready_sg4_force_run_d799": {"name": "SG Ready SG4: Zwangslauf"}
+      "sgready_sg4_force_run_d799": {"name": "SG Ready SG4: Zwangslauf"},
+      "sgready_input_a_d817": {"name": "SG Ready Eingang A (EVU)"},
+      "sgready_input_b_d818": {"name": "SG Ready Eingang B (Sollwert)"}
     },
     "datetime": {
       "holiday_start_time": {"name": "Urlaub Start"},

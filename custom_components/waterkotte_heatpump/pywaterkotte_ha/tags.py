@@ -899,6 +899,8 @@ class WKHPTag(DataTag, Enum):
     STATUS_WATER = DataTag(["I139"], decode_f=DataTag._decode_status)
     STATUS_POOL = DataTag(["I140"], decode_f=DataTag._decode_status)
     STATUS_SOLAR = DataTag(["I141"], decode_f=DataTag._decode_status)
+    # the SG Ready icon of the web interface (active, when SG Ready is requested by the external relay)
+    STATUS_SGREADY_I143 = DataTag(["I143"], decode_f=DataTag._decode_status)
     # returned 2='disabled' (even if the pump is running) - could be, that this TAG has to be set to 1='on' in order
     # to allow manual enable/disable the pump??? So it's then better to rename this then operation_mode and move it to
     # the switch section [just like the 'ENABLE_*' tags]
@@ -990,6 +992,9 @@ class WKHPTag(DataTag, Enum):
     SGREADY_SG3_SETPOINT_CHANGE_D798 = DataTag(["D798"])
     # lngD799 = ["SG4: Zwangslauf", "SG4: Forced run", "SG4: Marche forc\xe9e"],
     SGREADY_SG4_FORCE_RUN_D799 = DataTag(["D799"])
+    # the digital inputs of the SG Ready relays (pgService_IO) - SG1: A, SG2: none, SG3: B, SG4: A and B
+    SGREADY_INPUT_A_D817 = DataTag(["D817"])
+    SGREADY_INPUT_B_D818 = DataTag(["D818"])
 
     ##################################################################################
     # BASICVENT / ECOVENT Stuff...
