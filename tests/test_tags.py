@@ -35,9 +35,9 @@ def test_monthly_tags_are_unique() -> None:
                    "ENG_PRODUCTION_POOL"):
         tags = [WKHPTag[f"{prefix}{month:02d}"] for month in range(1, 13)]
         assert len({tag.tags[0] for tag in tags}) == 12, prefix
-        # the 12 months are consecutive tags
-        numbers = [int(tag.tags[0][1:]) for tag in tags]
-        assert numbers == list(range(numbers[0], numbers[0] + 12)), prefix
+        # the 12 months are consecutive tags (or pairs of tags)
+        numbers = [int(name[1:]) for tag in tags for name in tag.tags]
+        assert numbers == list(range(numbers[0], numbers[0] + len(numbers))), prefix
         assert all(tag.name == f"{prefix}{month:02d}" for month, tag in zip(range(1, 13), tags, strict=True)), prefix
 
 
@@ -109,3 +109,20 @@ def test_encode_invalid_value(tag: WKHPTag, value) -> None:
     """Test that an invalid value is raised (instead of an assert or of writing nothing)."""
     with pytest.raises(InvalidValueException):
         tag.encode_f(tag, value, {})
+
+
+@pytest.mark.parametrize(
+    ("tag", "raw", "expected"),
+    [
+        # the monthly values of a heat pump (the web interface shows the same values)
+        (WKHPTag.ENG_PRODUCTION_HEATING01, ["17821", "-448"], 5055.8),
+        (WKHPTag.ENG_PRODUCTION_HEATING02, ["17784", "-9776"], 3981.6),
+        (WKHPTag.ENG_CONSUMPTION_COMPRESSOR12, ["17538", "11216"], 1041.4),
+        (WKHPTag.ENG_PRODUCTION_WARMWATER01, ["17271", "13824"], 247.2),
+        (WKHPTag.ENG_PRODUCTION_POOL01, ["0", "0"], 0.0),
+        (WKHPTag.ENG_PRODUCTION_HEATING01, ["17821", None], None),
+    ],
+)
+def test_decode_monthly_float_words(tag: WKHPTag, raw: list, expected) -> None:
+    """Test that the monthly values above 3276.7 kWh are decoded (32-bit floats in pairs of 16-bit tags)."""
+    assert tag.decode_f(tag, raw) == expected
