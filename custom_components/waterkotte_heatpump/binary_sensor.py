@@ -196,6 +196,12 @@ BINARY_SENSORS: Final = [
         device_class=BinarySensorDeviceClass.RUNNING,
         entity_registry_enabled_default=False
     ),
+    ExtBinarySensorEntityDescription(
+        key="STATUS_SGREADY_I143",
+        tag=WKHPTag.STATUS_SGREADY_I143,
+        device_class=BinarySensorDeviceClass.RUNNING,
+        entity_registry_enabled_default=False
+    ),
 
     ExtBinarySensorEntityDescription(
         key="BASICVENT_STATUS_BYPASS_ACTIVE_D1432",
@@ -258,6 +264,16 @@ BINARY_SENSORS: Final = [
     ExtBinarySensorEntityDescription(
         key="SGREADY_SG4_FORCE_RUN_D799",
         tag=WKHPTag.SGREADY_SG4_FORCE_RUN_D799,
+        entity_registry_enabled_default=False
+    ),
+    ExtBinarySensorEntityDescription(
+        key="SGREADY_INPUT_A_D817",
+        tag=WKHPTag.SGREADY_INPUT_A_D817,
+        entity_registry_enabled_default=False
+    ),
+    ExtBinarySensorEntityDescription(
+        key="SGREADY_INPUT_B_D818",
+        tag=WKHPTag.SGREADY_INPUT_B_D818,
         entity_registry_enabled_default=False
     ),
 

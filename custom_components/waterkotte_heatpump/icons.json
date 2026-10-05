@@ -112,6 +112,9 @@
       "status_solar": {
         "default": "mdi:solar-power-variant"
       },
+      "status_sgready_i143": {
+        "default": "mdi:transmission-tower"
+      },
       "basicvent_status_bypass_active_d1432": {
         "default": "mdi:electric-switch"
       },
@@ -141,6 +144,12 @@
       },
       "sgready_sg4_force_run_d799": {
         "default": "mdi:lightning-bolt"
+      },
+      "sgready_input_a_d817": {
+        "default": "mdi:electric-switch"
+      },
+      "sgready_input_b_d818": {
+        "default": "mdi:electric-switch"
       }
     },
     "number": {
