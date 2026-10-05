@@ -481,7 +481,7 @@
       "operating_hours_v2_heatingpump_a522": {"name": "Betriebsstunden Heizungspumpe"},
       "operating_hours_v2_source_pump_a524": {"name": "Betriebsstunden Wärmequellenpumpe"},
       "operating_hours_v2_solar_circulation_pump_a526": {"name": "Betriebsstunden Solarkreispumpe"},
-      "operating_hours_v2_externalheater_a528": {"name": "Betriebsstunden Externer Wärmeerzeuger"},
+      "operating_hours_v2_externalheater_a528": {"name": "Betriebsstunden Heizstab"},
       "operating_hours_v2_heating_a530": {"name": "Betriebsstunden Heizbetrieb"},
       "operating_hours_v2_cooling_a532": {"name": "Betriebsstunden Kühlbetrieb"},
       "operating_hours_v2_hot_water_a534": {"name": "Betriebsstunden Warmwasserbetrieb"},
