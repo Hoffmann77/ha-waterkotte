@@ -24,6 +24,7 @@ from custom_components.waterkotte_heatpump.pywaterkotte_ha.error import (
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .const import (
     CONF_ADD_READONLY_COPIES,
+    CONF_MONTHLY_STATISTICS,
     CONF_POLLING_INTERVAL,
     CONF_READ_ONLY,
     MIN_POLLING_INTERVAL,
@@ -83,6 +84,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
 
         self.add_readonly_copies = setting(CONF_ADD_READONLY_COPIES, False)
         self.read_only = setting(CONF_READ_ONLY, False)
+        self.monthly_statistics = setting(CONF_MONTHLY_STATISTICS, False)
 
         # the connection data (incl. the credentials) is only stored in the config entry data (not in the options)
         _system_type = config_entry.data.get(CONF_SYSTEMTYPE, ECOTOUCH)

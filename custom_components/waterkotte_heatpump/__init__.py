@@ -1,11 +1,14 @@
 """The Waterkotte Heatpump integration."""
 import logging
 import re
+from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as config_val, device_registry as dev_reg, entity_registry as entity_reg
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
@@ -22,11 +25,13 @@ from .const import (
 )
 from .coordinator import WaterkotteConfigEntry, WKHPDataUpdateCoordinator
 from .naming import entry_title, is_real_serial
+from .monthly_statistics import async_update_monthly_statistics
 from .readonly import READONLY_SUFFIX
 from .service import async_setup_services
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 CONFIG_SCHEMA = config_val.removed(DOMAIN, raise_if_present=False)
+_MONTHLY_STATISTICS_INTERVAL = timedelta(hours=1)
 
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry):
@@ -190,7 +195,23 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: WaterkotteConfigE
     # enabled entities have registered their tags as coordinator context, so we fetch the data
     await coordinator.async_refresh()
 
+    if coordinator.monthly_statistics and "recorder" in hass.config.components:
+        _async_setup_monthly_statistics(hass, config_entry)
+
     return True
+
+
+def _async_setup_monthly_statistics(hass: HomeAssistant, config_entry: WaterkotteConfigEntry) -> None:
+    """Add the monthly values to the statistics - now and then every hour (the value of the current month changes)."""
+
+    async def update(_now=None) -> None:
+        try:
+            await async_update_monthly_statistics(config_entry.runtime_data)
+        except HomeAssistantError as err:
+            _LOGGER.warning("the monthly statistics could not be updated: %s", err)
+
+    config_entry.async_create_background_task(hass, update(), f"{DOMAIN} monthly statistics")
+    config_entry.async_on_unload(async_track_time_interval(hass, update, _MONTHLY_STATISTICS_INTERVAL))
 
 
 def _async_remove_readonly_copies(hass: HomeAssistant, config_entry: WaterkotteConfigEntry) -> None:

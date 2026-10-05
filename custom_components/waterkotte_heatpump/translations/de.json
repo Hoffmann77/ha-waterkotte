@@ -88,11 +88,13 @@
           "polling_interval": "Aktualisierungsintervall in Sekunden",
           "tags_per_request": "Anzahl von TAGS die gleichzeitig angefordert werden (max. 75)",
           "add_readonly_copies": "Schreibgeschützte Kopien der Schalter, Zahlen und Auswahlen hinzufügen",
-          "read_only": "Schreibschutz"
+          "read_only": "Schreibschutz",
+          "monthly_statistics": "Monatsstatistiken hinzufügen (JAZ und Energie)"
         },
         "data_description": {
           "add_readonly_copies": "Fügt für jede Einstellung der Wärmepumpe einen Sensor hinzu - z. B. um sie auf einem Dashboard anzuzeigen, ohne dass sie geändert werden kann.",
-          "read_only": "Es wird nichts in die Wärmepumpe geschrieben: Änderungen an Schaltern, Zahlen, Auswahlen, Datum oder Uhrzeit (und die Aktionen, die Einstellungen ändern) schlagen fehl."
+          "read_only": "Es wird nichts in die Wärmepumpe geschrieben: Änderungen an Schaltern, Zahlen, Auswahlen, Datum oder Uhrzeit (und die Aktionen, die Einstellungen ändern) schlagen fehl.",
+          "monthly_statistics": "Fügt die JAZ und die Energie der letzten 12 Monate (und ab dann jedes Monats) zu den Langzeitstatistiken von Home Assistant hinzu - anzeigbar mit einer Statistik-Diagrammkarte (Zeitraum: Monat)."
         }
       }
     }

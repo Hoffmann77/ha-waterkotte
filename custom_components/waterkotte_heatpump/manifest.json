@@ -1,6 +1,7 @@
 {
   "domain": "waterkotte_heatpump",
   "name": "Waterkotte Heatpump [+2020]",
+  "after_dependencies": ["recorder"],
   "codeowners": [
     "@marq24",
     "@pattisonmichael"

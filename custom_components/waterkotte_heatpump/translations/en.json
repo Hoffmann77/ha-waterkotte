@@ -88,11 +88,13 @@
           "polling_interval": "Polling Interval in seconds",
           "tags_per_request": "Number of tags to fetch in a single request (max. 75)",
           "add_readonly_copies": "Add read-only copies of the switches, numbers and selects",
-          "read_only": "Read-only mode"
+          "read_only": "Read-only mode",
+          "monthly_statistics": "Add monthly statistics (COP and energy)"
         },
         "data_description": {
           "add_readonly_copies": "Adds a sensor for every setting of the heat pump - e.g. to show it on a dashboard without the risk of changing it.",
-          "read_only": "Nothing is written to the heat pump: changing a switch, number, select, date or time (and the service actions, that change settings) fails."
+          "read_only": "Nothing is written to the heat pump: changing a switch, number, select, date or time (and the service actions, that change settings) fails.",
+          "monthly_statistics": "Adds the COP and the energy of the last 12 months (and from then on of every month) to the long-term statistics of Home Assistant - shown with a statistics graph card (period: month)."
         }
       }
     }
