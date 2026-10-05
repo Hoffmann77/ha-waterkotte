@@ -110,3 +110,23 @@ async def test_operating_hours_totals_enabled(hass: HomeAssistant, mock_bridge: 
     mock_bridge.async_read_value.return_value = {"value": False, "status": "S_OK"}
     await _setup(hass, mock_bridge, {})
     mock_bridge.async_write_value.assert_awaited_with(WKHPTag.OPERATING_HOURS_V2_SHOW_TOTALS_SWITCH_D634, True)
+
+
+async def test_readonly_copies_follow_original(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    """Test that a copy is enabled by default, when its original entity is enabled (and vice versa)."""
+    entry = await _setup(hass, mock_bridge, {})
+    registry = er.async_get(hass)
+    # enable an entity, that is disabled by default - and disable one, that is enabled by default
+    registry.async_update_entity(_entity_id(hass, "select", "ENABLE_MIXING2"), disabled_by=None)
+    registry.async_update_entity(_entity_id(hass, "select", "ENABLE_HEATING"),
+                                 disabled_by=er.RegistryEntryDisabler.USER)
+
+    hass.config_entries.async_update_entry(entry, options={CONF_ADD_READONLY_COPIES: True})
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert not registry.async_get(_entity_id(hass, "sensor", "ENABLE_MIXING2_READONLY")).disabled
+    assert registry.async_get(_entity_id(hass, "sensor", "ENABLE_HEATING_READONLY")).disabled
+    # not changed by the user: like the original
+    assert not registry.async_get(_entity_id(hass, "sensor", "ENABLE_WARMWATER_READONLY")).disabled
+    assert registry.async_get(_entity_id(hass, "sensor", "ENABLE_PV_READONLY")).disabled
