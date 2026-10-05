@@ -332,6 +332,30 @@
       },
       "temperature_room_target_a100": {
         "default": "mdi:home-thermometer"
+      },
+      "temperature_heating_pv_change": {
+        "default": "mdi:radiator"
+      },
+      "temperature_cooling_pv_change": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "temperature_water_pv_change": {
+        "default": "mdi:water-boiler"
+      },
+      "temperature_pool_pv_change": {
+        "default": "mdi:pool-thermometer"
+      },
+      "temperature_mix1_pv_change": {
+        "default": "mdi:radiator"
+      },
+      "temperature_mix2_pv_change": {
+        "default": "mdi:radiator"
+      },
+      "temperature_mix3_pv_change": {
+        "default": "mdi:radiator"
+      },
+      "temperature_heating_sgready_status4": {
+        "default": "mdi:transmission-tower"
       }
     },
     "select": {

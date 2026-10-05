@@ -249,7 +249,15 @@
       "pumpservice_sourcepump_coolingmode_minspeed_a1032": {"name": "Service: Quellenpumpe Kühlbetrieb Min. Drehzahl"},
       "pumpservice_sourcepump_coolingmode_maxspeed_a1033": {"name": "Service: Quellenpumpe Kühlbetrieb Max. Drehzahl"},
       "pumpservice_sourcepump_coolingmode_source_temperature_a1034": {"name": "Service: Quellenpumpe Kühlbetrieb Temp. Wärmequelle"},
-      "temperature_room_target_a100": {"name": "T Raum-Sollwert"}
+      "temperature_room_target_a100": {"name": "T Raum-Sollwert"},
+      "temperature_heating_pv_change": {"name": "PV-Anhebung Heizung"},
+      "temperature_cooling_pv_change": {"name": "PV-Absenkung Kühlung"},
+      "temperature_water_pv_change": {"name": "PV-Anhebung Warmwasser"},
+      "temperature_pool_pv_change": {"name": "PV-Anhebung Pool"},
+      "temperature_mix1_pv_change": {"name": "PV-Anhebung Mischerkreis 1"},
+      "temperature_mix2_pv_change": {"name": "PV-Anhebung Mischerkreis 2"},
+      "temperature_mix3_pv_change": {"name": "PV-Anhebung Mischerkreis 3"},
+      "temperature_heating_sgready_status4": {"name": "SG Ready SG4: Heiztemperatur"}
     },
     "select": {
       "temperature_heating_mode": {

@@ -249,7 +249,15 @@
       "pumpservice_sourcepump_coolingmode_minspeed_a1032": {"name": "Service: Sourcepump Cooling min speed"},
       "pumpservice_sourcepump_coolingmode_maxspeed_a1033": {"name": "Service: Sourcepump Cooling max speed"},
       "pumpservice_sourcepump_coolingmode_source_temperature_a1034": {"name": "Service: Sourcepump Cooling Source Temperature"},
-      "temperature_room_target_a100": {"name": "T Room target"}
+      "temperature_room_target_a100": {"name": "T Room target"},
+      "temperature_heating_pv_change": {"name": "PV change heating"},
+      "temperature_cooling_pv_change": {"name": "PV change cooling"},
+      "temperature_water_pv_change": {"name": "PV change hot water"},
+      "temperature_pool_pv_change": {"name": "PV change pool"},
+      "temperature_mix1_pv_change": {"name": "PV change mixer 1"},
+      "temperature_mix2_pv_change": {"name": "PV change mixer 2"},
+      "temperature_mix3_pv_change": {"name": "PV change mixer 3"},
+      "temperature_heating_sgready_status4": {"name": "SG Ready SG4: Heating temperature"}
     },
     "select": {
       "temperature_heating_mode": {
