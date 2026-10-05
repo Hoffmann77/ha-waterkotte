@@ -31,10 +31,13 @@ def test_decode_no_alarms() -> None:
 def test_monthly_tags_are_unique() -> None:
     """Test that each month has its own tag (an alias would report the value of another month)."""
     for prefix in ("ENG_HEATPUMP_COP_MONTH", "ENG_CONSUMPTION_COMPRESSOR", "ENG_CONSUMPTION_SOURCEPUMP",
-                   "ENG_CONSUMPTION_EXTERNALHEATER", "ENG_PRODUCTION_HEATING", "ENG_PRODUCTION_WARMWATER",
+                   "ENG_CONSUMPTION_EXTERNALHEATER", "ENG_CONSUMPTION_TOTAL", "ENG_PRODUCTION_HEATING", "ENG_PRODUCTION_WARMWATER",
                    "ENG_PRODUCTION_POOL"):
         tags = [WKHPTag[f"{prefix}{month:02d}"] for month in range(1, 13)]
         assert len({tag.tags[0] for tag in tags}) == 12, prefix
+        # the 12 months are consecutive tags
+        numbers = [int(tag.tags[0][1:]) for tag in tags]
+        assert numbers == list(range(numbers[0], numbers[0] + 12)), prefix
         assert all(tag.name == f"{prefix}{month:02d}" for month, tag in zip(range(1, 13), tags, strict=True)), prefix
 
 

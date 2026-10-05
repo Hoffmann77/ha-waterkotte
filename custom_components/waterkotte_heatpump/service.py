@@ -26,6 +26,7 @@ _MONTHLY_TAG_PREFIXES = {
     "compressor": "ENG_CONSUMPTION_COMPRESSOR",
     "sourcepump": "ENG_CONSUMPTION_SOURCEPUMP",
     "externalheater": "ENG_CONSUMPTION_EXTERNALHEATER",
+    "consumption": "ENG_CONSUMPTION_TOTAL",
     "heating": "ENG_PRODUCTION_HEATING",
     "warmwater": "ENG_PRODUCTION_WARMWATER",
     "pool": "ENG_PRODUCTION_POOL",
