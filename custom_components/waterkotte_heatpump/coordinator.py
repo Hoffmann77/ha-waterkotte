@@ -1,4 +1,5 @@
 """The coordinator of the Waterkotte Heatpump integration - it polls the values of the heat pump."""
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from datetime import timedelta
@@ -78,6 +79,11 @@ YEAR_BALANCE_TAGS: frozenset[WKHPTag] = frozenset({
 _YEAR_CHECK_TAGS = (WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO, WKHPTag.DATE_YEAR)
 
 
+def _is_ok(value: dict | None) -> bool:
+    """True, when the value has been read"""
+    return value is not None and value["status"] == "S_OK"
+
+
 def is_other_year(values: dict) -> bool:
     """True, when the energy balance of another year than the current year of the heat pump is selected (when the
     year can't be read, the values are not discarded)"""
@@ -150,12 +156,20 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             configuration_url=f"http://{_host}",
         )
 
+        # the heat pump allows only a few sessions - so it is accessed by one request at a time (the regular updates,
+        # the monthly statistics, the service actions and the writes of the entities)
+        self._lock = asyncio.Lock()
+
         # update_interval can be adjusted in the options
         super().__init__(hass, _LOGGER, config_entry=config_entry, name=DOMAIN,
                          update_interval=timedelta(seconds=max(MIN_POLLING_INTERVAL, setting(CONF_POLLING_INTERVAL, 60))))
 
     async def _async_setup(self) -> None:
         """Connect to the heat pump (once, during the first refresh)."""
+        async with self._lock:
+            await self._async_setup_locked()
+
+    async def _async_setup_locked(self) -> None:
         async with self._map_errors():
             # the EasyCon interface has no login - so we also read a tag to check the connection
             await self.bridge.async_check_login()
@@ -218,13 +232,27 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             tags.update(_YEAR_CHECK_TAGS)
         self.bridge.tags = list(tags)
         _LOGGER.debug("number of entities to query: %s (1 entity can consist of n-tags)", len(self.bridge.tags))
-        async with self._map_errors():
-            result = await self.bridge.async_get_data()
-        _LOGGER.debug("number of entity values read: %s", len(result))
+        async with self._lock:
+            async with self._map_errors():
+                result = await self.bridge.async_get_data()
+            _LOGGER.debug("number of entity values read: %s", len(result))
 
-        # only the values that have been read in this update - the entities of the other tags are unavailable
-        # (and don't show an outdated value)
-        data = {tag: value for tag, value in result.items() if value is not None and value["status"] == "S_OK"}
+            # only the values that have been read in this update - the entities of the other tags are unavailable
+            # (and don't show an outdated value)
+            data = {tag: value for tag, value in result.items() if _is_ok(value)}
+
+            # a value, that could be read in the last update but not in this one, is read again (once) - so that a
+            # single failed request doesn't make the entity unavailable for a moment
+            lost = [tag for tag in tags if tag in (self.data or {}) and tag not in data]
+            if lost:
+                _LOGGER.debug("read again: %s", {tag.name: (result.get(tag) or {}).get("status") for tag in lost})
+                try:
+                    again = await self.bridge.async_read_values(lost)
+                except Exception as err:  # pylint: disable=broad-except
+                    _LOGGER.debug("the values could not be read again: %s %s", type(err).__name__, err)
+                    again = {}
+                data.update({tag: value for tag, value in again.items() if _is_ok(value)})
+
         if check_year and is_other_year(data):
             # the values of another year would look like a reset of the yearly counters (in the statistics)
             _LOGGER.info("the energy balance of %s is selected in the web interface of the heat pump - the yearly "
@@ -250,7 +278,8 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
     async def async_read_values(self, tags: Sequence[WKHPTag]) -> dict:
         """Read the values of the tags (outside the regular updates) - the errors are raised as HomeAssistantError"""
         try:
-            return await self.bridge.async_read_values(tags)
+            async with self._lock:
+                return await self.bridge.async_read_values(tags)
         except (StatusException, aiohttp.ClientError, TimeoutError) as err:
             raise HomeAssistantError(translation_domain=DOMAIN, translation_key="read_failed",
                                      translation_placeholders={"error": f"{type(err).__name__} {err}"}) from err
@@ -262,7 +291,8 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             raise ServiceValidationError(translation_domain=DOMAIN, translation_key="read_only",
                                          translation_placeholders=placeholders)
         try:
-            result = await self.bridge.async_write_value(tag, value)
+            async with self._lock:
+                result = await self.bridge.async_write_value(tag, value)
         except (ValueError, InvalidValueException) as err:
             # the value can't be encoded for the tag (or the tag is read only)
             raise ServiceValidationError(translation_domain=DOMAIN, translation_key="invalid_value",
