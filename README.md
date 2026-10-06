@@ -80,7 +80,7 @@ If the IP address (or hostname) or the login credentials of your Waterkotte have
 
 Please note, that most of the available sensors are __not__ enabled by default.
 
-The heat pump provides the yearly values (energy and COP 'this year') for the year, that is selected on the energy balance page of its web interface. While an older year is selected there, these sensors are unavailable - otherwise the values of the older year would look like a reset of the yearly counters in the statistics of Home Assistant. The heat pump returns to the current year after one hour. Since the heat pump doesn't switch the selected year and the values at the same moment, the yearly values are also skipped in the first update after the current year is selected again and when an energy counter decreases or increases more than possible (these values are accepted after 3 updates in a row, e.g. after the counters have been reset).
+The heat pump provides the yearly values (energy and COP 'this year') for the year, that is selected on the energy balance page of its web interface. While an older year or the total of all years ('Gesamt') is selected there, these sensors are unavailable - otherwise the values of the older year would look like a reset of the yearly counters in the statistics of Home Assistant. The heat pump returns to the current year after one hour. Since the heat pump doesn't switch the selected year and the values at the same moment, the yearly values are also skipped in the first update after the current year is selected again and when an energy counter decreases or increases more than possible (these values are accepted after 3 updates in a row, e.g. after the counters have been reset).
 
 #### Read-only entities & read-only mode
 

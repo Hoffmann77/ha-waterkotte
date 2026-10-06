@@ -77,7 +77,7 @@ YEAR_BALANCE_TAGS: frozenset[WKHPTag] = frozenset({
     WKHPTag.POOL_ENERGY_PRODUCTION_YEAR,
     WKHPTag.COOLING_ENERGY_YEAR,
 })
-_YEAR_CHECK_TAGS = (WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO, WKHPTag.DATE_YEAR)
+_YEAR_CHECK_TAGS = (WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO, WKHPTag.COP_HEATPUMP_TOTAL_SELECTED, WKHPTag.DATE_YEAR)
 
 
 def _is_ok(value: dict | None) -> bool:
@@ -107,9 +107,16 @@ def _number(values: dict, tag: WKHPTag) -> float | None:
         return None
 
 
+def is_total_selected(values: dict) -> bool:
+    """True, when the total of all years ('Gesamt') is selected in the web interface"""
+    return values.get(WKHPTag.COP_HEATPUMP_TOTAL_SELECTED, {}).get("value") in (True, 1, "1")
+
+
 def is_other_year(values: dict) -> bool:
-    """True, when the energy balance of another year than the current year of the heat pump is selected (when the
-    year can't be read, the values are not discarded)"""
+    """True, when the energy balance of another year than the current year of the heat pump (or the total of all
+    years) is selected (when the year can't be read, the values are not discarded)"""
+    if is_total_selected(values):
+        return True
     try:
         balance_year = int(values[WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]["value"])
         year = int(float(values[WKHPTag.DATE_YEAR]["value"]))
@@ -141,7 +148,8 @@ class YearBalanceGuard:
         if is_other_year(data):
             # the values of another year would look like a reset of the yearly counters (in the statistics)
             _LOGGER.info("the energy balance of %s is selected in the web interface of the heat pump - the yearly "
-                         "values are not updated", data[WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]["value"])
+                         "values are not updated",
+                         "all years" if is_total_selected(data) else data[WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]["value"])
             self._settle = True
             return self._discard(data)
         if self._settle:

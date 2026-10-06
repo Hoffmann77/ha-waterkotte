@@ -97,3 +97,28 @@ async def test_implausible_values(hass: HomeAssistant, mock_bridge: MagicMock) -
     assert await _refresh(hass, entry, _data(2027, consumption=500.0, year=27)) == STATE_UNAVAILABLE
     assert await _refresh(hass, entry, _data(2027, consumption=500.0, year=27)) == STATE_UNAVAILABLE
     assert await _refresh(hass, entry, _data(2027, consumption=500.0, year=27)) == "500.0"
+
+
+async def test_total_of_all_years_selected(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    """Test that the yearly values are unavailable, while the total of all years ('Gesamt') is selected in the web
+    interface - the selected year doesn't change then."""
+    mock_bridge.async_get_data.return_value = _data(2026, consumption=5068.782)
+    entry = MockConfigEntry(
+        domain=DOMAIN, version=2, minor_version=3, unique_id=SERIAL,
+        data={CONF_HOST: HOST, CONF_SERIAL: SERIAL, CONF_SYSTEMTYPE: "ECOTOUCH"},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert WKHPTag.COP_HEATPUMP_TOTAL_SELECTED in mock_bridge.tags
+
+    total = _data(2026, consumption=16739.35)
+    total[WKHPTag.COP_HEATPUMP_TOTAL_SELECTED] = {"value": True, "status": "S_OK"}
+    # the total stays selected longer than the implausible values are discarded
+    for _ in range(5):
+        assert await _refresh(hass, entry, total) == STATE_UNAVAILABLE
+
+    current = _data(2026, consumption=5068.9)
+    current[WKHPTag.COP_HEATPUMP_TOTAL_SELECTED] = {"value": False, "status": "S_OK"}
+    assert await _refresh(hass, entry, current) == STATE_UNAVAILABLE
+    assert await _refresh(hass, entry, current) == "5068.9"

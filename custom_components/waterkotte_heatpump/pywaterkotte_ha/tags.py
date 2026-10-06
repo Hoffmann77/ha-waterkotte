@@ -536,6 +536,8 @@ class WKHPTag(DataTag, Enum):
     # ENERGY-YEAR-BALANCE
     COP_HEATPUMP_YEAR = DataTag(["A460"], "")  # HEATPUMP_COP
     COP_HEATPUMP_ACTUAL_YEAR_INFO = DataTag(["I1261"], decode_f=DataTag._decode_year)  # HEATPUMP_COP_YEAR
+    # the total of all years ('Gesamt') is selected in the web interface (instead of the year I1261)
+    COP_HEATPUMP_TOTAL_SELECTED = DataTag(["D428"])
     COP_TOTAL_SYSTEM_YEAR = DataTag(["A461"], "")
     COP_HEATING_YEAR = DataTag(["A695"])
     COP_HOT_WATER_YEAR = DataTag(["A697"])
