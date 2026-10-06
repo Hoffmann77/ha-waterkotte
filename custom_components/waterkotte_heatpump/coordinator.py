@@ -1,6 +1,7 @@
 """The coordinator of the Waterkotte Heatpump integration - it polls the values of the heat pump."""
 import asyncio
 import logging
+import time
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from typing import Sequence
@@ -76,7 +77,7 @@ YEAR_BALANCE_TAGS: frozenset[WKHPTag] = frozenset({
     WKHPTag.POOL_ENERGY_PRODUCTION_YEAR,
     WKHPTag.COOLING_ENERGY_YEAR,
 })
-_YEAR_CHECK_TAGS = (WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO, WKHPTag.DATE_YEAR)
+_YEAR_CHECK_TAGS = (WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO, WKHPTag.COP_HEATPUMP_TOTAL_SELECTED, WKHPTag.DATE_YEAR)
 
 
 def _is_ok(value: dict | None) -> bool:
@@ -84,9 +85,38 @@ def _is_ok(value: dict | None) -> bool:
     return value is not None and value["status"] == "S_OK"
 
 
+# the yearly energy counters (kWh) - they only increase during a year
+YEAR_ENERGY_TAGS: frozenset[WKHPTag] = YEAR_BALANCE_TAGS - {
+    WKHPTag.COP_HEATPUMP_YEAR,
+    WKHPTag.COP_TOTAL_SYSTEM_YEAR,
+    WKHPTag.COP_HEATING_YEAR,
+    WKHPTag.COP_HOT_WATER_YEAR,
+}
+# the maximum increase of a yearly energy counter: per hour since the last value and per update
+_MAX_KWH_PER_HOUR = 50.0
+_MAX_KWH_PER_UPDATE = 5.0
+# after this number of updates with implausible values in a row, the values are accepted (e.g. after the counters of
+# the heat pump have been reset)
+_MAX_IMPLAUSIBLE_UPDATES = 3
+
+
+def _number(values: dict, tag: WKHPTag) -> float | None:
+    try:
+        return float(values[tag]["value"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def is_total_selected(values: dict) -> bool:
+    """True, when the total of all years ('Gesamt') is selected in the web interface"""
+    return values.get(WKHPTag.COP_HEATPUMP_TOTAL_SELECTED, {}).get("value") in (True, 1, "1")
+
+
 def is_other_year(values: dict) -> bool:
-    """True, when the energy balance of another year than the current year of the heat pump is selected (when the
-    year can't be read, the values are not discarded)"""
+    """True, when the energy balance of another year than the current year of the heat pump (or the total of all
+    years) is selected (when the year can't be read, the values are not discarded)"""
+    if is_total_selected(values):
+        return True
     try:
         balance_year = int(values[WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]["value"])
         year = int(float(values[WKHPTag.DATE_YEAR]["value"]))
@@ -95,6 +125,71 @@ def is_other_year(values: dict) -> bool:
     if year < 100:
         year += 2000
     return balance_year != year
+
+
+class YearBalanceGuard:
+    """Discards the values of the energy balance of a year, that don't belong to the current year.
+
+    When the year is changed in the web interface, the heat pump doesn't switch the selected year (I1261) and the
+    yearly values at the same moment - for one update the values of the other year (or 0) can be read together with
+    the current year. So the yearly values are also discarded
+    - in the first update after another year has been selected (until the values have settled) and
+    - when an energy counter decreases or increases more than possible since its last value.
+    """
+
+    def __init__(self) -> None:
+        self._settle = False
+        self._implausible = 0
+        self._year: int | None = None
+        # the last accepted value of each energy counter: (time.monotonic(), value)
+        self._reference: dict[WKHPTag, tuple[float, float]] = {}
+
+    def filter(self, data: dict, now: float) -> dict:
+        if is_other_year(data):
+            # the values of another year would look like a reset of the yearly counters (in the statistics)
+            _LOGGER.info("the energy balance of %s is selected in the web interface of the heat pump - the yearly "
+                         "values are not updated",
+                         "all years" if is_total_selected(data) else data[WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]["value"])
+            self._settle = True
+            return self._discard(data)
+        if self._settle:
+            self._settle = False
+            _LOGGER.debug("the current year is selected again - the yearly values are updated with the next update")
+            return self._discard(data)
+
+        year = _number(data, WKHPTag.DATE_YEAR)
+        energies = {tag: value for tag in YEAR_ENERGY_TAGS if (value := _number(data, tag)) is not None}
+        implausible = self._implausible_values(energies, year, now)
+        if implausible:
+            self._implausible += 1
+            if self._implausible < _MAX_IMPLAUSIBLE_UPDATES:
+                _LOGGER.info("implausible yearly values (another year selected in the web interface?) - the yearly "
+                             "values are not updated: %s", implausible)
+                return self._discard(data)
+            _LOGGER.warning("the yearly values have changed: %s", implausible)
+        self._implausible = 0
+        if year is not None:
+            self._year = int(year)
+        self._reference.update({tag: (now, value) for tag, value in energies.items()})
+        return data
+
+    def _implausible_values(self, energies: dict[WKHPTag, float], year: float | None, now: float) -> dict:
+        if year is None or self._year is None or int(year) != self._year:
+            # a new year: the counters start at 0
+            return {}
+        implausible = {}
+        for tag, value in energies.items():
+            if tag not in self._reference:
+                continue
+            since, last = self._reference[tag]
+            max_increase = _MAX_KWH_PER_HOUR * (now - since) / 3600 + _MAX_KWH_PER_UPDATE
+            if value < last - 0.1 or value > last + max_increase:
+                implausible[tag.name] = f"{last} -> {value}"
+        return implausible
+
+    @staticmethod
+    def _discard(data: dict) -> dict:
+        return {tag: value for tag, value in data.items() if tag not in YEAR_BALANCE_TAGS}
 
 
 # the coordinator of a loaded config entry is stored as its runtime_data
@@ -159,6 +254,7 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
         # the heat pump allows only a few sessions - so it is accessed by one request at a time (the regular updates,
         # the monthly statistics, the service actions and the writes of the entities)
         self._lock = asyncio.Lock()
+        self._year_balance_guard = YearBalanceGuard()
 
         # update_interval can be adjusted in the options
         super().__init__(hass, _LOGGER, config_entry=config_entry, name=DOMAIN,
@@ -253,11 +349,8 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
                     again = {}
                 data.update({tag: value for tag, value in again.items() if _is_ok(value)})
 
-        if check_year and is_other_year(data):
-            # the values of another year would look like a reset of the yearly counters (in the statistics)
-            _LOGGER.info("the energy balance of %s is selected in the web interface of the heat pump - the yearly "
-                         "values are not updated", data[WKHPTag.COP_HEATPUMP_ACTUAL_YEAR_INFO]["value"])
-            data = {tag: value for tag, value in data.items() if tag not in YEAR_BALANCE_TAGS}
+        if check_year:
+            data = self._year_balance_guard.filter(data, time.monotonic())
         return data
 
     @asynccontextmanager
