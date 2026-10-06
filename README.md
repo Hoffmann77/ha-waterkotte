@@ -80,6 +80,8 @@ If the IP address (or hostname) or the login credentials of your Waterkotte have
 
 Please note, that most of the available sensors are __not__ enabled by default.
 
+The heat pump provides the yearly values (energy and COP 'this year') for the year, that is selected on the energy balance page of its web interface. While an older year is selected there, these sensors are unavailable - otherwise the values of the older year would look like a reset of the yearly counters in the statistics of Home Assistant. The heat pump returns to the current year after one hour.
+
 #### Read-only entities & read-only mode
 
 The options of the integration ('config' button) offer two settings to protect the settings of your heat pump:
@@ -97,9 +99,11 @@ The heat pump provides the COP and the energy of the last 12 months. With the op
 | `waterkotte_heatpump:<serial>_compressor_consumption_monthly` | Electrical consumption compressor (kWh) |
 | `waterkotte_heatpump:<serial>_source_pump_consumption_monthly` | Electrical consumption source pump (kWh) |
 | `waterkotte_heatpump:<serial>_external_heater_consumption_monthly` | Electrical consumption external heater (kWh) |
+| `waterkotte_heatpump:<serial>_consumption_monthly` | Electrical consumption total (kWh) |
 | `waterkotte_heatpump:<serial>_heating_production_monthly` | Thermal production heating (kWh) |
 | `waterkotte_heatpump:<serial>_hot_water_production_monthly` | Thermal production hot water (kWh) |
 | `waterkotte_heatpump:<serial>_pool_production_monthly` | Thermal production pool (kWh) |
+| `waterkotte_heatpump:<serial>_production_monthly` | Thermal production total (kWh) |
 
 They are no entities - show them with a __Statistics graph card__ (period: month, chart type: bar; stat type: mean for the COP, change for the energy).
 

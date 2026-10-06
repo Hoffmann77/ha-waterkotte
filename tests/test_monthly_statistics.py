@@ -26,14 +26,20 @@ def auto_enable_custom_integrations(recorder_mock: Recorder, enable_custom_integ
 
 COP_ID = f"{DOMAIN}:{SERIAL.lower()}_cop_monthly"
 COMPRESSOR_ID = f"{DOMAIN}:{SERIAL.lower()}_compressor_consumption_monthly"
+CONSUMPTION_ID = f"{DOMAIN}:{SERIAL.lower()}_consumption_monthly"
+PRODUCTION_ID = f"{DOMAIN}:{SERIAL.lower()}_production_monthly"
 
 
 def _heat_pump_values(month: int, year: int, april: float = 104.0) -> dict:
-    """The values of the heat pump: the COP of month m is 3 + m/10, the compressor consumption 100 + m (kWh)"""
+    """The values of the heat pump: the COP of month m is 3 + m/10, the compressor consumption 100 + m, the source
+    pump consumption 10 and the external heater consumption 0 (kWh) - without the production of the pool"""
     values = {WKHPTag.DATE_MONTH: month, WKHPTag.DATE_YEAR: year}
     for m in range(1, 13):
         values[WKHPTag[f"ENG_HEATPUMP_COP_MONTH{m:02d}"]] = 3 + m / 10
         values[WKHPTag[f"ENG_CONSUMPTION_COMPRESSOR{m:02d}"]] = april if m == 4 else 100.0 + m
+        values[WKHPTag[f"ENG_CONSUMPTION_SOURCEPUMP{m:02d}"]] = 10.0
+        values[WKHPTag[f"ENG_CONSUMPTION_EXTERNALHEATER{m:02d}"]] = 0.0
+        values[WKHPTag[f"ENG_CONSUMPTION_TOTAL{m:02d}"]] = (april if m == 4 else 100.0 + m) + 10.0
     # the heat pump did not run in December - no COP
     values[WKHPTag.ENG_HEATPUMP_COP_MONTH12] = 0.0
 
@@ -78,6 +84,11 @@ async def test_monthly_statistics(hass: HomeAssistant, mock_bridge: MagicMock) -
     assert len(compressor) == 12
     assert compressor[0]["state"] == 104.0
     assert compressor[-1]["sum"] == sum(100.0 + m for m in range(1, 13))
+    # the total consumption of the heat pump - the heat pump did not provide the total production
+    consumption = await _statistics(hass, CONSUMPTION_ID)
+    assert [row["state"] for row in consumption] == [
+        110.0 + m for m in range(4, 13)] + [110.0 + m for m in range(1, 4)]
+    assert await _statistics(hass, PRODUCTION_ID) == []
 
     # April 2026: the window moves - the sum continues the sum of April 2025 (not provided anymore)
     mock_bridge.async_read_values.side_effect = _heat_pump_values(month=4, year=2026, april=50.0)
@@ -101,3 +112,4 @@ async def test_no_monthly_statistics_by_default(hass: HomeAssistant, mock_bridge
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     assert await _statistics(hass, COP_ID) == []
+

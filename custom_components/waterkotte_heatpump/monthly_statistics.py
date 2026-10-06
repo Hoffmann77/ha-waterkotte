@@ -52,12 +52,14 @@ MONTHLY_STATISTICS = [
                      "Electrical consumption source pump", is_energy=True),
     MonthlyStatistic("external_heater_consumption_monthly", "ENG_CONSUMPTION_EXTERNALHEATER",
                      "Electrical consumption external heater", is_energy=True),
+    MonthlyStatistic("consumption_monthly", "ENG_CONSUMPTION_TOTAL", "Electrical consumption", is_energy=True),
     MonthlyStatistic("heating_production_monthly", "ENG_PRODUCTION_HEATING",
                      "Thermal production heating", is_energy=True),
     MonthlyStatistic("hot_water_production_monthly", "ENG_PRODUCTION_WARMWATER",
                      "Thermal production hot water", is_energy=True),
     MonthlyStatistic("pool_production_monthly", "ENG_PRODUCTION_POOL",
                      "Thermal production pool", is_energy=True),
+    MonthlyStatistic("production_monthly", "ENG_PRODUCTION_TOTAL", "Thermal production", is_energy=True),
 ]
 
 
@@ -85,6 +87,7 @@ async def async_update_monthly_statistics(coordinator: WKHPDataUpdateCoordinator
     """Read the monthly values of the heat pump and add them to the statistics - the read errors are raised as
     HomeAssistantError"""
     hass = coordinator.hass
+    # the monthly values are the last 12 months - independent of the year, that is selected in the web interface
     tags = [WKHPTag.DATE_MONTH, WKHPTag.DATE_YEAR] + [tag for stat in MONTHLY_STATISTICS for tag in stat.tags()]
     values = await coordinator.async_read_values(tags)
 
@@ -94,13 +97,12 @@ async def async_update_monthly_statistics(coordinator: WKHPDataUpdateCoordinator
         _LOGGER.debug("monthly statistics: the date of the heat pump could not be read (%s/%s)", month, year)
         return
     starts = month_starts(int(month), int(year))
+    # the months of the window - from the oldest to the current month
+    ordered = sorted(_MONTHS, key=lambda m: starts[m])
 
     for stat in MONTHLY_STATISTICS:
-        # the months of the window - from the oldest to the current month
-        months = sorted(
-            ((starts[m], _number(values, tag)) for m, tag in zip(_MONTHS, stat.tags(), strict=True)),
-            key=lambda item: item[0],
-        )
+        month_tags = dict(zip(_MONTHS, stat.tags(), strict=True))
+        months = [(starts[m], _number(values, month_tags[m])) for m in ordered]
         if stat.is_energy:
             await _async_add_energy(hass, coordinator, stat, months)
         else:

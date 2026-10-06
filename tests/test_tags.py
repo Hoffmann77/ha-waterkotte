@@ -31,10 +31,14 @@ def test_decode_no_alarms() -> None:
 def test_monthly_tags_are_unique() -> None:
     """Test that each month has its own tag (an alias would report the value of another month)."""
     for prefix in ("ENG_HEATPUMP_COP_MONTH", "ENG_CONSUMPTION_COMPRESSOR", "ENG_CONSUMPTION_SOURCEPUMP",
-                   "ENG_CONSUMPTION_EXTERNALHEATER", "ENG_PRODUCTION_HEATING", "ENG_PRODUCTION_WARMWATER",
+                   "ENG_CONSUMPTION_EXTERNALHEATER", "ENG_CONSUMPTION_TOTAL", "ENG_PRODUCTION_HEATING",
+                   "ENG_PRODUCTION_TOTAL", "ENG_PRODUCTION_WARMWATER",
                    "ENG_PRODUCTION_POOL"):
         tags = [WKHPTag[f"{prefix}{month:02d}"] for month in range(1, 13)]
         assert len({tag.tags[0] for tag in tags}) == 12, prefix
+        # the 12 months are consecutive tags (or pairs of tags)
+        numbers = [int(name[1:]) for tag in tags for name in tag.tags]
+        assert numbers == list(range(numbers[0], numbers[0] + len(numbers))), prefix
         assert all(tag.name == f"{prefix}{month:02d}" for month, tag in zip(range(1, 13), tags, strict=True)), prefix
 
 
@@ -106,3 +110,20 @@ def test_encode_invalid_value(tag: WKHPTag, value) -> None:
     """Test that an invalid value is raised (instead of an assert or of writing nothing)."""
     with pytest.raises(InvalidValueException):
         tag.encode_f(tag, value, {})
+
+
+@pytest.mark.parametrize(
+    ("tag", "raw", "expected"),
+    [
+        # the monthly values of a heat pump: the low word and the high word (the web interface shows the same values)
+        (WKHPTag.ENG_PRODUCTION_HEATING01, ["11216", "17821"], 5029.5),
+        (WKHPTag.ENG_PRODUCTION_HEATING04, ["19472", "17697"], 2580.8),
+        (WKHPTag.ENG_PRODUCTION_WARMWATER01, ["18368", "17271"], 247.3),
+        (WKHPTag.ENG_CONSUMPTION_TOTAL04, ["23136", "17451"], 685.4),
+        (WKHPTag.ENG_PRODUCTION_POOL01, ["0", "0"], 0.0),
+        (WKHPTag.ENG_PRODUCTION_HEATING01, ["11216", None], None),
+    ],
+)
+def test_decode_monthly_float_words(tag: WKHPTag, raw: list, expected) -> None:
+    """Test that the monthly values above 3276.7 kWh are decoded (32-bit floats in pairs of 16-bit tags)."""
+    assert tag.decode_f(tag, raw) == expected
