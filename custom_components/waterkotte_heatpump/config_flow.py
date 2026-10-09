@@ -259,8 +259,10 @@ class WaterkotteHeatpumpFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if pwd is not None and len(str(pwd)) == 0:
             pwd = None
 
-        # a temporary session (with its own cookies) - closed after the test
-        session = async_create_clientsession(self.hass, auto_cleanup=False)
+        # a temporary session (with its own cookies - 'unsafe' to accept the cookies of an IP address) - closed
+        # after the test
+        session = async_create_clientsession(self.hass, auto_cleanup=False,
+                                             cookie_jar=aiohttp.CookieJar(unsafe=True))
         client = WaterkotteClient(host=host, username=username, pwd=pwd, system_type=system_type,
                                   web_session=session, tags=None,
                                   tags_per_request=tags_per_request, lang=self.hass.config.language.lower())

@@ -5,8 +5,10 @@ from unittest.mock import MagicMock
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.waterkotte_heatpump import coordinator as coordinator_module
 from custom_components.waterkotte_heatpump.const import CONF_SERIAL, CONF_SYSTEMTYPE, DOMAIN
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.tags import WKHPTag
 from .conftest import HOST, SERIAL
@@ -85,3 +87,16 @@ async def test_requests_one_at_a_time(hass: HomeAssistant, mock_bridge: MagicMoc
     await update
     await read
     mock_bridge.async_read_values.assert_awaited_once()
+
+
+async def test_own_web_session(hass: HomeAssistant, mock_bridge: MagicMock) -> None:
+    """Test that the bridge has an own session (the login cookies must not end up in the shared session of HA)."""
+    entry = await _setup(hass)
+    session = coordinator_module.WaterkotteClient.call_args.kwargs["web_session"]
+    assert session is not async_get_clientsession(hass)
+    assert not session.closed
+
+    # the session is detached, when the config entry is unloaded (after the logout)
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    mock_bridge.logout.assert_awaited_once()
+    assert session.closed
