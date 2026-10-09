@@ -11,7 +11,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_ID, CONF_HOST, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError, ServiceValidationError
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -233,8 +233,13 @@ class WKHPDataUpdateCoordinator(DataUpdateCoordinator[dict[WKHPTag, dict]]):
             _user = None
             _pwd = None
 
+        # an own session, so that the login cookies of the heat pump are not stored in the cookie jar of the
+        # shared session of HA (and are not sent to other hosts). 'unsafe', because the heat pump is usually
+        # configured by its IP address - and the default jar ignores the cookies of IP addresses. The session is
+        # detached, when the config entry is unloaded
+        session = async_create_clientsession(hass, cookie_jar=aiohttp.CookieJar(unsafe=True))
         self.bridge = WaterkotteClient(host=_host, username=_user, pwd=_pwd, system_type=_system_type,
-                                       web_session=async_get_clientsession(hass), tags=[],
+                                       web_session=session, tags=[],
                                        tags_per_request=setting(CONF_TAGS_PER_REQUEST, 10),
                                        lang=hass.config.language.lower())
 

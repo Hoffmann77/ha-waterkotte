@@ -4,7 +4,11 @@ from datetime import datetime, time
 from contextlib import asynccontextmanager
 from urllib.parse import urlsplit
 
+import aiohttp
 import pytest
+from aiohttp import web
+from aiohttp.test_utils import TestServer
+from yarl import URL
 
 from custom_components.waterkotte_heatpump.pywaterkotte_ha import EasyconBridge, EcotouchBridge
 from custom_components.waterkotte_heatpump.pywaterkotte_ha.const import TRANSLATIONS
@@ -214,3 +218,34 @@ async def test_easycon_unknown_tags() -> None:
     values, states = await bridge._read_tags(["I7", "I8", "D7"])
     assert values == {"I7": "3", "I8": None, "D7": None}
     assert states == {"I7": "S_OK", "I8": "E_NOTFOUND", "D7": "E_NOTFOUND"}
+
+
+async def test_login_cookies_scoped_to_heat_pump(socket_enabled) -> None:
+    """Test that the login cookies are only sent to the heat pump (by its IP address) - not to other hosts."""
+
+    async def login(request: web.Request) -> web.Response:
+        response = web.Response(text="#S_OK\n")
+        response.headers.add("Set-Cookie", "IDALToken=token; Path=/")
+        response.headers.add("Set-Cookie", 'INFO="a,b"; Path=/')
+        return response
+
+    async def read_tags(request: web.Request) -> web.Response:
+        if request.cookies.get("IDALToken") != "token":
+            return web.Response(text="#E_NEED_LOGIN\n")
+        return web.Response(text="#A1\tS_OK\n192\t215\n")
+
+    app = web.Application()
+    app.router.add_get("/cgi/login", login)
+    app.router.add_get("/cgi/readTags", read_tags)
+    async with TestServer(app, host="127.0.0.1") as server:
+        async with aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True)) as session:
+            bridge = EcotouchBridge(host=f"127.0.0.1:{server.port}", web_session=session)
+            await bridge.login()
+            values, states = await bridge._read_tags(["A1"], retry=False)
+            assert values == {"A1": "215"}
+            assert states == {"A1": "S_OK"}
+
+            assert set(session.cookie_jar.filter_cookies(URL(f"http://127.0.0.1:{server.port}/"))) == {
+                "IDALToken", "INFO"}
+            assert not session.cookie_jar.filter_cookies(URL("http://core-openthread-border-router:8081/"))
+            assert not session.cookie_jar.filter_cookies(URL("http://172.30.32.1:8081/"))

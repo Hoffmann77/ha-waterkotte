@@ -146,13 +146,10 @@ class EcotouchBridge:
                     else:
                         raise StatusException(f"Error while LOGIN: status: {parsed_response}")
 
-                # since this is a get, we have to do our own cookie handling...
+                # aiohttp stores the cookies in the jar of the session - scoped to the host of the heat pump. The
+                # session must accept the cookies of an IP address: aiohttp.CookieJar(unsafe=True)
                 if response.cookies is not None:
                     self.auth_cookies = response.cookies
-                    _LOGGER.debug("%s", self.auth_cookies)
-                    if hasattr(self.web_session, "_cookie_jar"):
-                        jar = self.web_session._cookie_jar
-                        jar.update_cookies(response.cookies)
 
             else:
                 _LOGGER.warning("%s", response)
